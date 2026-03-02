@@ -112,7 +112,6 @@ const AgentInfo: {
   },
 };
 
-// ======================= slotConfig patch（一次 patch） =======================
 function patchSlotConfig(
   slotConfig: any[],
   params: {
@@ -120,7 +119,7 @@ function patchSlotConfig(
     sinkDbOptions: Array<string | Option>;
     tableOptions: string[];
     tableLoading: boolean;
-    selectedSourceDb: string; // ✅ 新增
+    selectedSourceDb: string;
   }
 ) {
   const {
@@ -130,12 +129,12 @@ function patchSlotConfig(
     tableLoading,
     selectedSourceDb,
   } = params;
-
+  console.log(slotConfig);
   return slotConfig.map((item) => {
     if (item?.type === "select" && item?.key === "source_db") {
       return {
         ...item,
-        value: selectedSourceDb, // ✅ 关键：把 state 写回去
+        // value: selectedSourceDb,
         props: { ...item.props, options: sourceDbOptions },
       };
     }
@@ -158,7 +157,7 @@ function patchSlotConfig(
     return item;
   });
 }
-// ======================= hook：加载数据源 all() => options + map =======================
+
 function useDataSources() {
   const [dbOptions, setDbOptions] = useState<string[]>([]);
   const [dbNameToId, setDbNameToId] = useState<Record<string, number>>({});
@@ -194,7 +193,6 @@ function useDataSources() {
   return { dbOptions, dbNameToId };
 }
 
-// ======================= hook：根据 selectedSourceDb 动态拉表（防竞态） =======================
 function useTables(dbNameToId: Record<string, number>) {
   const [selectedSourceDb, setSelectedSourceDb] = useState("");
   const [tablesState, setTablesState] = useState<{
@@ -217,14 +215,14 @@ function useTables(dbNameToId: Record<string, number>) {
 
     let cancelled = false;
 
-    // ✅ 这里一次 setState，就不会 “loading + 清空” 两次 render
     setTablesState({ loading: true, options: [] });
 
     dataSourceCatalogApi
       .listTable(String(datasourceId))
       .then((res: any) => {
         if (cancelled) return;
-        if (res?.code !== 0) throw new Error(res?.message || "Load tables failed");
+        if (res?.code !== 0)
+          throw new Error(res?.message || "Load tables failed");
 
         const tables: string[] = (res?.data || [])
           .map((t: any) => (typeof t === "string" ? t : t?.value ?? t?.label))
@@ -252,7 +250,6 @@ function useTables(dbNameToId: Record<string, number>) {
   };
 }
 
-// ======================= App =======================
 const App: React.FC = () => {
   const [loading, setLoading] = useState<boolean>(false);
   const [activeAgentKey, setActiveAgentKey] = useState("sync_copilot");
@@ -264,7 +261,6 @@ const App: React.FC = () => {
   const { selectedSourceDb, setSelectedSourceDb, tableOptions, tableLoading } =
     useTables(dbNameToId);
 
-  // agent 下拉
   const agentItems: MenuProps["items"] = useMemo(() => {
     return Object.keys(AgentInfo).map((agent) => {
       const { icon, label } = AgentInfo[agent];
@@ -272,7 +268,6 @@ const App: React.FC = () => {
     });
   }, []);
 
-  // 最终 slotConfig：一次 patch
   const slotConfig = useMemo(() => {
     const base = AgentInfo[activeAgentKey];
     return {
@@ -292,8 +287,8 @@ const App: React.FC = () => {
         selectedSourceDb, // ✅
       }),
     };
-  }, [activeAgentKey, dbOptions, tableOptions, tableLoading, selectedSourceDb]);
-  // loading 模拟
+  }, [tableOptions ]);
+
   useEffect(() => {
     if (!loading) return;
     const timer = setTimeout(() => {
@@ -324,15 +319,19 @@ const App: React.FC = () => {
         onChange={(_value, _event, slots) => {
           const raw = (slots?.find((x: any) => x.key === "source_db") as any)
             ?.value;
-            console.log(raw);
           const sourceDb = normalizeSlotValue(raw);
+          console.log(sourceDb);
+          // 1) 空值直接忽略
+          if (!sourceDb || sourceDb === "") return;
 
-          // Sender 重建 slotConfig 时可能会发一次空值，忽略即可
-          if (!sourceDb) return;
+          // 2) 关键：同一个值的重复 onChange 直接忽略（包括 Sender 内部回写触发）
+          if (sourceDb === lastSourceDbRef.current) return;
 
-          // ✅ 用 state 去重：只在真的变了才 set
-          if (sourceDb === selectedSourceDb) return;
+          lastSourceDbRef.current = sourceDb;
 
+          console.log("source_db changed =>", sourceDb);
+
+          // 3) 再更新 state
           setSelectedSourceDb(sourceDb);
         }}
         footer={(actionNode) => (
