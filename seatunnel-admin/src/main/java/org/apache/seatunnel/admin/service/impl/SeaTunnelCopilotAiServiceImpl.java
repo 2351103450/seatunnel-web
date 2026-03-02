@@ -6,6 +6,7 @@ import org.apache.seatunnel.copilot.intent.Intent;
 import org.apache.seatunnel.copilot.intent.IntentParser;
 import org.apache.seatunnel.copilot.intent.IntentRouter;
 import org.apache.seatunnel.copilot.llm.LlmClient;
+import org.apache.seatunnel.copilot.rule.CopilotOrchestrator;
 import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.stereotype.Service;
 
@@ -16,18 +17,16 @@ public class SeaTunnelCopilotAiServiceImpl implements SeaTunnelAiService {
     private IntentParser intentParser;
 
     @Resource
-    private IntentRouter intentRouter;
+    private CopilotOrchestrator copilotOrchestrator;
 
-    @Resource
-    private LlmClient llmClient;
 
     @Override
-    public ChatResponse generateJson(String userInput) {
+    public ChatResponse copilot(String userInput) {
 
         Intent intent = intentParser.parse(userInput);
 
-        String finalPrompt = intentRouter.buildPrompt(intent);
+        copilotOrchestrator.execute(intent);
 
-        return llmClient.call(finalPrompt);
+        return null;
     }
 }
