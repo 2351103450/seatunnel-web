@@ -23,14 +23,14 @@ const AgentInfo: {
     zh_label: "同步助手",
 
     skill: {
-      value: "syncCopilot",
+      value: "FULL_SYNC",
       title: "Full Copilot",
       closable: true,
     },
 
     zh_skill: {
-      value: "syncCopilot",
-      title: "同步助手",
+      value: "FULL_SYNC",
+      title: "FULL SYNC",
       closable: true,
     },
 
