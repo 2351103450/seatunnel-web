@@ -1,15 +1,16 @@
-import React, { useEffect, useMemo, useRef, useState } from "react";
 import { SyncOutlined } from "@ant-design/icons";
 import { Sender, SenderProps } from "@ant-design/x";
 import { Dropdown, Flex, GetRef, MenuProps, message } from "antd";
-import DeepSeekIcon from "../../icon/DeepSeekIcon";
+import React, { useEffect, useMemo, useRef, useState } from "react";
+
 import { dataSourceApi, dataSourceCatalogApi } from "@/pages/data-source/type";
+import DeepSeekIcon from "../../icon/DeepSeekIcon";
 
 const Switch = Sender.Switch;
 
 type Option = { label: string; value: string };
 
-// ======================= AgentInfo（原样保留） =======================
+// ======================= AgentInfo（原样保留，可继续扩展） =======================
 const AgentInfo: {
   [key: string]: {
     icon: React.ReactNode;
@@ -39,17 +40,26 @@ const AgentInfo: {
     },
 
     slotConfig: [
-      { type: "text", value: "Perform a single table data synchronization from [" },
+      {
+        type: "text",
+        value: "Perform a single table data synchronization from [",
+      },
       {
         type: "select",
         key: "source_db",
-        props: { options: ["MySQL", "PostgreSQL", "Oracle"], placeholder: "select source" },
+        props: {
+          options: ["MySQL", "PostgreSQL", "Oracle"],
+          placeholder: "select source",
+        },
       },
       { type: "text", value: "." },
       {
         type: "select",
         key: "source_table",
-        props: { options: ["users", "orders", "products"], placeholder: "select source table" },
+        props: {
+          options: ["users", "orders", "products"],
+          placeholder: "select source table",
+        },
       },
       { type: "text", value: "] to [" },
       {
@@ -58,7 +68,11 @@ const AgentInfo: {
         props: { options: ["Oracle", "MySQL"], placeholder: "select sink" },
       },
       { type: "text", value: "." },
-      { type: "input", key: "sink_table", props: { placeholder: "enter sink table" } },
+      {
+        type: "input",
+        key: "sink_table",
+        props: { placeholder: "enter sink table" },
+      },
       { type: "text", value: "]." },
     ],
 
@@ -67,13 +81,19 @@ const AgentInfo: {
       {
         type: "select",
         key: "source_db",
-        props: { options: ["MySQL", "PostgreSQL", "Oracle"], placeholder: "选择源数据库" },
+        props: {
+          options: ["MySQL", "PostgreSQL", "Oracle"],
+          placeholder: "选择源数据库",
+        },
       },
       { type: "text", value: "] 中的 [" },
       {
         type: "select",
         key: "source_table",
-        props: { options: ["users", "orders", "products"], placeholder: "选择源表" },
+        props: {
+          options: ["users", "orders", "products"],
+          placeholder: "选择源表",
+        },
       },
       { type: "text", value: "] 表，全量同步至 " },
       {
@@ -82,126 +102,88 @@ const AgentInfo: {
         props: { options: ["Oracle", "MySQL"], placeholder: "选择目标数据库" },
       },
       { type: "text", value: " 的 " },
-      { type: "input", key: "sink_table", props: { placeholder: "输入目标表名" } },
+      {
+        type: "input",
+        key: "sink_table",
+        props: { placeholder: "输入目标表名" },
+      },
       { type: "text", value: " 表。" },
     ],
   },
 };
 
-// ======================= patch 工具函数（组件外，避免重建） =======================
-function deepClone<T>(obj: T): T {
-  return JSON.parse(JSON.stringify(obj));
-}
-
-function applyDbOptions(
-  agent: (typeof AgentInfo)[keyof typeof AgentInfo],
-  sourceOpts: Array<string | Option>,
-  sinkOpts: Array<string | Option>
+// ======================= slotConfig patch（一次 patch） =======================
+function patchSlotConfig(
+  slotConfig: any[],
+  params: {
+    sourceDbOptions: Array<string | Option>;
+    sinkDbOptions: Array<string | Option>;
+    tableOptions: string[];
+    tableLoading: boolean;
+    selectedSourceDb: string; // ✅ 新增
+  }
 ) {
-  const next = deepClone(agent);
+  const {
+    sourceDbOptions,
+    sinkDbOptions,
+    tableOptions,
+    tableLoading,
+    selectedSourceDb,
+  } = params;
 
-  const patch = (arr: any[]) =>
-    arr.map((item) => {
-      if (item?.type === "select" && item?.key === "source_db") {
-        return { ...item, props: { ...item.props, options: sourceOpts } };
-      }
-      if (item?.type === "select" && item?.key === "sink_db") {
-        return { ...item, props: { ...item.props, options: sinkOpts } };
-      }
-      return item;
-    });
-
-  next.slotConfig = patch(next.slotConfig);
-  next.zh_slotConfig = patch(next.zh_slotConfig);
-  return next;
+  return slotConfig.map((item) => {
+    if (item?.type === "select" && item?.key === "source_db") {
+      return {
+        ...item,
+        value: selectedSourceDb, // ✅ 关键：把 state 写回去
+        props: { ...item.props, options: sourceDbOptions },
+      };
+    }
+    if (item?.type === "select" && item?.key === "sink_db") {
+      return { ...item, props: { ...item.props, options: sinkDbOptions } };
+    }
+    if (item?.type === "select" && item?.key === "source_table") {
+      return {
+        ...item,
+        props: {
+          ...item.props,
+          options: tableOptions,
+          loading: tableLoading,
+          placeholder: tableLoading
+            ? "loading tables..."
+            : item?.props?.placeholder,
+        },
+      };
+    }
+    return item;
+  });
 }
-
-function applyTableOptions(
-  agent: (typeof AgentInfo)[keyof typeof AgentInfo],
-  tableOpts: string[],
-  loading?: boolean
-) {
-  const next = deepClone(agent);
-
-  const patch = (arr: any[]) =>
-    arr.map((item) => {
-      if (item?.type === "select" && item?.key === "source_table") {
-        return {
-          ...item,
-          props: {
-            ...item.props,
-            options: tableOpts,
-            // 某些版本可能不支持 loading，但不会影响
-            loading: !!loading,
-            placeholder: loading ? "loading tables..." : item?.props?.placeholder,
-          },
-        };
-      }
-      return item;
-    });
-
-  next.slotConfig = patch(next.slotConfig);
-  next.zh_slotConfig = patch(next.zh_slotConfig);
-  return next;
-}
-
-// 从拼接后的 value 里解析 source_db（退化方案，非常稳）
-function parseSourceDbFromValue(value: string) {
-  // 模板：from [<source_db>.<source_table>] to [...]
-  const m = value?.match(/from\s*\[\s*([^. \]]+)\s*\./i);
-  return m?.[1] || "";
-}
-
-const App: React.FC = () => {
-  // ======================= state 一律放最上面（避免 TDZ） =======================
-  const [loading, setLoading] = useState<boolean>(false);
-  const [activeAgentKey, setActiveAgentKey] = useState("sync_copilot");
-
-  const [sourceDbOptions, setSourceDbOptions] = useState<string[]>([]);
-  const [sinkDbOptions, setSinkDbOptions] = useState<string[]>([]);
+// ======================= hook：加载数据源 all() => options + map =======================
+function useDataSources() {
+  const [dbOptions, setDbOptions] = useState<string[]>([]);
   const [dbNameToId, setDbNameToId] = useState<Record<string, number>>({});
 
-  const [selectedSourceDb, setSelectedSourceDb] = useState<string>("");
-  const [tableOptions, setTableOptions] = useState<string[]>([]);
-  const [tableLoading, setTableLoading] = useState<boolean>(false);
-
-  const senderRef = useRef<GetRef<typeof Sender>>(null);
-
-  // ======================= agent 下拉 =======================
-  const agentItems: MenuProps["items"] = useMemo(() => {
-    return Object.keys(AgentInfo).map((agent) => {
-      const { icon, label } = AgentInfo[agent];
-      return { key: agent, icon, label };
-    });
-  }, []);
-
-  const agentItemClick: MenuProps["onClick"] = (item) => {
-    setActiveAgentKey(item.key);
-  };
-
-  // ======================= 1）加载数据源 all() => options + map =======================
   useEffect(() => {
     dataSourceApi
       .all()
       .then((res: any) => {
-        if (res?.code === 0) {
-          const list = res?.data || [];
-
-          const names: string[] = list.map((v: any) => v?.dbName).filter(Boolean);
-
-          setSourceDbOptions(names);
-          setSinkDbOptions(names);
-
-          const map: Record<string, number> = {};
-          list.forEach((v: any) => {
-            if (v?.dbName != null && v?.id != null) {
-              map[String(v.dbName)] = Number(v.id);
-            }
-          });
-          setDbNameToId(map);
-        } else {
-          message.error(res?.message || "");
+        if (res?.code !== 0) {
+          message.error(res?.message || "Load data sources failed");
+          return;
         }
+
+        const list = res?.data || [];
+        const names: string[] = list.map((v: any) => v?.dbName).filter(Boolean);
+
+        const map: Record<string, number> = {};
+        list.forEach((v: any) => {
+          if (v?.dbName != null && v?.id != null) {
+            map[String(v.dbName)] = Number(v.id);
+          }
+        });
+
+        setDbOptions(names);
+        setDbNameToId(map);
       })
       .catch((err: any) => {
         console.error(err);
@@ -209,18 +191,30 @@ const App: React.FC = () => {
       });
   }, []);
 
-  // ======================= 2）根据 selectedSourceDb 动态拉表 =======================
+  return { dbOptions, dbNameToId };
+}
+
+// ======================= hook：根据 selectedSourceDb 动态拉表（防竞态） =======================
+function useTables(dbNameToId: Record<string, number>) {
+  const [selectedSourceDb, setSelectedSourceDb] = useState<string>("");
+  const [tableOptions, setTableOptions] = useState<string[]>([]);
+  const [tableLoading, setTableLoading] = useState<boolean>(false);
+
   useEffect(() => {
-    if (!selectedSourceDb) {
+    const dbName = selectedSourceDb;
+
+    if (!dbName) {
       setTableOptions([]);
       return;
     }
 
-    const datasourceId = dbNameToId[selectedSourceDb];
+    const datasourceId = dbNameToId[dbName];
     if (!datasourceId) {
       setTableOptions([]);
       return;
     }
+
+    let cancelled = false;
 
     setTableLoading(true);
     setTableOptions([]); // 切换源库时先清空，避免显示旧表
@@ -228,49 +222,103 @@ const App: React.FC = () => {
     dataSourceCatalogApi
       .listTable(String(datasourceId))
       .then((res: any) => {
-        if (res?.code === 0) {
-          console.log(res?.data);
-          const tables: string[] = (res?.data || [])
-            .map((t: any) => (typeof t === "string" ? t : t?.value ?? t?.label))
-            .filter(Boolean);
-            
-          setTableOptions(tables);
-        } else {
+        if (cancelled) return;
+
+        if (res?.code !== 0) {
           setTableOptions([]);
-          message.error(res?.message || "");
+          message.error(res?.message || "Load tables failed");
+          return;
         }
+
+        const tables: string[] = (res?.data || [])
+          .map((t: any) => (typeof t === "string" ? t : t?.value ?? t?.label))
+          .filter(Boolean);
+
+        setTableOptions(tables);
       })
       .catch((err: any) => {
+        if (cancelled) return;
         console.error(err);
         setTableOptions([]);
         message.error("Load tables failed");
       })
-      .finally(() => setTableLoading(false));
+      .finally(() => {
+        if (cancelled) return;
+        setTableLoading(false);
+      });
+
+    return () => {
+      cancelled = true;
+    };
   }, [selectedSourceDb, dbNameToId]);
 
-  // ======================= 3）最终 slotConfig：注入 db options + table options =======================
+  return {
+    selectedSourceDb,
+    setSelectedSourceDb,
+    tableOptions,
+    tableLoading,
+  };
+}
+
+// ======================= App =======================
+const App: React.FC = () => {
+  const [loading, setLoading] = useState<boolean>(false);
+  const [activeAgentKey, setActiveAgentKey] = useState("sync_copilot");
+  const senderRef = useRef<GetRef<typeof Sender>>(null);
+
+  const lastSourceDbRef = useRef<string>("");
+
+  const { dbOptions, dbNameToId } = useDataSources();
+  const { selectedSourceDb, setSelectedSourceDb, tableOptions, tableLoading } =
+    useTables(dbNameToId);
+
+  // agent 下拉
+  const agentItems: MenuProps["items"] = useMemo(() => {
+    return Object.keys(AgentInfo).map((agent) => {
+      const { icon, label } = AgentInfo[agent];
+      return { key: agent, icon, label };
+    });
+  }, []);
+
+  // 最终 slotConfig：一次 patch
   const slotConfig = useMemo(() => {
     const base = AgentInfo[activeAgentKey];
-    let next = deepClone(base);
 
-    if (sourceDbOptions.length || sinkDbOptions.length) {
-      next = applyDbOptions(next, sourceDbOptions, sinkDbOptions);
-    }
-
-    next = applyTableOptions(next, tableOptions, tableLoading);
-    return next;
-  }, [activeAgentKey, sourceDbOptions, sinkDbOptions, tableOptions, tableLoading]);
-
-  // ======================= loading 模拟 =======================
+    return {
+      ...base,
+      slotConfig: patchSlotConfig(base.slotConfig as any[], {
+        sourceDbOptions: dbOptions,
+        sinkDbOptions: dbOptions,
+        tableOptions,
+        tableLoading,
+        selectedSourceDb, // ✅
+      }),
+      zh_slotConfig: patchSlotConfig(base.zh_slotConfig as any[], {
+        sourceDbOptions: dbOptions,
+        sinkDbOptions: dbOptions,
+        tableOptions,
+        tableLoading,
+        selectedSourceDb, // ✅
+      }),
+    };
+  }, [activeAgentKey, dbOptions, tableOptions, tableLoading, selectedSourceDb]);
+  // loading 模拟
   useEffect(() => {
-    if (loading) {
-      const timer = setTimeout(() => {
-        setLoading(false);
-        message.success("Send message successfully!");
-      }, 3000);
-      return () => clearTimeout(timer);
-    }
+    if (!loading) return;
+    const timer = setTimeout(() => {
+      setLoading(false);
+      message.success("Send message successfully!");
+    }, 3000);
+    return () => clearTimeout(timer);
   }, [loading]);
+
+  function normalizeSlotValue(v: any): string {
+    if (typeof v === "string") return v;
+    if (v && typeof v === "object") {
+      return String(v.value ?? v.label ?? "");
+    }
+    return "";
+  }
 
   return (
     <Flex vertical gap="middle">
@@ -282,13 +330,26 @@ const App: React.FC = () => {
         slotConfig={slotConfig.slotConfig}
         autoSize={{ minRows: 3, maxRows: 6 }}
         suffix={false}
+        onChange={(_value, _event, slots) => {
+          const raw = (slots?.find((x: any) => x.key === "source_db") as any)
+            ?.value;
+          const sourceDb = normalizeSlotValue(raw);
+
+          // Sender 重建 slotConfig 时可能会发一次空值，忽略即可
+          if (!sourceDb) return;
+
+          // ✅ 用 state 去重：只在真的变了才 set
+          if (sourceDb === selectedSourceDb) return;
+
+          setSelectedSourceDb(sourceDb);
+        }}
         footer={(actionNode) => (
           <Flex justify="space-between" align="center">
             <Flex gap="small" align="center">
               <Dropdown
                 menu={{
                   selectedKeys: [activeAgentKey],
-                  onClick: agentItemClick,
+                  onClick: (item) => setActiveAgentKey(item.key),
                   items: agentItems,
                 }}
               >
@@ -304,27 +365,6 @@ const App: React.FC = () => {
             <Flex align="center">{actionNode}</Flex>
           </Flex>
         )}
-        onChange={(value, event) => {
-          // 方式1：优先从 event 里拿结构化 values（不同版本字段名可能不同）
-          const values =
-            (event as any)?.values ||
-            (event as any)?.slotValues ||
-            (event as any)?.slots ||
-            (event as any)?.data?.values;
-
-          const sourceDbFromEvent = values?.source_db;
-          if (typeof sourceDbFromEvent === "string" && sourceDbFromEvent) {
-            // 只有变化才 set，减少 effect 触发
-            setSelectedSourceDb((prev) => (prev === sourceDbFromEvent ? prev : sourceDbFromEvent));
-            return;
-          }
-
-          // 方式2：退化解析（你的模板很固定，解析很稳）
-          const parsed = parseSourceDbFromValue(value);
-          if (parsed) {
-            setSelectedSourceDb((prev) => (prev === parsed ? prev : parsed));
-          }
-        }}
         onSubmit={(v, _, skill) => {
           setLoading(true);
           message.info(`Send message: ${skill?.value} | ${v}`);
