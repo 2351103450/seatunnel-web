@@ -30,7 +30,7 @@ public class IntentParser {
 
     private Intent tryRuleParse(String input) {
 
-        if (input.startsWith("syncCopilot")) {
+        if (input.startsWith("SINGLE_SYNC")) {
             Matcher matcher = SYNC_PATTERN.matcher(input);
 
             if (matcher.find()) {

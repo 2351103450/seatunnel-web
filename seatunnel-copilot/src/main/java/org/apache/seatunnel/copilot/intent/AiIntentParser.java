@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.annotation.Resource;
 import org.apache.seatunnel.copilot.llm.LlmClient;
+import org.apache.seatunnel.copilot.util.JsonSanitizerUtils;
 import org.springframework.stereotype.Component;
 
 @Component
@@ -30,7 +31,8 @@ public class AiIntentParser {
                                   int retryCount) {
 
         try {
-            JsonNode node = objectMapper.readTree(response);
+            String json = JsonSanitizerUtils.sanitizeToJsonObject(response);
+            JsonNode node = objectMapper.readTree(json);
 
             String type = node.path("type").asText();
 
@@ -101,10 +103,15 @@ public class AiIntentParser {
 
                 SYNC:
                 {
-                  "type": "SYNC",
-                  "sourceId": "string",
-                  "sourceTable": "string",
-                  "sinkId": "string"
+                  "operation": "SINGLE_SYNC",
+                  "source": {
+                    "database": "",
+                    "table": ""
+                  },
+                  "target": {
+                    "database": "",
+                    "table": ""
+                  }
                 }
 
                 所有字段必须存在。
@@ -116,15 +123,20 @@ public class AiIntentParser {
                 =========================
 
                 输入：
-                syncCopilot | Perform a full data synchronization from [mysql.users] to [pg.1234].
+                SINGLE_SYNC | Perform a full data synchronization from [sourceId.users] to [sinkId.1234].
 
                 输出：
                 {
-                  "type": "SYNC",
-                  "sourceId": "mysql",
-                  "sourceTable": "users",
-                  "sinkId": "pg"
-                }
+                   "operation": "SINGLE_SYNC",
+                   "source": {
+                     "database": "sourceId",
+                     "table": "users"
+                   },
+                   "target": {
+                     "database": "sinkId",
+                     "table": "1234"
+                   }
+                 }
                 """;
     }
 
