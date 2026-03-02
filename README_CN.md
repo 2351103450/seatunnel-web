@@ -9,6 +9,7 @@
 
 ## 部分截图
 
+![Batch Sync Screenshot](docs/images/img_13.png)
 ![Batch Sync Screenshot](docs/images/img_12.png)
 ![Batch Sync Screenshot](docs/images/img_11.png)
 ![Batch Sync Screenshot](docs/images/img.png)
