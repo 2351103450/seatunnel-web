@@ -9,4 +9,9 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 public class AiGenerateRequest {
     private String prompt;
+    private String intentType;
+
+    public void setIntentType(String intentType) {
+        this.intentType = intentType.toUpperCase();
+    }
 }

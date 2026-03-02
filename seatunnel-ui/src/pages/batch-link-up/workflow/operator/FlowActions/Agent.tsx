@@ -22,7 +22,7 @@ const AgentInfo: {
     zh_slotConfig: SenderProps["slotConfig"];
   };
 } = {
-  sync_copilot: {
+  single_sync: {
     icon: <SyncOutlined />,
     label: "SINGLE SYNC🧠",
     zh_label: "同步助手",
@@ -268,9 +268,9 @@ const App: React.FC = () => {
   const [loading, setLoading] = useState(false);
 
   // 1) agent 用 state：切换必更新（✅ 和你第二段一致）
-  const [activeAgentKey, setActiveAgentKey] = useState("sync_copilot");
+  const [activeAgentKey, setActiveAgentKey] = useState("single_sync");
   const [agentConfig, setAgentConfig] = useState(() =>
-    cloneAgent(AgentInfo["sync_copilot"])
+    cloneAgent(AgentInfo["single_sync"])
   );
 
   // 2) 数据源/表
@@ -387,10 +387,10 @@ const App: React.FC = () => {
           setLoading(true);
           const params = {
             prompt: `${skill?.value} | ${v}`,
+            intentType: activeAgentKey,
           };
           seatunnelCopilotApi.copilot(params).then((data) => {
             if (data?.code === 0) {
-              console.log(data);
               senderRef.current?.clear?.();
             } else {
               senderRef.current?.clear?.();
