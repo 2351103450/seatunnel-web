@@ -196,55 +196,47 @@ function useDataSources() {
 
 // ======================= hook：根据 selectedSourceDb 动态拉表（防竞态） =======================
 function useTables(dbNameToId: Record<string, number>) {
-  const [selectedSourceDb, setSelectedSourceDb] = useState<string>("");
-  const [tableOptions, setTableOptions] = useState<string[]>([]);
-  const [tableLoading, setTableLoading] = useState<boolean>(false);
+  const [selectedSourceDb, setSelectedSourceDb] = useState("");
+  const [tablesState, setTablesState] = useState<{
+    loading: boolean;
+    options: string[];
+  }>({ loading: false, options: [] });
 
   useEffect(() => {
     const dbName = selectedSourceDb;
-
     if (!dbName) {
-      setTableOptions([]);
+      setTablesState({ loading: false, options: [] });
       return;
     }
 
     const datasourceId = dbNameToId[dbName];
     if (!datasourceId) {
-      setTableOptions([]);
+      setTablesState({ loading: false, options: [] });
       return;
     }
 
     let cancelled = false;
 
-    setTableLoading(true);
-    setTableOptions([]); // 切换源库时先清空，避免显示旧表
+    // ✅ 这里一次 setState，就不会 “loading + 清空” 两次 render
+    setTablesState({ loading: true, options: [] });
 
     dataSourceCatalogApi
       .listTable(String(datasourceId))
       .then((res: any) => {
         if (cancelled) return;
-
-        if (res?.code !== 0) {
-          setTableOptions([]);
-          message.error(res?.message || "Load tables failed");
-          return;
-        }
+        if (res?.code !== 0) throw new Error(res?.message || "Load tables failed");
 
         const tables: string[] = (res?.data || [])
           .map((t: any) => (typeof t === "string" ? t : t?.value ?? t?.label))
           .filter(Boolean);
 
-        setTableOptions(tables);
+        setTablesState({ loading: false, options: tables }); // ✅ 一次
       })
       .catch((err: any) => {
         if (cancelled) return;
         console.error(err);
-        setTableOptions([]);
         message.error("Load tables failed");
-      })
-      .finally(() => {
-        if (cancelled) return;
-        setTableLoading(false);
+        setTablesState({ loading: false, options: [] }); // ✅ 一次
       });
 
     return () => {
@@ -255,8 +247,8 @@ function useTables(dbNameToId: Record<string, number>) {
   return {
     selectedSourceDb,
     setSelectedSourceDb,
-    tableOptions,
-    tableLoading,
+    tableOptions: tablesState.options,
+    tableLoading: tablesState.loading,
   };
 }
 
@@ -283,7 +275,6 @@ const App: React.FC = () => {
   // 最终 slotConfig：一次 patch
   const slotConfig = useMemo(() => {
     const base = AgentInfo[activeAgentKey];
-
     return {
       ...base,
       slotConfig: patchSlotConfig(base.slotConfig as any[], {
@@ -333,6 +324,7 @@ const App: React.FC = () => {
         onChange={(_value, _event, slots) => {
           const raw = (slots?.find((x: any) => x.key === "source_db") as any)
             ?.value;
+            console.log(raw);
           const sourceDb = normalizeSlotValue(raw);
 
           // Sender 重建 slotConfig 时可能会发一次空值，忽略即可
