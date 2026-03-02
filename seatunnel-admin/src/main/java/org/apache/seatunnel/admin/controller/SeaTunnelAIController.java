@@ -10,13 +10,13 @@ import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
-@RequestMapping("/api/ai")
+@RequestMapping("/api/v1/copilot/ai")
 public class SeaTunnelAIController {
 
     @Resource
     private SeaTunnelAiService seaTunnelAiService;
 
-    @PostMapping("/copilot")
+    @PostMapping("/agent")
     public Result<ChatResponse> generate(@RequestBody AiGenerateRequest request) {
         ChatResponse chatResponse = seaTunnelAiService.copilot(request.getPrompt());
         return Result.buildSuc(chatResponse);

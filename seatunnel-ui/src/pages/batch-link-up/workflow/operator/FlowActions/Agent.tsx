@@ -3,6 +3,7 @@ import { Sender, SenderProps } from "@ant-design/x";
 import { Dropdown, Flex, GetRef, MenuProps, message } from "antd";
 import React, { useEffect, useMemo, useRef, useState } from "react";
 
+import { seatunnelCopilotApi } from "@/pages/batch-link-up/api";
 import { dataSourceApi, dataSourceCatalogApi } from "@/pages/data-source/type";
 import DeepSeekIcon from "../../icon/DeepSeekIcon";
 
@@ -30,17 +31,26 @@ const AgentInfo: {
     zh_skill: { value: "SINGLE_SYNC", title: "SINGLE SYNC🧠", closable: true },
 
     slotConfig: [
-      { type: "text", value: "Perform a single table data synchronization from [" },
+      {
+        type: "text",
+        value: "Perform a single table data synchronization from [",
+      },
       {
         type: "select",
         key: "source_db",
-        props: { options: ["MySQL", "PostgreSQL", "Oracle"], placeholder: "select source" },
+        props: {
+          options: ["MySQL", "PostgreSQL", "Oracle"],
+          placeholder: "select source",
+        },
       },
       { type: "text", value: "." },
       {
         type: "select",
         key: "source_table",
-        props: { options: ["users", "orders", "products"], placeholder: "select source table" },
+        props: {
+          options: ["users", "orders", "products"],
+          placeholder: "select source table",
+        },
       },
       { type: "text", value: "] to [" },
       {
@@ -49,7 +59,11 @@ const AgentInfo: {
         props: { options: ["Oracle", "MySQL"], placeholder: "select sink" },
       },
       { type: "text", value: "." },
-      { type: "input", key: "sink_table", props: { placeholder: "enter sink table" } },
+      {
+        type: "input",
+        key: "sink_table",
+        props: { placeholder: "enter sink table" },
+      },
       { type: "text", value: "]." },
     ],
 
@@ -58,13 +72,19 @@ const AgentInfo: {
       {
         type: "select",
         key: "source_db",
-        props: { options: ["MySQL", "PostgreSQL", "Oracle"], placeholder: "选择源数据库" },
+        props: {
+          options: ["MySQL", "PostgreSQL", "Oracle"],
+          placeholder: "选择源数据库",
+        },
       },
       { type: "text", value: "] 中的 [" },
       {
         type: "select",
         key: "source_table",
-        props: { options: ["users", "orders", "products"], placeholder: "选择源表" },
+        props: {
+          options: ["users", "orders", "products"],
+          placeholder: "选择源表",
+        },
       },
       { type: "text", value: "] 表，全量同步至 " },
       {
@@ -73,13 +93,17 @@ const AgentInfo: {
         props: { options: ["Oracle", "MySQL"], placeholder: "选择目标数据库" },
       },
       { type: "text", value: " 的 " },
-      { type: "input", key: "sink_table", props: { placeholder: "输入目标表名" } },
+      {
+        type: "input",
+        key: "sink_table",
+        props: { placeholder: "输入目标表名" },
+      },
       { type: "text", value: " 表。" },
     ],
   },
 };
 
-function cloneAgent(agent: typeof AgentInfo[string]) {
+function cloneAgent(agent: (typeof AgentInfo)[string]) {
   return {
     ...agent,
     // icon 是 ReactNode，保持引用即可（不要 clone）
@@ -131,7 +155,9 @@ function patchSlotConfig(
           ...item.props,
           options: tableOptions,
           loading: tableLoading,
-          placeholder: tableLoading ? "loading tables..." : item?.props?.placeholder,
+          placeholder: tableLoading
+            ? "loading tables..."
+            : item?.props?.placeholder,
         },
       };
     }
@@ -157,7 +183,8 @@ function useDataSources() {
 
         const map: Record<string, number> = {};
         list.forEach((v: any) => {
-          if (v?.dbName != null && v?.id != null) map[String(v.dbName)] = Number(v.id);
+          if (v?.dbName != null && v?.id != null)
+            map[String(v.dbName)] = Number(v.id);
         });
 
         setDbOptions(names);
@@ -172,8 +199,14 @@ function useDataSources() {
   return { dbOptions, dbNameToId };
 }
 
-function useTables(dbNameToId: Record<string, number>, selectedSourceDb: string) {
-  const [tablesState, setTablesState] = useState<{ loading: boolean; options: string[] }>({
+function useTables(
+  dbNameToId: Record<string, number>,
+  selectedSourceDb: string
+) {
+  const [tablesState, setTablesState] = useState<{
+    loading: boolean;
+    options: string[];
+  }>({
     loading: false,
     options: [],
   });
@@ -198,7 +231,8 @@ function useTables(dbNameToId: Record<string, number>, selectedSourceDb: string)
       .listTable(String(datasourceId))
       .then((res: any) => {
         if (cancelled) return;
-        if (res?.code !== 0) throw new Error(res?.message || "Load tables failed");
+        if (res?.code !== 0)
+          throw new Error(res?.message || "Load tables failed");
 
         const tables: string[] = (res?.data || [])
           .map((t: any) => (typeof t === "string" ? t : t?.value ?? t?.label))
@@ -218,7 +252,10 @@ function useTables(dbNameToId: Record<string, number>, selectedSourceDb: string)
     };
   }, [selectedSourceDb, dbNameToId]);
 
-  return { tableOptions: tablesState.options, tableLoading: tablesState.loading };
+  return {
+    tableOptions: tablesState.options,
+    tableLoading: tablesState.loading,
+  };
 }
 
 function normalizeSlotValue(v: any): string {
@@ -232,12 +269,17 @@ const App: React.FC = () => {
 
   // 1) agent 用 state：切换必更新（✅ 和你第二段一致）
   const [activeAgentKey, setActiveAgentKey] = useState("sync_copilot");
-  const [agentConfig, setAgentConfig] = useState(() => cloneAgent(AgentInfo["sync_copilot"]));
+  const [agentConfig, setAgentConfig] = useState(() =>
+    cloneAgent(AgentInfo["sync_copilot"])
+  );
 
   // 2) 数据源/表
   const { dbOptions, dbNameToId } = useDataSources();
   const [selectedSourceDb, setSelectedSourceDb] = useState("");
-  const { tableOptions, tableLoading } = useTables(dbNameToId, selectedSourceDb);
+  const { tableOptions, tableLoading } = useTables(
+    dbNameToId,
+    selectedSourceDb
+  );
 
   // 3) Sender refs
   const senderRef = useRef<GetRef<typeof Sender>>(null);
@@ -309,7 +351,8 @@ const App: React.FC = () => {
         autoSize={{ minRows: 3, maxRows: 6 }}
         suffix={false}
         onChange={(_value, _event, slots) => {
-          const raw = (slots?.find((x: any) => x.key === "source_db") as any)?.value;
+          const raw = (slots?.find((x: any) => x.key === "source_db") as any)
+            ?.value;
           const sourceDb = normalizeSlotValue(raw);
 
           if (!sourceDb) return;
@@ -328,7 +371,11 @@ const App: React.FC = () => {
                   items: agentItems,
                 }}
               >
-                <Switch value={false} icon={<DeepSeekIcon style={{ paddingTop: 4 }} />} style={{ borderRadius: 12 }}>
+                <Switch
+                  value={false}
+                  icon={<DeepSeekIcon style={{ paddingTop: 4 }} />}
+                  style={{ borderRadius: 12 }}
+                >
                   Copilot
                 </Switch>
               </Dropdown>
@@ -338,8 +385,17 @@ const App: React.FC = () => {
         )}
         onSubmit={(v, _, skill) => {
           setLoading(true);
-          message.info(`Send message: ${skill?.value} | ${v}`);
-          senderRef.current?.clear?.();
+          const params = {
+            prompt: `${skill?.value} | ${v}`,
+          };
+          seatunnelCopilotApi.copilot(params).then((data) => {
+            if (data?.code === 0) {
+              console.log(data);
+              senderRef.current?.clear?.();
+            } else {
+              senderRef.current?.clear?.();
+            }
+          });
         }}
         onCancel={() => {
           setLoading(false);

@@ -1,8 +1,7 @@
 CREATE DATABASE IF NOT EXISTS seatunnel_web;
 
 use seatunnel_web;
-DROP TABLE IF EXISTS `t_seatunnel_datasource`;
-CREATE TABLE `t_seatunnel_datasource`
+CREATE TABLE IF NOT EXISTS `t_seatunnel_datasource`
 (
     `id`                bigint NOT NULL COMMENT '主键',
     `db_name`           varchar(64)   DEFAULT NULL COMMENT '数据源名称',

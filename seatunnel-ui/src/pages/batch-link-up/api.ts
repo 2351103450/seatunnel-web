@@ -102,3 +102,14 @@ export const seatunnelJobScheduleApi = {
 
     }
 }
+
+
+const seatunnelCopilotApiPrefix = "/api/v1/copilot/ai"
+
+export const seatunnelCopilotApi = {
+    copilot: (data: any) => {
+        return HttpUtils.post<any[]>(`${seatunnelCopilotApiPrefix}/agent`, data);
+    },
+
+
+}
