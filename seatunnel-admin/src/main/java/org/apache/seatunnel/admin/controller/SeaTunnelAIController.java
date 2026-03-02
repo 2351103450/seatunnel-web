@@ -16,7 +16,7 @@ public class SeaTunnelAIController {
     @Resource
     private SeaTunnelAiService seaTunnelAiService;
 
-    @PostMapping("/generate")
+    @PostMapping("/copilot")
     public Result<ChatResponse> generate(@RequestBody AiGenerateRequest request) {
         ChatResponse chatResponse = seaTunnelAiService.copilot(request.getPrompt());
         return Result.buildSuc(chatResponse);
