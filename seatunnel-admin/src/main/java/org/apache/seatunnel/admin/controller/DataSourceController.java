@@ -377,4 +377,23 @@ public class DataSourceController {
         Boolean results = dataSourceService.batchConnectionTest(ids);
         return Result.buildSuc(results);
     }
+
+    /**
+     * Retrieves all data sources (no pagination).
+     *
+     * @return List of all data sources
+     */
+    @GetMapping("/all")
+    @Operation(
+            summary = "Get all data sources",
+            description = "Retrieves all data sources without pagination, suitable for dropdown options and cache preload"
+    )
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "Successfully retrieved all data sources"),
+            @ApiResponse(responseCode = "500", description = "Internal server error")
+    })
+    public Result<List<DataSourceVO>> all() {
+        log.info("Retrieving all data sources");
+        return Result.buildSuc(dataSourceService.listAll());
+    }
 }

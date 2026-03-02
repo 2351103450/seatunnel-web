@@ -107,4 +107,8 @@ public interface DataSourceService extends IService<DataSourcePO> {
      */
     Boolean connectionTestWithParam(String connJson);
 
+    /**
+     * List all data sources (no pagination).
+     */
+    List<DataSourceVO> listAll();
 }

@@ -136,6 +136,12 @@ public class DataSourceServiceImpl extends ServiceImpl<DataSourceMapper, DataSou
         return checkConnection(dbType, param);
     }
 
+    @Override
+    public List<DataSourceVO> listAll() {
+        List<DataSourcePO> entities = getBaseMapper().selectList(new LambdaQueryWrapper<>());
+        return ConvertUtil.sourceListToTarget(entities, DataSourceVO.class);
+    }
+
     private DbType extractDbType(String connJson) {
         JSONObject json = JSON.parseObject(connJson);
         return DbType.valueOf(json.getString("type"));
