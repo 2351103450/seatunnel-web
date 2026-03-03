@@ -18,6 +18,12 @@ export default [
     component: './data-source',
   },
   {
+    icon: 'monitor',
+    name: 'Client',
+    path: '/client',
+    component: './client',
+  },
+  {
     icon: 'product',
     name: 'Data Sync',
     path: '/sync',
@@ -48,8 +54,8 @@ export default [
     icon: ' ',
     name: 'Login',
     path: '/login',
-    layout: false,
     component: './login',
+    layout: false,
   },
   {
     path: '/',

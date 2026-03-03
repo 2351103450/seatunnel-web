@@ -4,6 +4,13 @@ server:
     accept-count: 1000
     max-connections: 10000
 
+seatunnel:
+  client:
+    base-url: http://192.168.1.115:8080
+    context-path: /seatunnel
+    connect-timeout-ms: 2000
+    read-timeout-ms: 10000
+
 spring:
   application:
     name: seatunnel-web
@@ -16,7 +23,7 @@ spring:
 
   ai:
     deepseek:
-      api-key: sk-d615692a05d44e8997e993ad4f290a48
+      api-key: sk-****
       base-url: "https://api.deepseek.com"
       chat:
         options:

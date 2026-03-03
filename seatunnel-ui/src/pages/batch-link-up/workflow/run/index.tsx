@@ -155,7 +155,7 @@ const RunLog: FC<RunLogProps> = ({
           ...leftSideParam,
         };
 
-        seatunnelJobExecuteApi.executeadHoc(params).then((data) => {
+        seatunnelJobExecuteApi.execute(params).then((data) => {
           if (data.code !== 0) {
             addLogEntry(`Backend error?: ${data.message}`, "log");
           }

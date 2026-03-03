@@ -34,57 +34,6 @@ public class SeatunnelJobExecutorController {
             summary = "Execute a job",
             description = "Execute a SeaTunnel job by its definition ID and create a new job instance"
     )
-    @ApiResponses({
-            @ApiResponse(
-                    responseCode = "200",
-                    description = "Job execution started successfully",
-                    content = @Content(
-                            mediaType = "application/json",
-                            examples = @ExampleObject(
-                                    value = """
-                    {
-                        "code": 200,
-                        "message": "Success",
-                        "data": 10001,
-                        "success": true
-                    }
-                    """
-                            )
-                    )
-            ),
-            @ApiResponse(
-                    responseCode = "404",
-                    description = "Job definition not found",
-                    content = @Content(
-                            examples = @ExampleObject(
-                                    value = """
-                    {
-                        "code": 404,
-                        "message": "Job definition not found with id: 9999",
-                        "data": null,
-                        "success": false
-                    }
-                    """
-                            )
-                    )
-            ),
-            @ApiResponse(
-                    responseCode = "500",
-                    description = "Job execution failed",
-                    content = @Content(
-                            examples = @ExampleObject(
-                                    value = """
-                    {
-                        "code": 500,
-                        "message": "Failed to execute job: Connection refused",
-                        "data": null,
-                        "success": false
-                    }
-                    """
-                            )
-                    )
-            )
-    })
     public Result<Long> jobExecutor(
             @Parameter(
                     description = "Job definition ID",
