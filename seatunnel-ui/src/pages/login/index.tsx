@@ -119,7 +119,7 @@ const SPECS: Record<Variant, CharacterSpec> = {
   },
   blue: {
     w: S(150),
-    h: S(220),
+    h: S(290),
     bg: "#5B3BFF",
     radius: 12,
     faceTop: 42,
@@ -137,7 +137,7 @@ const SPECS: Record<Variant, CharacterSpec> = {
   },
   black: {
     w: S(84),
-    h: S(155),
+    h: S(215),
     bg: "#14161C",
     radius: 12,
     faceTop: 38,
