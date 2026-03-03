@@ -9,6 +9,12 @@ import React, {
 } from "react";
 import LoginPanel from "./LoginPanel";
 
+/** ===================== Layout (center group) ===================== */
+const LAYOUT = {
+  absLeft: { orange: 34, blue: 150, black: 325, yellow: 405 } as const,
+  absBottom: { orange: 18, blue: 18, black: 22, yellow: 18 } as const,
+};
+
 /** ===================== Types ===================== */
 type Pt = { x: number; y: number };
 type ActionType =
@@ -48,6 +54,47 @@ type CharacterSpec = {
   actionAmp: number; // slight amplitude personality
 };
 
+function computeLayout() {
+  const absL = LAYOUT.absLeft;
+  const absB = LAYOUT.absBottom;
+
+  const minLeft = Math.min(...(Object.values(absL) as number[]));
+
+  const relLeft: Record<Variant, number> = {
+    orange: absL.orange - minLeft,
+    blue: absL.blue - minLeft,
+    black: absL.black - minLeft,
+    yellow: absL.yellow - minLeft,
+  };
+
+  const groupW =
+    Math.max(
+      absL.orange + SPECS.orange.w,
+      absL.blue + SPECS.blue.w,
+      absL.black + SPECS.black.w,
+      absL.yellow + SPECS.yellow.w
+    ) - minLeft;
+
+  // 组高度：max(bottom + height) - min(bottom)（以“组的最低点”为基准）
+  const minBottom = Math.min(...(Object.values(absB) as number[]));
+
+  const relBottom: Record<Variant, number> = {
+    orange: absB.orange - minBottom,
+    blue: absB.blue - minBottom,
+    black: absB.black - minBottom,
+    yellow: absB.yellow - minBottom,
+  };
+
+  const groupH = Math.max(
+    relBottom.orange + SPECS.orange.h,
+    relBottom.blue + SPECS.blue.h,
+    relBottom.black + SPECS.black.h,
+    relBottom.yellow + SPECS.yellow.h
+  );
+
+  return { relLeft, groupW, relBottom, groupH };
+}
+
 const SPECS: Record<Variant, CharacterSpec> = {
   orange: {
     w: 190,
@@ -69,7 +116,7 @@ const SPECS: Record<Variant, CharacterSpec> = {
   },
   blue: {
     w: 150,
-    h: 300,
+    h: 220,
     bg: "#5B3BFF",
     radius: 12,
     faceTop: 42,
@@ -87,7 +134,7 @@ const SPECS: Record<Variant, CharacterSpec> = {
   },
   black: {
     w: 84,
-    h: 230,
+    h: 155,
     bg: "#14161C",
     radius: 12,
     faceTop: 38,
@@ -343,9 +390,9 @@ function Character(props: {
   useEffect(() => {
     const j = hash01(action.nonce, variant); // 0..1
     const extraDelay = 0; // 0..70ms
-    const delay = spec.actionDelayBaseMs + extraDelay;
+    const delay = 1;
 
-    const amp = 1;
+    const amp = spec.actionAmp * (0.92 + j * 0.16); // ~0.92..1.08
 
     const t = window.setTimeout(() => {
       switch (action.type) {
@@ -484,7 +531,6 @@ function Character(props: {
 
   const transition = "transform 420ms cubic-bezier(0.22, 1.4, 0.36, 1)";
 
-
   /** ===== Body by shape ===== */
   if (spec.shape === "semiTop") {
     // circular top, flat bottom (show top half of a full circle)
@@ -493,7 +539,7 @@ function Character(props: {
       height: spec.h,
       position: "relative",
       overflow: "hidden",
-      borderRadius: 0,
+      borderRadius: 12,
       transform: bodyTransform,
       transformOrigin: "50% 85%",
       transition,
@@ -513,7 +559,6 @@ function Character(props: {
 
     return (
       <div style={wrap}>
-        {/* {shadowNode} */}
         <div style={circle} />
         <div style={faceLayer}>
           <div ref={eyeLeftRef} style={eyeStyle}>
@@ -553,7 +598,6 @@ function Character(props: {
 
   return (
     <div style={body}>
-      {/* {shadowNode} */}
       <div style={faceLayer}>
         <div ref={eyeLeftRef} style={eyeStyle}>
           <div
@@ -585,116 +629,84 @@ const CharactersScene = forwardRef<
     action: GlobalAction;
     globalTilt: number;
     bootT: number;
+    stageW: number;
+    stageH: number;
   }
->(({ mouse, action, globalTilt, bootT }, ref) => {
-  // 设计稿尺寸：你之前 demo 的“逻辑舞台”
-  const BASE_W = 580;
-  const BASE_H = 340;
-
-  // 缩放比例（随容器变化）
-  const wrapRef = useRef<HTMLDivElement | null>(null);
-  const [scale, setScale] = useState(1);
-
-  useEffect(() => {
-    const el = wrapRef.current;
-    if (!el) return;
-
-    const ro = new ResizeObserver(() => {
-      const r = el.getBoundingClientRect();
-      const s = Math.min(r.width / BASE_W, r.height / BASE_H);
-      // 你可以乘一个系数，让它更“大”
-      setScale(1.3);
-    });
-
-    ro.observe(el);
-    return () => ro.disconnect();
-  }, []);
-
+>(({ mouse, action, globalTilt, bootT, stageW, stageH }, ref) => {
+  const { relLeft, groupW, relBottom, groupH } = useMemo(
+    () => computeLayout(),
+    []
+  );
+  const baseLeft = Math.max(0, (stageW - groupW) / 2);
+  const baseBottom = Math.max(0, (stageH - groupH) / 2);
   return (
     <div
-      ref={wrapRef}
+      ref={ref}
       style={{
         width: "100%",
         height: "100vh",
         background: "#f6f6f8",
+        borderRadius: 16,
         position: "relative",
         overflow: "hidden",
       }}
     >
-      {/* 居中缩放层 */}
-      <div
-        ref={ref}
+      {/* orange semi: front-most */}
+      <Character
+        variant="orange"
+        mouse={mouse}
+        action={action}
+        globalTilt={globalTilt}
+        bootT={bootT}
         style={{
-          width: BASE_W,
-          height: BASE_H,
           position: "absolute",
-          left: "50%",
-          top: "50%",
-          transform: `translate(-50%, -50%) scale(${scale})`,
-          transformOrigin: "50% 50%",
+          left: baseLeft + relLeft.orange,
+          bottom: baseBottom + relBottom.orange,
+          zIndex: 30,
         }}
-      >
-        {/* 四个角色：以舞台中心为基准排布 */}
-        <Character
-          variant="orange"
-          mouse={mouse}
-          action={action}
-          globalTilt={globalTilt}
-          bootT={bootT}
-          style={{
-            position: "absolute",
-            left: "50%",
-            bottom: 18,
-            transform: "translateX(-240px)", // 以中心向左偏移
-            zIndex: 30,
-          }}
-        />
+      />
 
-        <Character
-          variant="blue"
-          mouse={mouse}
-          action={action}
-          globalTilt={globalTilt}
-          bootT={bootT}
-          style={{
-            position: "absolute",
-            left: "50%",
-            bottom: 18,
-            transform: "translateX(-110px)",
-            zIndex: 10,
-          }}
-        />
+      <Character
+        variant="blue"
+        mouse={mouse}
+        action={action}
+        globalTilt={globalTilt}
+        bootT={bootT}
+        style={{
+          position: "absolute",
+          left: baseLeft + relLeft.blue,
+          bottom: baseBottom + relBottom.blue,
+          zIndex: 10,
+        }}
+      />
 
-        <Character
-          variant="black"
-          mouse={mouse}
-          action={action}
-          globalTilt={globalTilt}
-          bootT={bootT}
-          style={{
-            position: "absolute",
-            left: "50%",
-            bottom: 22,
-            transform: "translateX(70px)",
-            zIndex: 12,
-          }}
-        />
+      <Character
+        variant="black"
+        mouse={mouse}
+        action={action}
+        globalTilt={globalTilt}
+        bootT={bootT}
+        style={{
+          position: "absolute",
+          left: baseLeft + relLeft.black,
+          bottom: baseBottom + relBottom.black,
+          zIndex: 12,
+        }}
+      />
 
-        <Character
-          variant="yellow"
-          mouse={mouse}
-          action={action}
-          globalTilt={globalTilt}
-          bootT={bootT}
-          style={{
-            position: "absolute",
-            left: "50%",
-            bottom: 18,
-            transform: "translateX(160px)",
-            zIndex: 11,
-          }}
-        />
-      </div>
+      <Character
+        variant="yellow"
+        mouse={mouse}
+        action={action}
+        globalTilt={globalTilt}
+        bootT={bootT}
+        style={{
+          position: "absolute",
+          left: baseLeft + relLeft.yellow,
+          bottom: baseBottom + relBottom.yellow,
+          zIndex: 11,
+        }}
+      />
     </div>
   );
 });
@@ -753,23 +765,48 @@ export default function BlueCrewDemo() {
     return () => window.removeEventListener("mousemove", onMove);
   }, []);
 
+  const [stageSize, setStageSize] = useState({ w: 0, h: 0 });
+
+  useEffect(() => {
+    const el = stageRef.current;
+    if (!el) return;
+
+    const update = () => {
+      const r = el.getBoundingClientRect();
+      setStageSize({ w: r.width, h: r.height });
+    };
+
+    const ro = new ResizeObserver(update);
+    ro.observe(el);
+    update();
+
+    return () => ro.disconnect();
+  }, []);
+
   const fire = (type: ActionType) => setAction({ type, nonce: Date.now() });
 
   return (
-    <Row gutter={24} style={{overflow: "hidden", margin:0, padding:0}}>
-      <Col span={16} style={{padding:0, margin:0}}>
+    <Row gutter={24} style={{ margin: 0, padding: 0 }}>
+      <Col span={18} style={{ margin: 0, padding: 0 }}>
         <CharactersScene
           ref={stageRef}
           mouse={mouse}
           action={action}
           globalTilt={globalTilt}
           bootT={bootT}
+          stageW={stageSize.w}
+          stageH={stageSize.h}
         />
       </Col>
 
       <Col
-        span={8}
-        style={{ display: "flex", flexDirection: "column", margin:0, padding:0 }}
+        span={6}
+        style={{
+          display: "flex",
+          flexDirection: "column",
+          margin: 0,
+          padding: 0,
+        }}
       >
         <LoginPanel onFire={fire} />
       </Col>

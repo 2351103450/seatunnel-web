@@ -215,6 +215,9 @@ export default function LoginPanel({ onFire }: LoginPanelProps) {
 
   return (
     <div style={wrapStyle}>
+
+
+
       <style>{keyframes}</style>
       <div style={animatedBgStyle} />
 
