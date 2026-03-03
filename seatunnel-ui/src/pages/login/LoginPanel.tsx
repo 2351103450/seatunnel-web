@@ -335,6 +335,9 @@ export default function LoginPanel({ onFire }: LoginPanelProps) {
             loading={loading}
             style={primaryBtnStyle}
             onMouseEnter={() => fireThrottled("login_hover", "SMILE", 700)}
+            onClick={() => {
+                onFire("TILT")
+            }}
           >
             <span style={{ position: "relative", zIndex: 1 }}>Login</span>
             <span style={shineLayerStyle} aria-hidden>
@@ -369,7 +372,7 @@ export default function LoginPanel({ onFire }: LoginPanelProps) {
             <Button
               type="link"
               style={{ padding: 0 }}
-              onClick={() => onFire("BOW")}
+             
             >
               Sign up
             </Button>
