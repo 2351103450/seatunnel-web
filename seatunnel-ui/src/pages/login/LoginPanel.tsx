@@ -225,7 +225,7 @@ export default function LoginPanel({ onFire }: LoginPanelProps) {
             display: "flex",
             alignItems: "center",
             justifyContent: "center",
-            marginBottom: 34,
+            marginBottom: 70,
             userSelect: "none",
           }}
         >
