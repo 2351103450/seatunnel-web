@@ -15,7 +15,7 @@ const LAYOUT = {
   absBottom: { orange: 18, blue: 18, black: 22, yellow: 18 } as const,
 };
 
-const GROUP_SCALE = 1.3; // 例如 0.9 变小，1.1 变大
+const GROUP_SCALE = 1.4; // 例如 0.9 变小，1.1 变大
 const S = (n: number) => Math.round(n * GROUP_SCALE);
 
 /** ===================== Types ===================== */

@@ -30,6 +30,7 @@ DolphinScheduler, Dify, Ant Design, and Spring Boot**
 ![Batch Sync Screenshot](docs/images/img_10.png)
 ![Batch Sync Screenshot](docs/images/log.png)
 ![Batch Sync Screenshot](docs/images/metrics.png)
+![Batch Sync Screenshot](docs/images/img_14.png)
 
 ## 🔥 Join Group
 
