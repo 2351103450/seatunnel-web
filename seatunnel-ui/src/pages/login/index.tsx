@@ -15,6 +15,9 @@ const LAYOUT = {
   absBottom: { orange: 18, blue: 18, black: 22, yellow: 18 } as const,
 };
 
+const GROUP_SCALE = 1.3; // 例如 0.9 变小，1.1 变大
+const S = (n: number) => Math.round(n * GROUP_SCALE);
+
 /** ===================== Types ===================== */
 type Pt = { x: number; y: number };
 type ActionType =
@@ -97,8 +100,8 @@ function computeLayout() {
 
 const SPECS: Record<Variant, CharacterSpec> = {
   orange: {
-    w: 190,
-    h: 110,
+    w: S(190),
+    h: S(110),
     bg: "#FF8B2B",
     radius: 999,
     faceTop: 34,
@@ -115,8 +118,8 @@ const SPECS: Record<Variant, CharacterSpec> = {
     actionAmp: 0.95,
   },
   blue: {
-    w: 150,
-    h: 220,
+    w: S(150),
+    h: S(220),
     bg: "#5B3BFF",
     radius: 12,
     faceTop: 42,
@@ -133,8 +136,8 @@ const SPECS: Record<Variant, CharacterSpec> = {
     actionAmp: 1.0,
   },
   black: {
-    w: 84,
-    h: 155,
+    w: S(84),
+    h: S(155),
     bg: "#14161C",
     radius: 12,
     faceTop: 38,
@@ -151,8 +154,8 @@ const SPECS: Record<Variant, CharacterSpec> = {
     actionAmp: 1.1,
   },
   yellow: {
-    w: 110,
-    h: 185,
+    w: S(110),
+    h: S(185),
     bg: "#FFD33D",
     radius: 999,
     faceTop: 48,
@@ -176,10 +179,10 @@ const ENTRY: Record<
   { mode: EntryMode; delayMs: number; dist?: number }
 > = {
   // 你可以随意调整顺序/方式
-  orange: { mode: "bottomBounce", delayMs: 0, dist: 220 },
-  blue: { mode: "bottomBounce", delayMs: 80, dist: 240 },
-  black: { mode: "topDrop", delayMs: 160, dist: 220 },
-  yellow: { mode: "sideSlide", delayMs: 240, dist: 260 },
+  orange: { mode: "bottomBounce", delayMs: 0, dist: S(220) },
+  blue: { mode: "bottomBounce", delayMs: 80, dist: S(240) },
+  black: { mode: "topDrop", delayMs: 160, dist: S(220) },
+  yellow: { mode: "sideSlide", delayMs: 240, dist: S(260) },
 };
 
 /** ===================== Utils ===================== */
