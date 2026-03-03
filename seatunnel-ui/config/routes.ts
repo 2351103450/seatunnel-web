@@ -38,11 +38,18 @@ export default [
       },
     ]
   },
-   {
+  {
     icon: 'monitor',
     name: 'Metrics',
     path: '/metrics',
     component: './metrics',
+  },
+  {
+    icon: ' ',
+    name: 'Login',
+    path: '/login',
+    layout: false,
+    component: './login',
   },
   {
     path: '/',
