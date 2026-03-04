@@ -1,21 +1,9 @@
 import HttpUtils from "@/utils/HttpUtils";
-import {
-  LoadingOutlined,
-  MinusCircleOutlined,
-  PlusOutlined,
-} from "@ant-design/icons";
-import {
-  Button,
-  Form,
-  Input,
-  InputNumber,
-  message,
-  Select,
-  Space,
-  Switch,
-} from "antd";
+import { LoadingOutlined, MinusCircleOutlined, PlusOutlined } from "@ant-design/icons";
+import { Button, Form, Input, InputNumber, message, Select, Space, Switch } from "antd";
 import TextArea from "antd/es/input/TextArea";
 import { useEffect, useState } from "react";
+import { useIntl } from "@umijs/max";
 import { DynamicDataSourceFormProps, FormField, FormRule } from "./type";
 
 const DynamicDataSourceForm: React.FC<DynamicDataSourceFormProps> = ({
@@ -24,6 +12,8 @@ const DynamicDataSourceForm: React.FC<DynamicDataSourceFormProps> = ({
   configForm,
   operateType,
 }) => {
+  const intl = useIntl();
+
   const [formConfig, setFormConfig] = useState<FormField[]>([]);
   const [loading, setLoading] = useState<boolean>(false);
 
@@ -35,7 +25,7 @@ const DynamicDataSourceForm: React.FC<DynamicDataSourceFormProps> = ({
     try {
       setLoading(true);
       const response = await HttpUtils.get<any>(
-        `/api/v1/data-source/plugin/config?pluginType=${dbType}`
+        `/api/v1/data-source/plugin/config?pluginType=${dbType}`,
       );
       if (response?.code === 0) {
         setFormConfig(response?.data?.formFields || []);
@@ -43,7 +33,12 @@ const DynamicDataSourceForm: React.FC<DynamicDataSourceFormProps> = ({
         message.error(response?.message);
       }
     } catch (error) {
-      message.error("加载表单配置失败");
+      message.error(
+        intl.formatMessage({
+          id: "pages.datasource.form.loadConfigFail",
+          defaultMessage: "Failed to load form config",
+        }),
+      );
     } finally {
       setLoading(false);
     }
@@ -51,14 +46,14 @@ const DynamicDataSourceForm: React.FC<DynamicDataSourceFormProps> = ({
 
   const renderFormItem = (field: FormField): React.ReactNode => {
     const commonProps = {
-      placeholder: field.placeholder,
+      placeholder: field.placeholder, // 这通常是后端下发的，如需国际化建议后端返回 i18nKey
       onChange: () => {
-        // 延迟验证，确保值已经更新
         setTimeout(() => {
           configForm.validateFields([field.key]).catch(() => {});
         }, 0);
       },
     };
+
     switch (field.type) {
       case "INPUT":
         return <Input {...commonProps} size="small" />;
@@ -81,10 +76,12 @@ const DynamicDataSourceForm: React.FC<DynamicDataSourceFormProps> = ({
         return <InputNumber {...commonProps} size="small" />;
 
       case "SWITCH":
+        // Switch 没有 placeholder，这里保持 commonProps 不影响（多余属性会被忽略）
         return <Switch {...commonProps} size="small" />;
 
       case "TEXTAREA":
         return <Input.TextArea rows={4} {...commonProps} size="small" />;
+
       default:
         return <Input {...commonProps} size="small" />;
     }
@@ -107,27 +104,62 @@ const DynamicDataSourceForm: React.FC<DynamicDataSourceFormProps> = ({
 
   return (
     <div style={{ padding: "0 16px" }}>
-      <Form
-        form={form}
-        labelCol={{ span: 3 }}
-        wrapperCol={{ span: 19 }}
-        // initialValues={getInitialValues(formConfig)}
-      >
+      <Form form={form} labelCol={{ span: 3 }} wrapperCol={{ span: 19 }}>
         <Form.Item
-          label={<div style={{ height: 32, lineHeight: "33px" }}>DS Name</div>}
+          label={
+            <div style={{ height: 32, lineHeight: "33px" }}>
+              {intl.formatMessage({
+                id: "pages.datasource.form.dsName",
+                defaultMessage: "DS Name",
+              })}
+            </div>
+          }
           name="dbName"
-          rules={[{ required: true }]}
+          rules={[
+            {
+              required: true,
+              message: intl.formatMessage({
+                id: "pages.datasource.form.dsNameRequired",
+                defaultMessage: "DS Name is required",
+              }),
+            },
+          ]}
         >
-          <Input placeholder="Input..." maxLength={100} size="small" />
+          <Input
+            placeholder={intl.formatMessage({
+              id: "pages.datasource.form.inputPlaceholder",
+              defaultMessage: "Input...",
+            })}
+            maxLength={100}
+            size="small"
+          />
         </Form.Item>
 
         <Form.Item
-          label={<div style={{ height: 32, lineHeight: "33px" }}>Env</div>}
+          label={
+            <div style={{ height: 32, lineHeight: "33px" }}>
+              {intl.formatMessage({
+                id: "pages.datasource.form.env",
+                defaultMessage: "Env",
+              })}
+            </div>
+          }
           name="environment"
-          rules={[{ required: true }]}
+          rules={[
+            {
+              required: true,
+              message: intl.formatMessage({
+                id: "pages.datasource.form.envRequired",
+                defaultMessage: "Env is required",
+              }),
+            },
+          ]}
         >
           <Select
-            placeholder="Select..."
+            placeholder={intl.formatMessage({
+              id: "pages.datasource.form.selectPlaceholder",
+              defaultMessage: "Select...",
+            })}
             size="small"
             options={[
               { label: "DEVELOP", value: "DEVELOP" },
@@ -136,28 +168,37 @@ const DynamicDataSourceForm: React.FC<DynamicDataSourceFormProps> = ({
             ]}
           />
         </Form.Item>
+
         <Form.Item
           label={
-            <div style={{ height: 32, lineHeight: "33px" }}>Description</div>
+            <div style={{ height: 32, lineHeight: "33px" }}>
+              {intl.formatMessage({
+                id: "pages.datasource.form.description",
+                defaultMessage: "Description",
+              })}
+            </div>
           }
           name="remark"
         >
-          <TextArea placeholder="Input..." size="small" rows={4} />
+          <TextArea
+            placeholder={intl.formatMessage({
+              id: "pages.datasource.form.inputPlaceholder",
+              defaultMessage: "Input...",
+            })}
+            size="small"
+            rows={4}
+          />
         </Form.Item>
 
         <Form.Item name="connectionParams" hidden>
           <Input type="hidden" />
         </Form.Item>
 
-        <Form
-          form={configForm}
-          initialValues={getConfigInitialValues(formConfig)}
-          component={false}
-        >
+        <Form form={configForm} initialValues={getConfigInitialValues(formConfig)} component={false}>
           {formConfig.map((field) => {
             if (field.type === "CUSTOM_SELECT") {
               return (
-                <div style={{ paddingLeft: "113px" }}>
+                <div key={field.key} style={{ paddingLeft: "113px" }}>
                   <Form.List name="other">
                     {(fields, { add, remove }) => (
                       <>
@@ -172,32 +213,53 @@ const DynamicDataSourceForm: React.FC<DynamicDataSourceFormProps> = ({
                               name={[name, "key"]}
                               style={{ marginBottom: 0 }}
                               rules={[
-                                { required: true, message: "key can not be null" },
+                                {
+                                  required: true,
+                                  message: intl.formatMessage({
+                                    id: "pages.datasource.form.other.keyRequired",
+                                    defaultMessage: "key can not be null",
+                                  }),
+                                },
                               ]}
                             >
                               <Input
-                                placeholder="key"
+                                placeholder={intl.formatMessage({
+                                  id: "pages.datasource.form.other.keyPlaceholder",
+                                  defaultMessage: "key",
+                                })}
                                 size="small"
                                 style={{ width: "310px" }}
                               />
                             </Form.Item>
+
                             <Form.Item
                               {...restField}
                               style={{ marginBottom: 0 }}
                               name={[name, "value"]}
                               rules={[
-                                { required: true, message: "value can not be null" },
+                                {
+                                  required: true,
+                                  message: intl.formatMessage({
+                                    id: "pages.datasource.form.other.valueRequired",
+                                    defaultMessage: "value can not be null",
+                                  }),
+                                },
                               ]}
                             >
                               <Input
-                                placeholder="value"
+                                placeholder={intl.formatMessage({
+                                  id: "pages.datasource.form.other.valuePlaceholder",
+                                  defaultMessage: "value",
+                                })}
                                 size="small"
                                 style={{ width: "310px" }}
                               />
                             </Form.Item>
+
                             <MinusCircleOutlined onClick={() => remove(name)} />
                           </Space>
                         ))}
+
                         <Form.Item>
                           <Button
                             type="dashed"
@@ -207,7 +269,10 @@ const DynamicDataSourceForm: React.FC<DynamicDataSourceFormProps> = ({
                             block
                             icon={<PlusOutlined />}
                           >
-                            Add Database Connection Settings
+                            {intl.formatMessage({
+                              id: "pages.datasource.form.other.addConnSetting",
+                              defaultMessage: "Add Database Connection Settings",
+                            })}
                           </Button>
                         </Form.Item>
                       </>
@@ -222,11 +287,7 @@ const DynamicDataSourceForm: React.FC<DynamicDataSourceFormProps> = ({
                 labelCol={{ span: 3 }}
                 wrapperCol={{ span: 19 }}
                 key={field.key}
-                label={
-                  <div style={{ height: 32, lineHeight: "33px" }}>
-                    {field.label}
-                  </div>
-                }
+                label={<div style={{ height: 32, lineHeight: "33px" }}>{field.label}</div>}
                 name={field.key}
                 rules={transformRules(field?.rules)}
                 validateTrigger={["onChange", "onBlur"]}
@@ -235,21 +296,17 @@ const DynamicDataSourceForm: React.FC<DynamicDataSourceFormProps> = ({
               </Form.Item>
             );
           })}
-
-          {/* 条件渲染other配置 */}
         </Form>
       </Form>
     </div>
   );
 };
 
-// 转换验证规则
+// 转换验证规则（后端下发的 rule.message 这里保持原样）
 const transformRules = (rules: FormRule[] | undefined): any[] => {
   if (!rules) return [];
-
   return rules.map((rule) => {
     const formRule: any = { message: rule.message };
-
     if (rule.required) {
       formRule.required = true;
     }
@@ -258,9 +315,7 @@ const transformRules = (rules: FormRule[] | undefined): any[] => {
 };
 
 // 设置配置表单的初始值
-const getConfigInitialValues = (
-  formConfig: FormField[]
-): Record<string, any> => {
+const getConfigInitialValues = (formConfig: FormField[]): Record<string, any> => {
   const initialValues: Record<string, any> = {};
   formConfig.forEach((field) => {
     if (field.defaultValue !== undefined) {
@@ -268,14 +323,6 @@ const getConfigInitialValues = (
     }
   });
   return initialValues;
-};
-
-// 设置主表单的初始值（如果需要的话）
-const getInitialValues = (formConfig: FormField[]): Record<string, any> => {
-  const configInitialValues = getConfigInitialValues(formConfig);
-  return {
-    config: JSON.stringify(configInitialValues),
-  };
 };
 
 export default DynamicDataSourceForm;

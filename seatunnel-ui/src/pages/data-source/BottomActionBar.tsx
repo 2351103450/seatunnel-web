@@ -1,6 +1,7 @@
 import { ApiOutlined, DeleteOutlined } from '@ant-design/icons';
 import { Button, Divider } from 'antd';
 import CustomPagination from './CustomPagination';
+import { useIntl } from '@umijs/max';
 
 interface BottomActionBarProps {
   pagination: {
@@ -21,6 +22,9 @@ const BottomActionBar: React.FC<BottomActionBarProps> = ({
   batchDeleteTest,
   onChange,
 }) => {
+
+  const intl = useIntl();
+
   return (
     <div
       style={{
@@ -42,9 +46,14 @@ const BottomActionBar: React.FC<BottomActionBarProps> = ({
             type="primary"
             icon={<ApiOutlined />}
           >
-            Batch Test
+            {intl.formatMessage({
+              id: 'pages.datasource.bottom.batchTest',
+              defaultMessage: 'Batch Test',
+            })}
           </Button>
+
           <Divider type="vertical" />
+
           <Button
             onClick={batchDeleteTest}
             style={{ width: 110, borderRadius: 4 }}
@@ -54,10 +63,14 @@ const BottomActionBar: React.FC<BottomActionBarProps> = ({
             type="primary"
             icon={<DeleteOutlined />}
           >
-            Batch Delete
+            {intl.formatMessage({
+              id: 'pages.datasource.bottom.batchDelete',
+              defaultMessage: 'Batch Delete',
+            })}
           </Button>
         </div>
-        <div style={{marginRight: 30}}>
+
+        <div style={{ marginRight: 30 }}>
           <CustomPagination
             total={pagination?.total}
             pageSize={pagination?.pageSize}

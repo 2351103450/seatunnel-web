@@ -3,6 +3,7 @@ import React, { useState } from 'react';
 
 import DatabaseIcons from './icon/DatabaseIcons';
 import './index.less';
+import { useIntl } from '@umijs/max';
 
 interface DataSource {
   img?: string;
@@ -23,9 +24,12 @@ interface Group {
 
 interface SearchFilterProps {
   data: Group[];
+  selectSource: (dsSource: string, flag: boolean) => void;
 }
 
 const SearchFilter: React.FC<SearchFilterProps> = ({ data, selectSource }) => {
+  const intl = useIntl();
+
   const [query, setQuery] = useState('');
   const [selectedGroup, setSelectedGroup] = useState<string | null>(null);
 
@@ -33,19 +37,10 @@ const SearchFilter: React.FC<SearchFilterProps> = ({ data, selectSource }) => {
     setQuery(e.target.value.toLowerCase());
   };
 
-  const [usedDataSource, setUsedDataSource] = useState([
-    {
-      label: 'MYSQL',
-      value: 'MYSQL',
-    },
-    {
-      label: 'ORACLE',
-      value: 'ORACLE',
-    },
-    {
-      label: 'PGSQL',
-      value: 'PGSQL',
-    },
+  const [usedDataSource] = useState([
+    { label: 'MYSQL', value: 'MYSQL' },
+    { label: 'ORACLE', value: 'ORACLE' },
+    { label: 'PGSQL', value: 'PGSQL' },
   ]);
 
   const filteredData = data
@@ -60,7 +55,7 @@ const SearchFilter: React.FC<SearchFilterProps> = ({ data, selectSource }) => {
       }),
     }));
 
-  const handleGroupClick = (groupName: string) => {
+  const handleGroupClick = (groupName: string | null) => {
     setSelectedGroup(groupName === selectedGroup ? null : groupName);
   };
 
@@ -72,20 +67,26 @@ const SearchFilter: React.FC<SearchFilterProps> = ({ data, selectSource }) => {
     <div>
       <Row>
         <Col span={3}>
-          {' '}
           <div style={{ display: 'flex', alignItems: 'center', fontSize: '13px', height: '30px' }}>
-            常用数据库：
+            {intl.formatMessage({
+              id: 'pages.datasource.filter.commonDb',
+              defaultMessage: 'Common DB:',
+            })}
           </div>
         </Col>
+
         {usedDataSource.map((ds, index) => (
           <Col span={7} key={index} style={{ padding: '0px 3px' }}>
             <div className="lf-ds-card" onClick={() => selectSource(ds?.value, true)}>
-              <div className="lf-ds-logo">{<DatabaseIcons dbType={ds.label} width={''} height={''} />}</div>
+              <div className="lf-ds-logo">
+                <DatabaseIcons dbType={ds.label} width={''} height={''} />
+              </div>
               <div>{ds?.label}</div>
             </div>
           </Col>
         ))}
       </Row>
+
       <div style={{ marginBottom: 8 }}>
         <Button
           type={selectedGroup === null ? 'primary' : 'default'}
@@ -99,8 +100,13 @@ const SearchFilter: React.FC<SearchFilterProps> = ({ data, selectSource }) => {
           onClick={() => handleGroupClick(null)}
           size="small"
         >
-          全部( {totalDatasourceCount} )
+          {intl.formatMessage({
+            id: 'pages.datasource.filter.all',
+            defaultMessage: 'All',
+          })}
+          ( {totalDatasourceCount} )
         </Button>
+
         {data.map((group) => (
           <Button
             key={group.groupName}
@@ -111,7 +117,6 @@ const SearchFilter: React.FC<SearchFilterProps> = ({ data, selectSource }) => {
               borderRadius: 4,
               fontSize: 12,
               padding: '4px 8px',
-              // fontWeight: 600,
             }}
             size="small"
             onClick={() => handleGroupClick(group.groupName)}
@@ -120,28 +125,32 @@ const SearchFilter: React.FC<SearchFilterProps> = ({ data, selectSource }) => {
           </Button>
         ))}
       </div>
+
       <Input
-        // type="text"
-        placeholder="Input..."
+        placeholder={intl.formatMessage({
+          id: 'pages.datasource.filter.inputPlaceholder',
+          defaultMessage: 'Input...',
+        })}
         value={query}
         style={{ borderRadius: 4 }}
-        // enterButton="搜索"
         onChange={handleChange}
       />
+
       <Divider style={{ margin: '16px 0' }} />
+
       <Row>
         {filteredData &&
           filteredData.map((group, index) =>
-            group.datasourceList.map((ds) => {
-              return (
-                <Col span={8} key={index} style={{ padding: '0px 4px' }}>
-                  <div className="lf-ds-card" onClick={() => selectSource(ds?.dbType, true)}>
-                    <div className="lf-ds-logo">{<DatabaseIcons dbType={ds.dbType} width={''} height={''} />}</div>
-                    <div>{ds?.dbType}</div>
+            group.datasourceList.map((ds) => (
+              <Col span={8} key={`${index}-${ds.dbType}`} style={{ padding: '0px 4px' }}>
+                <div className="lf-ds-card" onClick={() => selectSource(ds?.dbType, true)}>
+                  <div className="lf-ds-logo">
+                    <DatabaseIcons dbType={ds.dbType} width={''} height={''} />
                   </div>
-                </Col>
-              );
-            }),
+                  <div>{ds?.dbType}</div>
+                </div>
+              </Col>
+            )),
           )}
       </Row>
     </div>

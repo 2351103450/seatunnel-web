@@ -1,7 +1,10 @@
-import React from 'react';
-import styles from './index.less';
+import { useIntl } from "@umijs/max";
+import React from "react";
+import styles from "./index.less";
 
 const PageHeader: React.FC = () => {
+  const intl = useIntl();
+
   return (
     <div className={styles.headerSection}>
       <div
@@ -9,9 +12,19 @@ const PageHeader: React.FC = () => {
           flex: 1,
         }}
       >
-        <div className={styles.headerSectionTitle}>List of Data Sources</div>
+        <div className={styles.headerSectionTitle}>
+          {intl.formatMessage({
+            id: "pages.datasource.header.title",
+            defaultMessage: "List of Data Sources",
+          })}
+        </div>
+
         <p className={styles.headerDescription}>
-          A unified governance system for data sources, connectivity, access, and security.
+          {intl.formatMessage({
+            id: "pages.datasource.header.desc",
+            defaultMessage:
+              "A unified governance system for data sources, connectivity, access, and security.",
+          })}
         </p>
       </div>
     </div>
