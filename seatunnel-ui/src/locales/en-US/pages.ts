@@ -320,4 +320,7 @@ export default {
   "pages.job.config.sink.basic.warn.countNotSupportAutoCreate":
     "Auto-create table mode does not support data count",
   "pages.job.config.sink.basic.warn.selectDatasource": "Please select a datasource",
+
+  'pages.common.action.run': 'Run',
+  'pages.common.action.stop': 'Stop',
 };

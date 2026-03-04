@@ -316,4 +316,7 @@ export default {
   "pages.job.config.sink.basic.warn.previewNotSupportAutoCreate": "自动建表模式不支持数据预览",
   "pages.job.config.sink.basic.warn.countNotSupportAutoCreate": "自动建表模式不支持数据统计",
   "pages.job.config.sink.basic.warn.selectDatasource": "请选择数据源",
+
+  'pages.common.action.run': '运行',
+  'pages.common.action.stop': '停止',
 };
