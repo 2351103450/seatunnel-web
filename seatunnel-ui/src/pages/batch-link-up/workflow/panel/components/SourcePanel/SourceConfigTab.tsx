@@ -6,6 +6,7 @@ import { InfoCircleOutlined } from "@ant-design/icons";
 import { Divider } from "antd";
 import ExtraParamsConfig from "./ExtraParamsConfig";
 import SourceBasicConfig from "./SourceBasicConfig";
+import { useIntl } from "@umijs/max";
 
 interface SourceConfigTabProps {
   selectedNode: {
@@ -35,6 +36,8 @@ const SourceConfigTab: FC<SourceConfigTabProps> = ({
   setParams,
   params,
 }) => {
+  const intl = useIntl();
+
   const handleParamsChange = (newParams: any[]) => {
     setParams(newParams);
     if (selectedNode && onNodeDataChange) {
@@ -50,8 +53,16 @@ const SourceConfigTab: FC<SourceConfigTabProps> = ({
   return (
     <div style={{ marginTop: 8 }}>
       <Header
-        title={<span style={{ fontSize: 13, fontWeight: 500 }}>Basic Setting</span>}
+        title={
+          <span style={{ fontSize: 13, fontWeight: 500 }}>
+            {intl.formatMessage({
+              id: "pages.job.config.source.basicSetting",
+              defaultMessage: "Basic Setting",
+            })}
+          </span>
+        }
       />
+
       <SourceBasicConfig
         selectedNode={selectedNode}
         sourceOption={sourceOption}
@@ -68,8 +79,16 @@ const SourceConfigTab: FC<SourceConfigTabProps> = ({
       <Header
         title={
           <span style={{ fontSize: 13, fontWeight: 400 }}>
-            额外自定义参数配置{" "}
-            <a>
+            {intl.formatMessage({
+              id: "pages.job.config.source.extraParams",
+              defaultMessage: "Extra Custom Parameters",
+            })}{" "}
+            <a
+              title={intl.formatMessage({
+                id: "pages.job.config.source.extraParams.tip",
+                defaultMessage: "Configure extra custom parameters",
+              })}
+            >
               <InfoCircleOutlined />
             </a>
           </span>

@@ -6,18 +6,28 @@ import CloseIcon from "../../icon/CloseIcon";
 import CodeBlockWithCopy from "../CodeBlockWithCopy";
 import { CheckListPopover } from "./CheckListPopover";
 import styles from "./index.less";
+import { useIntl } from "@umijs/max";
 
 export const HoconPreview = ({ onGenerate, checkStat, checkGroups }: any) => {
+  const intl = useIntl();
+
   const [content, setContent] = useState("");
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
 
   const handleClick = async () => {
     if (loading) return;
+
     if (checkStat.total > 0) {
-      message.warning("Resolve all issues first 😊");
+      message.warning(
+        intl.formatMessage({
+          id: "pages.hoconPreview.resolveIssuesFirst",
+          defaultMessage: "Resolve all issues first 😊",
+        }),
+      );
       return;
     }
+
     setLoading(true);
     try {
       const data = await onGenerate();
@@ -44,20 +54,37 @@ export const HoconPreview = ({ onGenerate, checkStat, checkGroups }: any) => {
                 display: "flex",
                 alignItems: "center",
                 justifyContent: "space-between",
-                marginBottom: 6
+                marginBottom: 6,
               }}
             >
-              <div className={styles["latest-publish"]} style={{fontWeight: 500}}>Seatunnel Hocon</div>
               <div
-                onClick={() => {
-                  setOpen(false);
-                }}
+                className={styles["latest-publish"]}
+                style={{ fontWeight: 500 }}
+              >
+                {intl.formatMessage({
+                  id: "pages.hoconPreview.title",
+                  defaultMessage: "SeaTunnel HOCON",
+                })}
+              </div>
+
+              <div
+                onClick={() => setOpen(false)}
                 style={{ cursor: "pointer" }}
+                title={intl.formatMessage({
+                  id: "pages.common.close",
+                  defaultMessage: "Close",
+                })}
               >
                 <CloseIcon />
               </div>
             </div>
-            <Tooltip title="hocon模拟生成">
+
+            <Tooltip
+              title={intl.formatMessage({
+                id: "pages.hoconPreview.tooltip",
+                defaultMessage: "HOCON preview (simulated generation)",
+              })}
+            >
               <CodeBlockWithCopy content={content} />
             </Tooltip>
           </div>
@@ -67,7 +94,9 @@ export const HoconPreview = ({ onGenerate, checkStat, checkGroups }: any) => {
           <FileSearchOutlined />
         </div>
       </Popover>
+
       <div className={styles.divider}></div>
+
       <CheckListPopover checkStat={checkStat} checkGroups={checkGroups} />
     </div>
   );

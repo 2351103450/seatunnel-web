@@ -2,6 +2,7 @@ import Header from "@/components/Header";
 import { Table, Tag } from "antd";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useReactFlow } from "reactflow";
+import { useIntl } from "@umijs/max";
 
 interface Props {
   selectedNode: any;
@@ -21,8 +22,9 @@ const UpstreamFieldMatrixTable = ({
   selectedNode,
   sinkColumns,
   onNodeDataChange,
-  sinkForm
+  sinkForm,
 }: Props) => {
+  const intl = useIntl();
   const { getEdges, getNode } = useReactFlow();
   const [rows, setRows] = useState<MatrixRow[]>([]);
   const [upstreamNodes, setUpstreamNodes] = useState<any[]>([]);
@@ -39,13 +41,14 @@ const UpstreamFieldMatrixTable = ({
 
   useEffect(() => {
     if (!selectedNode) return;
+
     const prevNodes = getPrevNodes(selectedNode.id);
     const targetFields = sinkColumns || [];
     setUpstreamNodes(prevNodes);
 
     const maxLen = Math.max(
       targetFields.length,
-      ...prevNodes.map((n) => n?.data?.sourceFields?.length || 0)
+      ...prevNodes.map((n) => n?.data?.sourceFields?.length || 0),
     );
 
     const matrix: MatrixRow[] = Array.from({ length: maxLen }).map((_, i) => {
@@ -69,12 +72,16 @@ const UpstreamFieldMatrixTable = ({
     });
 
     setRows(matrix);
-  }, [selectedNode?.id, sinkColumns]); // 只依赖 id 和 sinkColumns
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedNode?.id, sinkColumns]);
 
   const columns = useMemo(() => {
     const baseColumns: any[] = [
       {
-        title: "序号",
+        title: intl.formatMessage({
+          id: "pages.job.node.sink.fieldsValidate.col.index",
+          defaultMessage: "Index",
+        }),
         width: 60,
         fixed: "left",
         render: (_: any, row: MatrixRow) => row.index + 1,
@@ -102,17 +109,19 @@ const UpstreamFieldMatrixTable = ({
     }));
 
     const targetColumn = {
-      title: "目标字段",
+      title: intl.formatMessage({
+        id: "pages.job.node.sink.fieldsValidate.col.targetField",
+        defaultMessage: "Target Field",
+      }),
       dataIndex: "target",
       fixed: "right",
     };
 
     return [...baseColumns, ...upstreamColumns, targetColumn];
-  }, [upstreamNodes]);
+  }, [upstreamNodes, intl]);
 
- 
   const allPass = rows.every((row) =>
-    upstreamNodes.every((node) => row.fieldsByNode[node.id] === row.target)
+    upstreamNodes.every((node) => row.fieldsByNode[node.id] === row.target),
   );
 
   useEffect(() => {
@@ -121,25 +130,51 @@ const UpstreamFieldMatrixTable = ({
       onNodeDataChange(selectedNode.id, {
         ...selectedNode.data,
         fieldCheck: allPass,
-        table: sinkForm.getFieldValue("table")
+        table: sinkForm.getFieldValue("table"),
       });
     }
-  }, [allPass, selectedNode.id]); 
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [allPass, selectedNode.id]);
 
   if (!upstreamNodes.length) {
-    return <div>No upstream node</div>;
+    return (
+      <div>
+        {intl.formatMessage({
+          id: "pages.job.node.sink.fieldsValidate.noUpstream",
+          defaultMessage: "No upstream node",
+        })}
+      </div>
+    );
   }
 
   return (
     <div style={{ marginTop: 8 }}>
       <Header
-        title={<div style={{ fontSize: 13, fontWeight: 500 }}>Match Result</div>}
+        title={
+          <div style={{ fontSize: 13, fontWeight: 500 }}>
+            {intl.formatMessage({
+              id: "pages.job.node.sink.fieldsValidate.title",
+              defaultMessage: "Match Result",
+            })}
+          </div>
+        }
       />
+
       <div style={{ marginBottom: 8 }}>
         {allPass ? (
-          <Tag color="green">All Matched</Tag>
+          <Tag color="green">
+            {intl.formatMessage({
+              id: "pages.job.node.sink.fieldsValidate.allMatched",
+              defaultMessage: "All Matched",
+            })}
+          </Tag>
         ) : (
-          <Tag color="red">Partial Mismatch</Tag>
+          <Tag color="red">
+            {intl.formatMessage({
+              id: "pages.job.node.sink.fieldsValidate.partialMismatch",
+              defaultMessage: "Partial Mismatch",
+            })}
+          </Tag>
         )}
       </div>
 

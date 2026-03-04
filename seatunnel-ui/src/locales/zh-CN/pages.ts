@@ -216,4 +216,104 @@ export default {
   'pages.job.status.running': '运行中',
   'pages.job.status.completed': '已完成',
   'pages.job.status.failed': '失败',
+
+  'pages.job.config.basicSetting': '基础配置',
+
+  'pages.job.config.jobName': '任务名称',
+  'pages.job.config.jobName.required': '任务名称不能为空',
+
+  'pages.job.config.jobDesc': '任务描述',
+
+  'pages.job.config.multiSync': '多表同步',
+
+  'pages.job.config.schedule.title': '调度配置',
+
+  'pages.job.config.schedule.cronExpression': 'Cron 表达式',
+  'pages.job.config.schedule.cronExpression.required': 'Cron 表达式不能为空',
+  'pages.job.config.schedule.cronRequired': '请先输入 Cron 表达式',
+
+  'pages.job.config.schedule.last5Runs.title': '最近 5 次运行',
+  'pages.job.config.schedule.last5Runs.link': '最近 5 次运行',
+  'pages.job.config.schedule.last5Runs.empty': '暂无预览',
+
+  'pages.job.config.schedule.enableScheduling': '启用调度',
+  'pages.job.config.schedule.enableScheduling.required': '请选择调度状态',
+
+  'pages.job.config.schedule.status.active': '启用',
+  'pages.job.config.schedule.status.paused': '暂停',
+
+  'pages.job.config.envSetting': '环境配置',
+
+  'pages.job.config.parallelism': '并行度',
+  'pages.job.config.parallelism.required': '并行度不能为空',
+
+  'pages.checklist.title': '检查清单（{total}）',
+  'pages.checklist.subtitle': '发布前请确保所有问题已解决',
+  'pages.checklist.nodeSuffix': '节点',
+
+  'pages.publish.publish': '发布',
+  'pages.publish.publishUpdate': '发布并更新',
+
+  'pages.publish.latest': '最新发布',
+
+  'pages.publish.timeAgo': '{time} 前发布',
+  'pages.publish.time.hours': '16 小时',
+
+  'pages.job.config.source.basicSetting': '基础配置',
+  'pages.job.config.source.extraParams': '额外自定义参数配置',
+  'pages.job.config.source.extraParams.tip': '配置额外的自定义参数',
+
+  'pages.quality.preview.title': '数据预览（最多展示10条数据）',
+
+  'pages.job.config.sourceFields.title': '字段信息',
+  'pages.job.config.sourceFields.col.index': '编号',
+  'pages.job.config.sourceFields.col.fieldName': '字段名称',
+  'pages.job.config.sourceFields.col.fieldType': '字段类型',
+
+  'pages.job.node.source.tab.sourceSetting': '源端配置',
+  'pages.job.node.source.tab.outputFields': '输出字段',
+
+  'pages.job.node.sink.tab.sinkSetting': '目的端配置',
+  'pages.job.node.sink.tab.fieldsValidate': '字段校验',
+  'pages.job.node.sink.tab.outputFields': '输出字段',
+
+  'pages.job.config.sink.basicSetting': '基础配置',
+  'pages.job.config.sink.extraParams': '额外自定义参数配置',
+  'pages.job.config.sink.extraParams.tip': '配置额外的自定义参数',
+
+  'pages.job.node.sink.fieldsValidate.title': '匹配结果',
+  'pages.job.node.sink.fieldsValidate.allMatched': '全部匹配',
+  'pages.job.node.sink.fieldsValidate.partialMismatch': '部分不匹配',
+  'pages.job.node.sink.fieldsValidate.noUpstream': '没有上游节点',
+
+  'pages.job.node.sink.fieldsValidate.col.index': '序号',
+  'pages.job.node.sink.fieldsValidate.col.targetField': '目标字段',
+
+  'pages.hoconPreview.resolveIssuesFirst': '请先解决所有问题 😊',
+  'pages.hoconPreview.title': 'SeaTunnel Hocon',
+  'pages.hoconPreview.tooltip': 'Hocon 模拟生成',
+
+  // 建议全局复用
+  'pages.common.close': '关闭',
+
+  "pages.job.config.sink.basic.datasource": "数据源",
+  "pages.job.config.sink.basic.datasource.placeholder": "请选择数据源",
+  "pages.job.config.sink.basic.datasource.required": "请选择数据源",
+
+  "pages.job.config.sink.basic.syncType": "同步类型",
+  "pages.job.config.sink.basic.syncType.placeholder": "请选择同步类型",
+  "pages.job.config.sink.basic.syncType.required": "请选择同步类型",
+
+  // actions
+  "pages.job.config.sink.basic.preview": "数据预览",
+  "pages.job.config.sink.basic.count": "数据统计",
+
+  // popover
+  "pages.job.config.sink.basic.count.title": "数据统计",
+  "pages.job.config.sink.basic.count.total": "数据总量：",
+
+  // warnings
+  "pages.job.config.sink.basic.warn.previewNotSupportAutoCreate": "自动建表模式不支持数据预览",
+  "pages.job.config.sink.basic.warn.countNotSupportAutoCreate": "自动建表模式不支持数据统计",
+  "pages.job.config.sink.basic.warn.selectDatasource": "请选择数据源",
 };

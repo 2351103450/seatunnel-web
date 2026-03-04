@@ -218,4 +218,106 @@ export default {
   'pages.job.status.running': 'RUNNING',
   'pages.job.status.completed': 'COMPLETED',
   'pages.job.status.failed': 'FAILED',
+
+  'pages.job.config.basicSetting': 'Basic Setting',
+
+  'pages.job.config.jobName': 'Job Name',
+  'pages.job.config.jobName.required': 'Job name cannot be empty',
+
+  'pages.job.config.jobDesc': 'Job Description',
+
+  'pages.job.config.multiSync': 'Multi Sync',
+
+  'pages.job.config.schedule.title': 'Schedule Setting',
+
+  'pages.job.config.schedule.cronExpression': 'Cron Expression',
+  'pages.job.config.schedule.cronExpression.required': 'Cron expression is required',
+  'pages.job.config.schedule.cronRequired': 'Please input cron expression first',
+
+  'pages.job.config.schedule.last5Runs.title': 'Last 5 Runs',
+  'pages.job.config.schedule.last5Runs.link': 'Last 5 Runs',
+  'pages.job.config.schedule.last5Runs.empty': 'No preview yet',
+
+  'pages.job.config.schedule.enableScheduling': 'Enable Scheduling',
+  'pages.job.config.schedule.enableScheduling.required': 'Please choose scheduling status',
+
+  'pages.job.config.schedule.status.active': 'ACTIVE',
+  'pages.job.config.schedule.status.paused': 'PAUSED',
+
+  'pages.job.config.envSetting': 'Env Setting',
+
+  'pages.job.config.parallelism': 'Parallelism',
+  'pages.job.config.parallelism.required': 'Parallelism cannot be empty',
+
+   'pages.checklist.title': 'Checklist ({total})',
+  'pages.checklist.subtitle': 'Make sure all issues are resolved before publishing',
+  'pages.checklist.nodeSuffix': 'node',
+
+  'pages.publish.publish': 'Publish',
+  'pages.publish.publishUpdate': 'Publish & Update',
+
+  'pages.publish.latest': 'Latest Publish',
+
+  'pages.publish.timeAgo': 'Published {time} ago',
+  'pages.publish.time.hours': '16 hours',
+
+  'pages.job.config.source.basicSetting': 'Basic Setting',
+  'pages.job.config.source.extraParams': 'Extra Custom Parameters',
+  'pages.job.config.source.extraParams.tip': 'Configure extra custom parameters',
+
+  'pages.quality.preview.title': 'Data Preview (max 10 rows)',
+
+  'pages.job.config.sourceFields.title': 'Field Info',
+  'pages.job.config.sourceFields.col.index': 'Index',
+  'pages.job.config.sourceFields.col.fieldName': 'Field Name',
+  'pages.job.config.sourceFields.col.fieldType': 'Field Type',
+
+  'pages.job.node.source.tab.sourceSetting': 'Source Setting',
+  'pages.job.node.source.tab.outputFields': 'Output Fields',
+
+  'pages.job.node.sink.tab.sinkSetting': 'Sink Setting',
+  'pages.job.node.sink.tab.fieldsValidate': 'Fields Validate',
+  'pages.job.node.sink.tab.outputFields': 'Output Fields',
+
+  'pages.job.config.sink.basicSetting': 'Basic Setting',
+  'pages.job.config.sink.extraParams': 'Extra Custom Parameters',
+  'pages.job.config.sink.extraParams.tip': 'Configure extra custom parameters',
+
+  'pages.job.node.sink.fieldsValidate.title': 'Match Result',
+  'pages.job.node.sink.fieldsValidate.allMatched': 'All Matched',
+  'pages.job.node.sink.fieldsValidate.partialMismatch': 'Partial Mismatch',
+  'pages.job.node.sink.fieldsValidate.noUpstream': 'No upstream node',
+
+  'pages.job.node.sink.fieldsValidate.col.index': 'Index',
+  'pages.job.node.sink.fieldsValidate.col.targetField': 'Target Field',
+
+  'pages.hoconPreview.resolveIssuesFirst': 'Resolve all issues first 😊',
+  'pages.hoconPreview.title': 'SeaTunnel HOCON',
+  'pages.hoconPreview.tooltip': 'HOCON preview (simulated generation)',
+
+  // common
+  'pages.common.close': 'Close',
+
+  "pages.job.config.sink.basic.datasource": "Datasource",
+  "pages.job.config.sink.basic.datasource.placeholder": "Select datasource",
+  "pages.job.config.sink.basic.datasource.required": "Please select a datasource",
+
+  "pages.job.config.sink.basic.syncType": "Sync Type",
+  "pages.job.config.sink.basic.syncType.placeholder": "Select sync type",
+  "pages.job.config.sink.basic.syncType.required": "Please select sync type",
+
+  // actions
+  "pages.job.config.sink.basic.preview": "Data Preview",
+  "pages.job.config.sink.basic.count": "Data Count",
+
+  // popover
+  "pages.job.config.sink.basic.count.title": "Data Count",
+  "pages.job.config.sink.basic.count.total": "Total records:",
+
+  // warnings
+  "pages.job.config.sink.basic.warn.previewNotSupportAutoCreate":
+    "Auto-create table mode does not support data preview",
+  "pages.job.config.sink.basic.warn.countNotSupportAutoCreate":
+    "Auto-create table mode does not support data count",
+  "pages.job.config.sink.basic.warn.selectDatasource": "Please select a datasource",
 };

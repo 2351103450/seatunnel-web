@@ -1,34 +1,58 @@
 import Header from "@/components/Header";
 import { Form, Input, Switch } from "antd";
 import TextArea from "antd/es/input/TextArea";
+import { useIntl } from "@umijs/max";
 
-const BasicConfig = () =>  {
+const BasicConfig = () => {
+  const intl = useIntl();
+
   return (
     <>
-      <Header title={<span style={{fontSize: 12, fontWeight: 500}}>Basic Setting</span>} />
+      <Header
+        title={
+          <span style={{ fontSize: 12, fontWeight: 500 }}>
+            {intl.formatMessage({
+              id: "pages.job.config.basicSetting",
+              defaultMessage: "Basic Setting",
+            })}
+          </span>
+        }
+      />
 
       <Form.Item
-        label="Job name"
+        label={intl.formatMessage({
+          id: "pages.job.config.jobName",
+          defaultMessage: "Job Name",
+        })}
         name="jobName"
-        rules={[{ required: true, message: "任务名称不能为空" }]}
+        rules={[
+          {
+            required: true,
+            message: intl.formatMessage({
+              id: "pages.job.config.jobName.required",
+              defaultMessage: "Job name cannot be empty",
+            }),
+          },
+        ]}
       >
         <Input size="small" />
       </Form.Item>
 
-      <Form.Item label="Job Description" name="jobDesc">
+      <Form.Item
+        label={intl.formatMessage({
+          id: "pages.job.config.jobDesc",
+          defaultMessage: "Job Description",
+        })}
+        name="jobDesc"
+      >
         <TextArea rows={4} size="small" />
       </Form.Item>
 
-      {/* <Form.Item
-        label="Client"
-        name="clientId"
-        rules={[{ required: true, message: "客户端不能为空" }]}
-      >
-        <Input size="small" />
-      </Form.Item> */}
-
       <Form.Item
-        label="Multi Sync"
+        label={intl.formatMessage({
+          id: "pages.job.config.multiSync",
+          defaultMessage: "Multi Sync",
+        })}
         name="wholeSync"
         valuePropName="checked"
       >
@@ -36,5 +60,6 @@ const BasicConfig = () =>  {
       </Form.Item>
     </>
   );
-}
+};
+
 export default BasicConfig;

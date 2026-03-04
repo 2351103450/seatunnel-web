@@ -14,6 +14,7 @@ import { CSS } from "@dnd-kit/utilities";
 import type { TableColumnsType } from "antd";
 import { Button, Table } from "antd";
 import React, { useContext, useEffect, useMemo, useState } from "react";
+import { useIntl } from "@umijs/max";
 
 interface DataType {
   key: string;
@@ -42,38 +43,6 @@ const DragHandle: React.FC = () => {
   );
 };
 
-const columns: TableColumnsType<DataType> = [
-  // { key: "sort", align: "center", width: 40, render: () => <DragHandle /> },
-  {
-    key: "key",
-    dataIndex: "key",
-    align: "center",
-    width: 40,
-    ellipsis: true,
-    title: "编号",
-  },
-  {
-    title: "字段名称",
-    align: "center",
-    width: "50%",
-    ellipsis: true,
-    dataIndex: "fieldName",
-  },
-  {
-    title: "字段类型",
-    align: "center",
-    width: "50%",
-    ellipsis: true,
-    dataIndex: "fieldType",
-  },
-];
-
-const initialData: DataType[] = [
-  { key: "1", fieldName: "John Brown", fieldType: "Lon Long" },
-  { key: "2", fieldName: "Jim Green", fieldType: "Londonrk" },
-  { key: "3", fieldName: "Joe Black", fieldType: "Sidneark" },
-];
-
 interface RowProps extends React.HTMLAttributes<HTMLTableRowElement> {
   "data-row-key": string;
 }
@@ -98,7 +67,7 @@ const Row: React.FC<RowProps> = (props) => {
 
   const contextValue = useMemo<RowContextProps>(
     () => ({ setActivatorNodeRef, listeners }),
-    [setActivatorNodeRef, listeners]
+    [setActivatorNodeRef, listeners],
   );
 
   return (
@@ -117,13 +86,53 @@ interface SourceConfigTabProps {
   setSourceColumns: (value: any) => void;
   sourceColumns: any;
 }
+
 const App: React.FC<SourceConfigTabProps> = ({
   selectedNode,
   onNodeDataChange,
   sourceColumns,
   setSourceColumns,
 }) => {
+  const intl = useIntl();
   const [flag, setFlag] = useState<boolean>(false);
+
+  const columns: TableColumnsType<DataType> = useMemo(
+    () => [
+      // { key: "sort", align: "center", width: 40, render: () => <DragHandle /> },
+      {
+        key: "key",
+        dataIndex: "key",
+        align: "center",
+        width: 40,
+        ellipsis: true,
+        title: intl.formatMessage({
+          id: "pages.job.config.sourceFields.col.index",
+          defaultMessage: "Index",
+        }),
+      },
+      {
+        title: intl.formatMessage({
+          id: "pages.job.config.sourceFields.col.fieldName",
+          defaultMessage: "Field Name",
+        }),
+        align: "center",
+        width: "50%",
+        ellipsis: true,
+        dataIndex: "fieldName",
+      },
+      {
+        title: intl.formatMessage({
+          id: "pages.job.config.sourceFields.col.fieldType",
+          defaultMessage: "Field Type",
+        }),
+        align: "center",
+        width: "50%",
+        ellipsis: true,
+        dataIndex: "fieldType",
+      },
+    ],
+    [intl],
+  );
 
   const handleFieldChange = (newParams: any[]) => {
     if (selectedNode && onNodeDataChange) {
@@ -139,17 +148,14 @@ const App: React.FC<SourceConfigTabProps> = ({
     if (sourceColumns) {
       handleFieldChange(sourceColumns);
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [sourceColumns]);
 
   const onDragEnd = ({ active, over }: DragEndEvent) => {
     if (active.id !== over?.id) {
       setSourceColumns((prevState: any) => {
-        const activeIndex = prevState.findIndex(
-          (record: any) => record.key === active?.id
-        );
-        const overIndex = prevState.findIndex(
-          (record: any) => record.key === over?.id
-        );
+        const activeIndex = prevState.findIndex((record: any) => record.key === active?.id);
+        const overIndex = prevState.findIndex((record: any) => record.key === over?.id);
         return arrayMove(prevState, activeIndex, overIndex);
       });
       setFlag(true);
@@ -159,10 +165,20 @@ const App: React.FC<SourceConfigTabProps> = ({
   return (
     <div>
       <div style={{ margin: "8px 0 " }}></div>
+
       <Header
-        title={<div style={{ fontSize: 13, fontWeight: 500 }}>字段信息</div>}
+        title={
+          <div style={{ fontSize: 13, fontWeight: 500 }}>
+            {intl.formatMessage({
+              id: "pages.job.config.sourceFields.title",
+              defaultMessage: "Field Info",
+            })}
+          </div>
+        }
       />
+
       <div style={{ margin: "8px 0 " }}></div>
+
       <DndContext modifiers={[restrictToVerticalAxis]} onDragEnd={onDragEnd}>
         <SortableContext
           items={sourceColumns.map((i: any) => i.key)}

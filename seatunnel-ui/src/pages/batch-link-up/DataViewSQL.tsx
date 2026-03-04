@@ -1,17 +1,20 @@
-import { forwardRef, useImperativeHandle, useState } from 'react';
+import { forwardRef, useImperativeHandle, useState } from "react";
+import { Drawer, Table } from "antd";
+import "./index.less";
+import { useIntl } from "@umijs/max";
 
-import { Drawer, Table } from 'antd';
-import './index.less';
+const QualityDetail = forwardRef((_: any, ref: any) => {
+  const intl = useIntl();
 
-const QualityDetail = forwardRef((_, ref) => {
   const [visible, setVisible] = useState<boolean>(false);
-  const [data, setData] = useState([]);
-  const [columns, setColumns] = useState([]);
+  const [data, setData] = useState<any[]>([]);
+  const [columns, setColumns] = useState<any[]>([]);
+
   // 展开抽屉
   const onOpen = (status: boolean, content: any) => {
-    const { columns, data } = content?.data || [];
-    setColumns(columns); // 将列名映射为 dataIndex
-    setData(data);
+    const { columns, data } = content?.data || {};
+    setColumns(columns || []);
+    setData(data || []);
     setVisible(status);
   };
 
@@ -23,19 +26,24 @@ const QualityDetail = forwardRef((_, ref) => {
   useImperativeHandle(ref, () => ({
     onOpen,
   }));
+
   // 动态计算 x 轴滚动宽度
-  const tableWidth = columns && columns?.reduce((totalWidth, col) => totalWidth + 200, 0) || 0;
+  const tableWidth =
+    (columns && columns.reduce((totalWidth: number) => totalWidth + 200, 0)) || 0;
 
   return (
     <Drawer
-      title="数据预览（最多展示10条数据）"
+      title={intl.formatMessage({
+        id: "pages.quality.preview.title",
+        defaultMessage: "Data Preview (max 10 rows)",
+      })}
       open={visible}
       footer={null}
       placement="bottom"
       onClose={onClose}
       height={500}
     >
-      <div style={{ margin: '0 12px 12px 12px' }}>
+      <div style={{ margin: "0 12px 12px 12px" }}>
         <Table
           columns={columns}
           dataSource={data}
