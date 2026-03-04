@@ -249,7 +249,7 @@ export default {
   'pages.job.config.parallelism': 'Parallelism',
   'pages.job.config.parallelism.required': 'Parallelism cannot be empty',
 
-   'pages.checklist.title': 'Checklist ({total})',
+  'pages.checklist.title': 'Checklist ({total})',
   'pages.checklist.subtitle': 'Make sure all issues are resolved before publishing',
   'pages.checklist.nodeSuffix': 'node',
 
@@ -323,4 +323,15 @@ export default {
 
   'pages.common.action.run': 'Run',
   'pages.common.action.stop': 'Stop',
+
+  'pages.job.overview.title': 'Job Overview',
+  'pages.job.overview.mode': 'Job Mode',
+  'pages.job.overview.timerange.24h': 'Last 24 Hours',
+
+  "pages.job.summary.totalSyncs": "Total Syncs",
+  "pages.job.summary.totalSyncVolume": "Total Sync Volume",
+  "pages.job.summary.totalExecutions": "Total Executions",
+  "pages.job.summary.successExecutions": "Successful Executions",
+  "pages.job.summary.unit.times": "times",
+  "pages.job.summary.unit.label": "Unit",
 };

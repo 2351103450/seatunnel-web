@@ -1,4 +1,5 @@
 import React from "react";
+import { useIntl } from "@umijs/max";
 import { SummaryData } from "./types";
 
 interface SummaryCardsProps {
@@ -6,23 +7,46 @@ interface SummaryCardsProps {
 }
 
 const SummaryCards: React.FC<SummaryCardsProps> = ({ summaryData }) => {
-  console.log(summaryData);
+  const intl = useIntl();
+
   const cards = [
     {
-      title: "Total Syncs",
+      title: intl.formatMessage({
+        id: "pages.job.summary.totalSyncs",
+        defaultMessage: "Total Syncs",
+      }),
       value: summaryData.totalRecords,
       unit: summaryData.totalRecordsUnit || "-",
     },
     {
-      title: "Total Sync Volume",
+      title: intl.formatMessage({
+        id: "pages.job.summary.totalSyncVolume",
+        defaultMessage: "Total Sync Volume",
+      }),
       value: summaryData.totalBytes,
       unit: summaryData.totalBytesUnit || "-",
     },
-    { title: "Total Executions", value: summaryData.totalTasks, unit: "times" },
     {
-      title: "Successful Executions",
+      title: intl.formatMessage({
+        id: "pages.job.summary.totalExecutions",
+        defaultMessage: "Total Executions",
+      }),
+      value: summaryData.totalTasks,
+      unit: intl.formatMessage({
+        id: "pages.job.summary.unit.times",
+        defaultMessage: "times",
+      }),
+    },
+    {
+      title: intl.formatMessage({
+        id: "pages.job.summary.successExecutions",
+        defaultMessage: "Successful Executions",
+      }),
       value: summaryData.successTasks,
-      unit: "times",
+      unit: intl.formatMessage({
+        id: "pages.job.summary.unit.times",
+        defaultMessage: "times",
+      }),
     },
   ];
 
@@ -49,7 +73,13 @@ const SummaryCards: React.FC<SummaryCardsProps> = ({ summaryData }) => {
               <div className="title">{item.title}</div>
               <div className="big-number">{item.value || 0}</div>
               <div>
-                <div className="small-number">Unit: {item.unit}</div>
+                <div className="small-number">
+                  {intl.formatMessage({
+                    id: "pages.job.summary.unit.label",
+                    defaultMessage: "Unit",
+                  })}
+                  : {item.unit}
+                </div>
               </div>
             </div>
           </div>

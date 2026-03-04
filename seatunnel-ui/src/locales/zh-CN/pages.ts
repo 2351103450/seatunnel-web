@@ -319,4 +319,16 @@ export default {
 
   'pages.common.action.run': '运行',
   'pages.common.action.stop': '停止',
+
+
+  'pages.job.overview.title': '任务概览',
+  'pages.job.overview.mode': '任务模式',
+  'pages.job.overview.timerange.24h': '最近24小时',
+
+  "pages.job.summary.totalSyncs": "同步总记录数",
+  "pages.job.summary.totalSyncVolume": "同步数据量",
+  "pages.job.summary.totalExecutions": "执行次数",
+  "pages.job.summary.successExecutions": "成功执行次数",
+  "pages.job.summary.unit.times": "次",
+  "pages.job.summary.unit.label": "单位",
 };
