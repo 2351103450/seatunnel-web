@@ -16,7 +16,9 @@ import org.apache.seatunnel.communal.bean.entity.PaginationResult;
 import org.apache.seatunnel.communal.bean.entity.Result;
 import org.apache.seatunnel.communal.bean.vo.DBOptionVO;
 import org.apache.seatunnel.communal.bean.vo.DataSourceVO;
+import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
 import java.util.Map;
@@ -65,20 +67,20 @@ public class DataSourceController {
                             examples = @ExampleObject(
                                     name = "MySQL Data Source Example",
                                     value = """
-                        {
-                            "name": "MySQL-ProductDB",
-                            "type": "MYSQL",
-                            "host": "localhost",
-                            "port": 3306,
-                            "database": "product_db",
-                            "username": "root",
-                            "password": "******",
-                            "properties": {
-                                "useSSL": "false",
-                                "serverTimezone": "UTC"
-                            }
-                        }
-                        """
+                                            {
+                                                "name": "MySQL-ProductDB",
+                                                "type": "MYSQL",
+                                                "host": "localhost",
+                                                "port": 3306,
+                                                "database": "product_db",
+                                                "username": "root",
+                                                "password": "******",
+                                                "properties": {
+                                                    "useSSL": "false",
+                                                    "serverTimezone": "UTC"
+                                                }
+                                            }
+                                            """
                             )
                     )
             )
@@ -118,16 +120,16 @@ public class DataSourceController {
                             examples = @ExampleObject(
                                     name = "Update Example",
                                     value = """
-                        {
-                            "name": "MySQL-ProductDB-Updated",
-                            "host": "192.168.1.100",
-                            "port": 3307,
-                            "password": "new_password",
-                            "properties": {
-                                "useSSL": "true"
-                            }
-                        }
-                        """
+                                            {
+                                                "name": "MySQL-ProductDB-Updated",
+                                                "host": "192.168.1.100",
+                                                "port": 3307,
+                                                "password": "new_password",
+                                                "properties": {
+                                                    "useSSL": "true"
+                                                }
+                                            }
+                                            """
                             )
                     )
             )
@@ -190,15 +192,15 @@ public class DataSourceController {
                             examples = @ExampleObject(
                                     name = "Pagination Example",
                                     value = """
-                        {
-                            "pageNo": 1,
-                            "pageSize": 10,
-                            "type": "MYSQL",
-                            "name": "test",
-                            "sortField": "createTime",
-                            "sortOrder": "DESC"
-                        }
-                        """
+                                            {
+                                                "pageNo": 1,
+                                                "pageSize": 10,
+                                                "type": "MYSQL",
+                                                "name": "test",
+                                                "sortField": "createTime",
+                                                "sortOrder": "DESC"
+                                            }
+                                            """
                             )
                     )
             )
@@ -284,20 +286,20 @@ public class DataSourceController {
                             examples = @ExampleObject(
                                     name = "MySQL Connection Test Example",
                                     value = """
-                        {
-                            "connJson": {
-                                "type": "MYSQL",
-                                "host": "localhost",
-                                "port": 3306,
-                                "database": "test_db",
-                                "username": "root",
-                                "password": "password",
-                                "properties": {
-                                    "useSSL": "false"
-                                }
-                            }
-                        }
-                        """
+                                            {
+                                                "connJson": {
+                                                    "type": "MYSQL",
+                                                    "host": "localhost",
+                                                    "port": 3306,
+                                                    "database": "test_db",
+                                                    "username": "root",
+                                                    "password": "password",
+                                                    "properties": {
+                                                        "useSSL": "false"
+                                                    }
+                                                }
+                                            }
+                                            """
                             )
                     )
             )
@@ -395,5 +397,24 @@ public class DataSourceController {
     public Result<List<DataSourceVO>> all() {
         log.info("Retrieving all data sources");
         return Result.buildSuc(dataSourceService.listAll());
+    }
+
+    @PostMapping(value = "/plugin/driver/upload", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    @Operation(summary = "Upload JDBC driver jar", description = "Upload JDBC driver jar and save to ${user.home}/jdbc-drivers")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "Upload success"),
+            @ApiResponse(responseCode = "400", description = "Bad request"),
+            @ApiResponse(responseCode = "500", description = "Server error")
+    })
+    public Result<Map<String, Object>> uploadJdbcDriver(
+            @Parameter(description = "Driver jar file (.jar)", required = true)
+            @RequestPart("file") MultipartFile file,
+            @Parameter(description = "Plugin type, e.g. MYSQL/POSTGRESQL (optional)")
+            @RequestParam(value = "pluginType", required = false) String pluginType,
+            @Parameter(description = "Whether to overwrite existing file", example = "false")
+            @RequestParam(value = "overwrite", required = false, defaultValue = "true") boolean overwrite
+    ) {
+        return Result.buildSuc(dataSourceService.uploadJdbcDriver(file, pluginType, overwrite));
+
     }
 }

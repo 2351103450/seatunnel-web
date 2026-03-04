@@ -1,9 +1,23 @@
 import HttpUtils from "@/utils/HttpUtils";
-import { LoadingOutlined, MinusCircleOutlined, PlusOutlined } from "@ant-design/icons";
-import { Button, Form, Input, InputNumber, message, Select, Space, Switch } from "antd";
+import {
+  LoadingOutlined,
+  MinusCircleOutlined,
+  PlusOutlined,
+} from "@ant-design/icons";
+import { useIntl } from "@umijs/max";
+import {
+  Button,
+  Form,
+  Input,
+  InputNumber,
+  message,
+  Select,
+  Space,
+  Switch,
+  Upload,
+} from "antd";
 import TextArea from "antd/es/input/TextArea";
 import { useEffect, useState } from "react";
-import { useIntl } from "@umijs/max";
 import { DynamicDataSourceFormProps, FormField, FormRule } from "./type";
 
 const DynamicDataSourceForm: React.FC<DynamicDataSourceFormProps> = ({
@@ -21,11 +35,28 @@ const DynamicDataSourceForm: React.FC<DynamicDataSourceFormProps> = ({
     loadFormConfig();
   }, [dbType]);
 
+  const uploadDriverJar = async (file: File) => {
+    const formData = new FormData();
+    formData.append("file", file);
+    // 如果你需要带上 pluginType/dbType，让后端知道放哪
+    formData.append("pluginType", dbType);
+
+    // ✅ 这里换成你的上传接口
+    // 建议返回：{ code:0, data:{ fileName:'mysql-connector-java-8.0.29.jar', path:'...' } }
+    const res = await HttpUtils.postForm<any>(
+      "/api/v1/data-source/plugin/driver/upload",
+      formData
+    );
+
+    if (res?.code !== 0) throw new Error(res?.message || "upload failed");
+    return res?.data; // { fileName, path } or string
+  };
+
   const loadFormConfig = async (): Promise<void> => {
     try {
       setLoading(true);
       const response = await HttpUtils.get<any>(
-        `/api/v1/data-source/plugin/config?pluginType=${dbType}`,
+        `/api/v1/data-source/plugin/config?pluginType=${dbType}`
       );
       if (response?.code === 0) {
         setFormConfig(response?.data?.formFields || []);
@@ -37,7 +68,7 @@ const DynamicDataSourceForm: React.FC<DynamicDataSourceFormProps> = ({
         intl.formatMessage({
           id: "pages.datasource.form.loadConfigFail",
           defaultMessage: "Failed to load form config",
-        }),
+        })
       );
     } finally {
       setLoading(false);
@@ -46,7 +77,7 @@ const DynamicDataSourceForm: React.FC<DynamicDataSourceFormProps> = ({
 
   const renderFormItem = (field: FormField): React.ReactNode => {
     const commonProps = {
-      placeholder: field.placeholder, // 这通常是后端下发的，如需国际化建议后端返回 i18nKey
+      placeholder: field.placeholder,
       onChange: () => {
         setTimeout(() => {
           configForm.validateFields([field.key]).catch(() => {});
@@ -54,13 +85,61 @@ const DynamicDataSourceForm: React.FC<DynamicDataSourceFormProps> = ({
       },
     };
 
+    // ✅ driverLocation：Input + 上传按钮（右侧）
+    if (field.key === "driverLocation") {
+      return (
+        <Space.Compact style={{ width: "100%" }}>
+          <Input {...commonProps} size="small" />
+
+          <Upload
+            accept=".jar"
+            showUploadList={false}
+            beforeUpload={(file) => {
+              const ok = file.name.toLowerCase().endsWith(".jar");
+              if (!ok) message.error("只允许上传 .jar 文件");
+              return ok;
+            }}
+            customRequest={async (options: any) => {
+              const { file, onSuccess, onError } = options;
+              try {
+                const data = await uploadDriverJar(file as File);
+
+                // 这里按你后端返回结构取值：
+                const jarValue =
+                  typeof data === "string"
+                    ? data
+                    : data?.fileName || data?.path || "";
+
+                if (!jarValue) {
+                  throw new Error("上传成功但未返回 jar 信息");
+                }
+
+                // ✅ 回填到 driverLocation
+                configForm.setFieldValue("driverLocation", jarValue);
+                // 触发校验
+                configForm.validateFields(["driverLocation"]).catch(() => {});
+                message.success("驱动包上传成功");
+
+                onSuccess?.(data as any);
+              } catch (e: any) {
+                message.error(e?.message || "驱动包上传失败");
+                onError?.(e);
+              }
+            }}
+          >
+            <Button size="small" type="default">
+              上传
+            </Button>
+          </Upload>
+        </Space.Compact>
+      );
+    }
+
     switch (field.type) {
       case "INPUT":
         return <Input {...commonProps} size="small" />;
-
       case "PASSWORD":
         return <Input.Password {...commonProps} size="small" />;
-
       case "SELECT":
         return (
           <Select {...commonProps} size="small">
@@ -71,17 +150,12 @@ const DynamicDataSourceForm: React.FC<DynamicDataSourceFormProps> = ({
             ))}
           </Select>
         );
-
       case "NUMBER":
         return <InputNumber {...commonProps} size="small" />;
-
       case "SWITCH":
-        // Switch 没有 placeholder，这里保持 commonProps 不影响（多余属性会被忽略）
         return <Switch {...commonProps} size="small" />;
-
       case "TEXTAREA":
         return <Input.TextArea rows={4} {...commonProps} size="small" />;
-
       default:
         return <Input {...commonProps} size="small" />;
     }
@@ -194,7 +268,11 @@ const DynamicDataSourceForm: React.FC<DynamicDataSourceFormProps> = ({
           <Input type="hidden" />
         </Form.Item>
 
-        <Form form={configForm} initialValues={getConfigInitialValues(formConfig)} component={false}>
+        <Form
+          form={configForm}
+          initialValues={getConfigInitialValues(formConfig)}
+          component={false}
+        >
           {formConfig.map((field) => {
             if (field.type === "CUSTOM_SELECT") {
               return (
@@ -271,7 +349,8 @@ const DynamicDataSourceForm: React.FC<DynamicDataSourceFormProps> = ({
                           >
                             {intl.formatMessage({
                               id: "pages.datasource.form.other.addConnSetting",
-                              defaultMessage: "Add Database Connection Settings",
+                              defaultMessage:
+                                "Add Database Connection Settings",
                             })}
                           </Button>
                         </Form.Item>
@@ -287,7 +366,11 @@ const DynamicDataSourceForm: React.FC<DynamicDataSourceFormProps> = ({
                 labelCol={{ span: 3 }}
                 wrapperCol={{ span: 19 }}
                 key={field.key}
-                label={<div style={{ height: 32, lineHeight: "33px" }}>{field.label}</div>}
+                label={
+                  <div style={{ height: 32, lineHeight: "33px" }}>
+                    {field.label}
+                  </div>
+                }
                 name={field.key}
                 rules={transformRules(field?.rules)}
                 validateTrigger={["onChange", "onBlur"]}
@@ -315,7 +398,9 @@ const transformRules = (rules: FormRule[] | undefined): any[] => {
 };
 
 // 设置配置表单的初始值
-const getConfigInitialValues = (formConfig: FormField[]): Record<string, any> => {
+const getConfigInitialValues = (
+  formConfig: FormField[]
+): Record<string, any> => {
   const initialValues: Record<string, any> = {};
   formConfig.forEach((field) => {
     if (field.defaultValue !== undefined) {

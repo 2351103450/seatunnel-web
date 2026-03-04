@@ -19,6 +19,18 @@ class HttpUtils {
     });
   }
 
+  public static async postForm<T>(
+  url: string,
+  formData: FormData,
+  options?: RequestInit
+): Promise<ApiResponse<T>> {
+  return request<ApiResponse<T>>(url, {
+    method: "POST",
+    body: formData as any,
+    ...options,
+  });
+}
+
   public static async request<T>(
     url: string,
     method: string,
