@@ -185,10 +185,6 @@ public class DataSourceServiceImpl extends ServiceImpl<DataSourceMapper, DataSou
                 throw new RuntimeException("file already exists, set overwrite=true to replace");
             }
 
-            CopyOption[] options = overwrite
-                    ? new CopyOption[]{StandardCopyOption.REPLACE_EXISTING}
-                    : new CopyOption[]{};
-
             Path tmp = Files.createTempFile(targetDir, filename + ".", ".uploading");
             try {
                 Files.copy(file.getInputStream(), tmp, StandardCopyOption.REPLACE_EXISTING);
@@ -229,7 +225,7 @@ public class DataSourceServiceImpl extends ServiceImpl<DataSourceMapper, DataSou
         } catch (Exception e) {
             log.error("Connection test failed for data source: {}", po.getId(), e);
             updateConnectionStatus(po, ConnStatus.CONNECTED_FAILED);
-            return false;
+            throw new RuntimeException(e.getMessage());
         }
     }
 
@@ -243,7 +239,7 @@ public class DataSourceServiceImpl extends ServiceImpl<DataSourceMapper, DataSou
             return true;
         } catch (Exception e) {
             log.error("Error checking connection for dbType {}: {}", dbType, e.getMessage());
-            return false;
+            throw new RuntimeException(e.getMessage());
         }
     }
 

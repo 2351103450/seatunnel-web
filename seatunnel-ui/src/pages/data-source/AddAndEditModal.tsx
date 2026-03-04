@@ -1,15 +1,18 @@
-import { Button, Form, message, Modal } from 'antd';
-import { forwardRef, useImperativeHandle, useRef, useState } from 'react';
-import { sourceList } from './config';
-import DynamicDataSourceForm from './DynamicDataSourceForm';
-import DatabaseIcons from './icon/DatabaseIcons';
-import './index.less';
-import SearchFilter from './SearchFilter';
-import { AddOrEditModalRef, dataSourceApi, Operate } from './type';
-import { useIntl } from '@umijs/max';
+import { useIntl } from "@umijs/max";
+import { Button, Form, message, Modal } from "antd";
+import { forwardRef, useImperativeHandle, useRef, useState } from "react";
+import DynamicDataSourceForm from "./components/DynamicDataSourceForm";
+import { sourceList } from "./config";
+import DatabaseIcons from "./icon/DatabaseIcons";
+import "./index.less";
+import SearchFilter from "./SearchFilter";
+import { AddOrEditModalRef, dataSourceApi, Operate } from "./type";
 
 // 新增/编辑配置抽屉
-const AddAndEditDataSourceModal = forwardRef<AddOrEditModalRef, AddOrEditModalRef>((_, ref) => {
+const AddAndEditDataSourceModal = forwardRef<
+  AddOrEditModalRef,
+  AddOrEditModalRef
+>((_, ref) => {
   const intl = useIntl();
 
   const [type, setType] = useState<Operate>(Operate.Add);
@@ -21,7 +24,7 @@ const AddAndEditDataSourceModal = forwardRef<AddOrEditModalRef, AddOrEditModalRe
     return;
   });
   const [showOk, setShowOk] = useState(false);
-  const [dbType, setDbType] = useState('');
+  const [dbType, setDbType] = useState("");
 
   // 提交表单
   const onSubmit = () => {
@@ -40,13 +43,13 @@ const AddAndEditDataSourceModal = forwardRef<AddOrEditModalRef, AddOrEditModalRe
             if (data?.code === 0) {
               onClose();
               setShowOk(false);
-              setDbType('');
+              setDbType("");
               callback.current();
               message.success(
                 intl.formatMessage({
-                  id: 'pages.datasource.modal.message.success',
-                  defaultMessage: 'Success',
-                }),
+                  id: "pages.datasource.modal.message.success",
+                  defaultMessage: "Success",
+                })
               );
             } else {
               message.error(data?.message);
@@ -58,13 +61,13 @@ const AddAndEditDataSourceModal = forwardRef<AddOrEditModalRef, AddOrEditModalRe
               if (data?.code === 0) {
                 onClose();
                 setShowOk(false);
-                setDbType('');
+                setDbType("");
                 callback.current();
                 message.success(
                   intl.formatMessage({
-                    id: 'pages.datasource.modal.message.success',
-                    defaultMessage: 'Success',
-                  }),
+                    id: "pages.datasource.modal.message.success",
+                    defaultMessage: "Success",
+                  })
                 );
               } else {
                 message.error(data?.message);
@@ -73,9 +76,9 @@ const AddAndEditDataSourceModal = forwardRef<AddOrEditModalRef, AddOrEditModalRe
           } else {
             message.error(
               intl.formatMessage({
-                id: 'pages.datasource.message.idNotExist',
-                defaultMessage: 'id does not exist',
-              }),
+                id: "pages.datasource.message.idNotExist",
+                defaultMessage: "id does not exist",
+              })
             );
           }
         }
@@ -84,7 +87,13 @@ const AddAndEditDataSourceModal = forwardRef<AddOrEditModalRef, AddOrEditModalRe
   };
 
   useImperativeHandle(ref, () => ({
-    setVisible: (status: boolean, type: Operate, content: any, cbk: () => void, title: string) => {
+    setVisible: (
+      status: boolean,
+      type: Operate,
+      content: any,
+      cbk: () => void,
+      title: string
+    ) => {
       setContent(content);
       setOpen(status);
       callback.current = cbk;
@@ -110,7 +119,7 @@ const AddAndEditDataSourceModal = forwardRef<AddOrEditModalRef, AddOrEditModalRe
     form.resetFields();
     configForm?.resetFields();
     setShowOk(false);
-    setDbType('');
+    setDbType("");
   };
 
   const selectSource = (dsSource: string, flag: boolean) => {
@@ -124,17 +133,26 @@ const AddAndEditDataSourceModal = forwardRef<AddOrEditModalRef, AddOrEditModalRe
     <>
       <Modal
         title={
-          <div style={{ padding: '20px 24px 12px 24px', display: 'flex', alignItems: 'center' }}>
+          <div
+            style={{
+              padding: "20px 24px 12px 24px",
+              display: "flex",
+              alignItems: "center",
+            }}
+          >
             {intl.formatMessage({
-              id: type !== Operate.Add ? 'pages.datasource.modal.title.edit' : 'pages.datasource.modal.title.add',
-              defaultMessage: type !== Operate.Add ? 'Edit' : 'Add',
+              id:
+                type !== Operate.Add
+                  ? "pages.datasource.modal.title.edit"
+                  : "pages.datasource.modal.title.add",
+              defaultMessage: type !== Operate.Add ? "Edit" : "Add",
             })}
             &nbsp;[
             <DatabaseIcons dbType={dbType} width="20" height="20" />
             {dbType}]&nbsp;
             {intl.formatMessage({
-              id: 'pages.datasource.common.title',
-              defaultMessage: 'Data Source',
+              id: "pages.datasource.common.title",
+              defaultMessage: "Data Source",
             })}
           </div>
         }
@@ -144,22 +162,22 @@ const AddAndEditDataSourceModal = forwardRef<AddOrEditModalRef, AddOrEditModalRe
         onCancel={onClose}
         centered={true}
         footer={
-          <div style={{ textAlign: 'right' }}>
+          <div style={{ textAlign: "right" }}>
             {shouldShowForm ? (
               <>
                 {type === Operate.Add && (
                   <Button
                     onClick={() => {
                       setShowOk(false);
-                      setDbType('');
+                      setDbType("");
                       form?.resetFields();
                     }}
                     size="small"
                     style={{ marginRight: 8 }}
                   >
                     {intl.formatMessage({
-                      id: 'pages.datasource.modal.button.lastStep',
-                      defaultMessage: 'Last step',
+                      id: "pages.datasource.modal.button.lastStep",
+                      defaultMessage: "Last step",
                     })}
                   </Button>
                 )}
@@ -169,28 +187,34 @@ const AddAndEditDataSourceModal = forwardRef<AddOrEditModalRef, AddOrEditModalRe
                   type="primary"
                   size="small"
                   onClick={() => {
+                    const res = configForm.getFieldsValue();
+                    console.log("configForm:", configForm.getFieldsValue(true));
+                    console.log("outer form:", form.getFieldsValue(true));
+
                     configForm.validateFields().then((values) => {
                       const param = {
                         ...values,
                         type: dbType,
                       };
                       dataSourceApi
-                        .connectionTestWithParam({ connJson: JSON.stringify(param) })
+                        .connectionTestWithParam({
+                          connJson: JSON.stringify(param),
+                        })
                         .then((data) => {
                           if (data?.code === 0) {
                             if (data?.data === true) {
                               message.success(
                                 intl.formatMessage({
-                                  id: 'pages.datasource.modal.message.success',
-                                  defaultMessage: 'Success',
-                                }),
+                                  id: "pages.datasource.modal.message.success",
+                                  defaultMessage: "Success",
+                                })
                               );
                             } else {
                               message.error(
                                 intl.formatMessage({
-                                  id: 'pages.datasource.modal.message.fail',
-                                  defaultMessage: 'Fail',
-                                }),
+                                  id: "pages.datasource.modal.message.fail",
+                                  defaultMessage: "Fail",
+                                })
                               );
                             }
                           } else {
@@ -201,23 +225,28 @@ const AddAndEditDataSourceModal = forwardRef<AddOrEditModalRef, AddOrEditModalRe
                   }}
                 >
                   {intl.formatMessage({
-                    id: 'pages.datasource.modal.button.connTest',
-                    defaultMessage: 'Connection Test',
+                    id: "pages.datasource.modal.button.connTest",
+                    defaultMessage: "Connection Test",
                   })}
                 </Button>
 
-                <Button onClick={onSubmit} style={{ marginRight: 8 }} type="primary" size="small">
+                <Button
+                  onClick={onSubmit}
+                  style={{ marginRight: 8 }}
+                  type="primary"
+                  size="small"
+                >
                   {intl.formatMessage({
-                    id: 'pages.datasource.modal.button.finish',
-                    defaultMessage: 'Finish',
+                    id: "pages.datasource.modal.button.finish",
+                    defaultMessage: "Finish",
                   })}
                 </Button>
               </>
             ) : (
               <Button size="small" onClick={onClose}>
                 {intl.formatMessage({
-                  id: 'pages.datasource.modal.button.cancel',
-                  defaultMessage: 'Cancel',
+                  id: "pages.datasource.modal.button.cancel",
+                  defaultMessage: "Cancel",
                 })}
               </Button>
             )}
@@ -233,7 +262,7 @@ const AddAndEditDataSourceModal = forwardRef<AddOrEditModalRef, AddOrEditModalRe
             operateType={type}
           />
         ) : (
-          <div style={{ height: '60vh', overflow: 'auto', padding: '0 16px' }}>
+          <div style={{ height: "60vh", overflow: "auto", padding: "0 16px" }}>
             <SearchFilter data={sourceList} selectSource={selectSource} />
           </div>
         )}

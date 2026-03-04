@@ -1,5 +1,7 @@
 # Package Files #
 *.jar
+!/jdbc-drivers/
+!/jdbc-drivers/*.jar
 *.zip
 *.tar.gz
 
