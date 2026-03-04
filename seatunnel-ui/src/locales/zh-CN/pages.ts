@@ -110,10 +110,10 @@ export default {
   'pages.job.menu.delete': '删除',
 
   // table columns
-  'pages.job.table.col.name': '名称',
-  'pages.job.table.col.syncPlan': '同步计划',
+  'pages.job.table.col.name': '名称/ID',
+  'pages.job.table.col.syncPlan': '数据源同步方案',
   'pages.job.table.col.status': '状态',
-  'pages.job.table.col.execution': '执行情况',
+  'pages.job.table.col.execution': '执行概况',
   'pages.job.table.col.schedule': '调度',
   'pages.job.table.col.createTime': '创建时间',
   'pages.job.table.col.operate': '操作',
