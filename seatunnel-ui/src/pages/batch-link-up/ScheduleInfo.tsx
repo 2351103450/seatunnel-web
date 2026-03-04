@@ -33,7 +33,7 @@ const ScheduleInfo: React.FC<ExecutionStatusProps> = ({ record }) => {
     <>
       <div style={{ display: "flex", alignItems: "center" }}>
         <span style={{ fontWeight: 700, fontSize: 19, marginRight: 8 }}>·</span>
-        <span style={{ marginRight: 58, fontWeight: 700 }}>
+        <span style={{ marginRight: 45, fontWeight: 700 }}>
           {intl.formatMessage({
             id: "pages.job.schedule.cron",
             defaultMessage: "Cron:",
@@ -121,7 +121,7 @@ const ScheduleInfo: React.FC<ExecutionStatusProps> = ({ record }) => {
 
       <div style={{ display: "flex", alignItems: "center" }}>
         <span style={{ fontWeight: 700, fontSize: 19, marginRight: 8 }}>·</span>
-        <span style={{ marginRight: 9, fontWeight: 700 }}>
+        <span style={{ marginRight: 12, fontWeight: 700 }}>
           {intl.formatMessage({
             id: "pages.job.schedule.nextRunTime",
             defaultMessage: "Next Run Time:",

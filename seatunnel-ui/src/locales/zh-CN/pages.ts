@@ -375,4 +375,5 @@ export default {
   "pages.job.detail.schedule.lastTime": "上一次调度时间",
   "pages.job.detail.schedule.cron": "Cron 表达式",
   "pages.job.detail.schedule.info": "调度信息",
+  "pages.job.history.title": "运行历史",
 };

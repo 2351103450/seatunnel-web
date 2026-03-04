@@ -373,9 +373,11 @@ export default {
   "pages.job.detail.metrics.unit.rowsPerSecond": "r/s",
   "pages.job.detail.metrics.unit.records": "records",
 
-   "pages.job.detail.schedule.status": "Schedule Status",
+  "pages.job.detail.schedule.status": "Schedule Status",
   "pages.job.detail.schedule.nextTime": "Next Schedule Time",
   "pages.job.detail.schedule.lastTime": "Last Schedule Time",
   "pages.job.detail.schedule.cron": "Cron Expression",
   "pages.job.detail.schedule.info": "Schedule Info",
+
+  "pages.job.history.title": "Run History",
 };

@@ -60,7 +60,7 @@ const ExecutionStatus: React.FC<ExecutionStatusProps> = ({ record }) => {
       {/* Time */}
       <div style={{ display: "flex", alignItems: "center" }}>
         <span style={{ fontWeight: 700, fontSize: 19, marginRight: 8 }}>·</span>
-        <span style={{ marginRight: 16, fontWeight: 700 }}>
+        <span style={{ marginRight: 42, fontWeight: 700 }}>
           {intl.formatMessage({
             id: "pages.job.execution.time",
             defaultMessage: "Time:",
@@ -78,7 +78,7 @@ const ExecutionStatus: React.FC<ExecutionStatusProps> = ({ record }) => {
       {/* Amount */}
       <div style={{ display: "flex", alignItems: "center" }}>
         <span style={{ fontWeight: 700, fontSize: 19, marginRight: 8 }}>·</span>
-        <span style={{ marginRight: 16, fontWeight: 700 }}>
+        <span style={{ marginRight: 30, fontWeight: 700 }}>
           {intl.formatMessage({
             id: "pages.job.execution.amount",
             defaultMessage: "Amount:",
@@ -96,7 +96,7 @@ const ExecutionStatus: React.FC<ExecutionStatusProps> = ({ record }) => {
       {/* QPS */}
       <div style={{ display: "flex", alignItems: "center" }}>
         <span style={{ fontWeight: 700, fontSize: 19, marginRight: 8 }}>·</span>
-        <span style={{ marginRight: 30, fontWeight: 700 }}>
+        <span style={{ marginRight: 43, fontWeight: 700 }}>
           {intl.formatMessage({
             id: "pages.job.execution.qps",
             defaultMessage: "QPS:",
@@ -114,7 +114,7 @@ const ExecutionStatus: React.FC<ExecutionStatusProps> = ({ record }) => {
       {/* Size */}
       <div style={{ display: "flex", alignItems: "center" }}>
         <span style={{ fontWeight: 700, fontSize: 19, marginRight: 8 }}>·</span>
-        <span style={{ marginRight: 16, fontWeight: 700 }}>
+        <span style={{ marginRight: 43, fontWeight: 700 }}>
           {intl.formatMessage({
             id: "pages.job.execution.size",
             defaultMessage: "Size:",

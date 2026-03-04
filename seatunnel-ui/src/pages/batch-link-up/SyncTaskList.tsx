@@ -132,7 +132,7 @@ const App: React.FC<Props> = ({ goDetail }) => {
     },
     {
       title: intl.formatMessage({ id: "pages.job.table.col.execution", defaultMessage: "Execution" }),
-      dataIndex: "执行情况",
+      dataIndex: "执行概况",
       width: "15%",
       render: (_content: any, record: any) => <ExecutionStatus record={record} />,
     },
