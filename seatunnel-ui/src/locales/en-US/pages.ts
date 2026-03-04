@@ -334,4 +334,48 @@ export default {
   "pages.job.summary.successExecutions": "Successful Executions",
   "pages.job.summary.unit.times": "times",
   "pages.job.summary.unit.label": "Unit",
+
+  "pages.job.detail.basicInfo": "Basic Info",
+  "pages.job.detail.jobCode": "Job Code",
+  "pages.job.detail.syncPlan": "Sync Plan",
+  "pages.job.detail.startTime": "Start Time",
+  "pages.job.detail.endTime": "End Time",
+  "pages.job.detail.jobVersion": "Job Version",
+  "pages.job.detail.jobDescription": "Job Description",
+
+  "pages.job.detail.empty": "Please select a run record on the left to view details",
+  "pages.job.detail.noLog": "No log available",
+  "pages.job.detail.loadLogFailed": "Failed to load log",
+
+  "pages.job.detail.tabs.log": "Log",
+  "pages.job.detail.tabs.hocon": "Hocon",
+  "pages.job.detail.tabs.metrics": "Metrics",
+  "pages.job.detail.tabs.schedule": "Scheduled",
+  "pages.job.detail.tabs.table": "Table",
+
+  "pages.job.history.tip.last3days": "Only show your run history from the past three days",
+  "pages.job.history.status.placeholder": "Filter by status",
+
+  "pages.job.history.status.all": "All Status",
+  "pages.job.history.status.finished": "Success",
+  "pages.job.history.status.failed": "Failed",
+  "pages.job.history.status.running": "Running",
+  "pages.job.history.status.pending": "Pending",
+
+  "pages.job.detail.metrics.throughput": "Throughput (QPS)",
+  "pages.job.detail.metrics.totalVolume": "Total Volume",
+
+  "pages.job.detail.metrics.readQps": "Read QPS",
+  "pages.job.detail.metrics.writeQps": "Write QPS",
+  "pages.job.detail.metrics.readRows": "Read Rows",
+  "pages.job.detail.metrics.writeRows": "Write Rows",
+
+  "pages.job.detail.metrics.unit.rowsPerSecond": "r/s",
+  "pages.job.detail.metrics.unit.records": "records",
+
+   "pages.job.detail.schedule.status": "Schedule Status",
+  "pages.job.detail.schedule.nextTime": "Next Schedule Time",
+  "pages.job.detail.schedule.lastTime": "Last Schedule Time",
+  "pages.job.detail.schedule.cron": "Cron Expression",
+  "pages.job.detail.schedule.info": "Schedule Info",
 };

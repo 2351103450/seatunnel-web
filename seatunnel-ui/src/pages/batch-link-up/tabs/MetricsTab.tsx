@@ -1,5 +1,6 @@
 import React from "react";
 import { Card, Row, Col, Typography } from "antd";
+import { useIntl } from "@umijs/max";
 import CountUp from "react-countup";
 import "../index.less";
 
@@ -22,12 +23,7 @@ const SparkLine: React.FC<{ data: number[] }> = ({ data }) => {
 
   return (
     <svg width="100%" height="30" viewBox="0 0 100 30" preserveAspectRatio="none">
-      <polyline
-        fill="none"
-        stroke="currentColor"
-        strokeWidth="2"
-        points={points}
-      />
+      <polyline fill="none" stroke="currentColor" strokeWidth="2" points={points} />
     </svg>
   );
 };
@@ -39,20 +35,14 @@ const MetricBlock: React.FC<{
   color: string;
 }> = ({ title, value, unit, color }) => {
   // mock trend 数据（你以后可以替换成真实历史数据）
-  const trend = Array.from({ length: 10 }, () =>
-    value * (0.8 + Math.random() * 0.4)
-  );
+  const trend = Array.from({ length: 10 }, () => value * (0.8 + Math.random() * 0.4));
 
   return (
     <div className="metric-block" style={{ borderLeft: `4px solid ${color}` }}>
       <Text className="metric-title">{title}</Text>
 
       <div className="metric-value" style={{ color }}>
-        <CountUp
-          end={value}
-          duration={1.2}
-          separator=","
-        />
+        <CountUp end={value} duration={1.2} separator="," />
         <span className="metric-unit"> {unit}</span>
       </div>
 
@@ -64,28 +54,33 @@ const MetricBlock: React.FC<{
 };
 
 const MetricsTab: React.FC<MetricsTabProps> = ({ instanceItem }) => {
+  const intl = useIntl();
+
+  const t = (id: string, defaultMessage: string) =>
+    intl.formatMessage({ id, defaultMessage });
+
   return (
     <Card size="small" style={{ marginTop: 8 }}>
       {/* ===== QPS 区域 ===== */}
       <Title level={5} style={{ marginBottom: 12 }}>
-        🚀 Throughput (QPS)
+        🚀 {t("pages.job.detail.metrics.throughput", "Throughput (QPS)")}
       </Title>
 
       <Row gutter={16}>
         <Col span={12}>
           <MetricBlock
-            title="Read QPS"
+            title={t("pages.job.detail.metrics.readQps", "Read QPS")}
             value={instanceItem.readQps ?? 0}
-            unit="r/s"
+            unit={t("pages.job.detail.metrics.unit.rowsPerSecond", "r/s")}
             color="#1677ff"
           />
         </Col>
 
         <Col span={12}>
           <MetricBlock
-            title="Write QPS"
+            title={t("pages.job.detail.metrics.writeQps", "Write QPS")}
             value={instanceItem.writeQps ?? 0}
-            unit="r/s"
+            unit={t("pages.job.detail.metrics.unit.rowsPerSecond", "r/s")}
             color="#52c41a"
           />
         </Col>
@@ -93,24 +88,24 @@ const MetricsTab: React.FC<MetricsTabProps> = ({ instanceItem }) => {
 
       {/* ===== Total Rows 区域 ===== */}
       <Title level={5} style={{ margin: "24px 0 12px 0" }}>
-        📦 Total Volume
+        📦 {t("pages.job.detail.metrics.totalVolume", "Total Volume")}
       </Title>
 
       <Row gutter={16}>
         <Col span={12}>
           <MetricBlock
-            title="Read Rows"
+            title={t("pages.job.detail.metrics.readRows", "Read Rows")}
             value={instanceItem.readRowCount ?? 0}
-            unit="records"
+            unit={t("pages.job.detail.metrics.unit.records", "records")}
             color="#fa8c16"
           />
         </Col>
 
         <Col span={12}>
           <MetricBlock
-            title="Write Rows"
+            title={t("pages.job.detail.metrics.writeRows", "Write Rows")}
             value={instanceItem.writeRowCount ?? 0}
-            unit="records"
+            unit={t("pages.job.detail.metrics.unit.records", "records")}
             color="#722ed1"
           />
         </Col>

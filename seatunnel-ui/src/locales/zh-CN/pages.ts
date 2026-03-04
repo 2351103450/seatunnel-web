@@ -331,4 +331,48 @@ export default {
   "pages.job.summary.successExecutions": "成功执行次数",
   "pages.job.summary.unit.times": "次",
   "pages.job.summary.unit.label": "单位",
+
+  "pages.job.detail.basicInfo": "基本信息",
+  "pages.job.detail.jobCode": "任务编号",
+  "pages.job.detail.syncPlan": "同步方案",
+  "pages.job.detail.startTime": "开始时间",
+  "pages.job.detail.endTime": "结束时间",
+  "pages.job.detail.jobVersion": "任务版本",
+  "pages.job.detail.jobDescription": "任务描述",
+
+  "pages.job.detail.empty": "请选择左侧运行记录查看详情",
+  "pages.job.detail.noLog": "暂无日志",
+  "pages.job.detail.loadLogFailed": "日志加载失败",
+
+  "pages.job.detail.tabs.log": "日志",
+  "pages.job.detail.tabs.hocon": "配置",
+  "pages.job.detail.tabs.metrics": "指标",
+  "pages.job.detail.tabs.schedule": "调度",
+  "pages.job.detail.tabs.table": "表信息",
+
+  "pages.job.history.tip.last3days": "仅展示最近三天的运行历史 😊",
+  "pages.job.history.status.placeholder": "按状态筛选",
+
+  "pages.job.history.status.all": "全部状态",
+  "pages.job.history.status.finished": "成功",
+  "pages.job.history.status.failed": "失败",
+  "pages.job.history.status.running": "运行中",
+  "pages.job.history.status.pending": "等待中",
+
+  "pages.job.detail.metrics.throughput": "吞吐量（QPS）",
+  "pages.job.detail.metrics.totalVolume": "总量统计",
+
+  "pages.job.detail.metrics.readQps": "读取 QPS",
+  "pages.job.detail.metrics.writeQps": "写入 QPS",
+  "pages.job.detail.metrics.readRows": "读取行数",
+  "pages.job.detail.metrics.writeRows": "写入行数",
+
+  "pages.job.detail.metrics.unit.rowsPerSecond": "行/秒",
+  "pages.job.detail.metrics.unit.records": "条",
+
+  "pages.job.detail.schedule.status": "调度状态",
+  "pages.job.detail.schedule.nextTime": "下一次调度时间",
+  "pages.job.detail.schedule.lastTime": "上一次调度时间",
+  "pages.job.detail.schedule.cron": "Cron 表达式",
+  "pages.job.detail.schedule.info": "调度信息",
 };
