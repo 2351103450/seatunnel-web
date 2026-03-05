@@ -1,18 +1,14 @@
-import { SendOutlined } from "@ant-design/icons";
 import { Button, Select } from "antd";
-import React, { useMemo, useState } from "react";
+import React from "react";
 
-// 图标组件
-import MysqlIcon from "../data-source/icon/MysqlIcon";
-import OracleIcon from "../data-source/icon/OracleIcon";
-import PostgreSQL from "../data-source/icon/PsSqlIcon";
+import { useIntl } from "@umijs/max";
+import DataSourceSelect, {
+  generateDataSourceOptions,
+} from "./DataSourceSelect";
 import IconRightArrow from "./IconRightArrow";
 import "./index.less";
-import DataSourceSelect, { generateCDCDataSourceOptions, generateDataSourceOptions } from "./DataSourceSelect";
 
 const { Option } = Select;
-
-
 
 interface DataSyncHeaderProps {
   goDetail: (value: any) => void;
@@ -28,16 +24,15 @@ export interface SyncParams {
   targetType: string;
 }
 
-
 const DataSyncHeader: React.FC<DataSyncHeaderProps> = ({
   goDetail,
   setParams,
   sourceType,
   setSourceType,
   targetType,
-  setTargetType
+  setTargetType,
 }) => {
-  
+  const intl = useIntl();
 
   const handleSourceChange = (value: string, option: any) => {
     setSourceType({
@@ -69,11 +64,25 @@ const DataSyncHeader: React.FC<DataSyncHeaderProps> = ({
         <div className="jy-dc-ui-pro-header-heading-title">
           <div className="jy-dc-ui-title-dc-ui-title-large-dc-ui-title-LR">
             <div className="jy-dc-ui-title-name">
-              <div className="jy-dc-ui-title-name-content" title="Batch Data Sync Job">
-                Batch Data Sync Job
+              <div
+                className="jy-dc-ui-title-name-content"
+                title={intl.formatMessage({
+                  id: "pages.datasync.header.title",
+                  defaultMessage: "Batch Data Sync Job",
+                })}
+              >
+                {intl.formatMessage({
+                  id: "pages.datasync.header.title",
+                  defaultMessage: "Batch Data Sync Job",
+                })}
               </div>
+
               <div className="jy-dc-ui-title-sub-name">
-                Build enterprise-grade data sync jobs in minutes with a fully guided, white-screen configuration.
+                {intl.formatMessage({
+                  id: "pages.datasync.header.subtitle",
+                  defaultMessage:
+                    "Build enterprise-grade data sync jobs in minutes with a fully guided, white-screen configuration.",
+                })}
               </div>
             </div>
           </div>
@@ -87,8 +96,14 @@ const DataSyncHeader: React.FC<DataSyncHeaderProps> = ({
               value={sourceType}
               onChange={handleSourceChange}
               dataSourceOptions={generateDataSourceOptions()}
-              placeholder="SOURCE"
-              prefix="SOURCE："
+              placeholder={intl.formatMessage({
+                id: "pages.datasync.header.source.placeholder",
+                defaultMessage: "SOURCE",
+              })}
+              prefix={intl.formatMessage({
+                id: "pages.datasync.header.source.prefix",
+                defaultMessage: "SOURCE:",
+              })}
             />
 
             <div
@@ -101,8 +116,14 @@ const DataSyncHeader: React.FC<DataSyncHeaderProps> = ({
               value={targetType}
               onChange={handleTargetChange}
               dataSourceOptions={generateDataSourceOptions()}
-              placeholder="SINK"
-              prefix="SINK："
+              placeholder={intl.formatMessage({
+                id: "pages.datasync.header.sink.placeholder",
+                defaultMessage: "SINK",
+              })}
+              prefix={intl.formatMessage({
+                id: "pages.datasync.header.sink.prefix",
+                defaultMessage: "SINK:",
+              })}
             />
 
             <Button
@@ -111,7 +132,10 @@ const DataSyncHeader: React.FC<DataSyncHeaderProps> = ({
               disabled={isButtonDisabled}
               onClick={handleCreateClick}
             >
-              START
+              {intl.formatMessage({
+                id: "pages.datasync.header.button.start",
+                defaultMessage: "START",
+              })}
             </Button>
           </div>
         </div>

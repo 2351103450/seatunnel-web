@@ -6,6 +6,7 @@ import { RunActions } from "./RunActions";
 import { useFlowChecks } from "./useFlowChecks";
 import { useFlowPublish } from "./useFlowPublish";
 import { AIActions } from "./AIActions";
+import { useIntl } from "@umijs/max";
 
 export const FlowActions = ({
   nodes,
@@ -15,6 +16,8 @@ export const FlowActions = ({
   setRunVisible,
   runVisible,
 }: any) => {
+  const intl = useIntl();
+
   const { publish, generateHocon } = useFlowPublish(nodes, edges, baseForm);
   const { checkStat, checkGroups } = useFlowChecks(nodes);
 
@@ -31,7 +34,12 @@ export const FlowActions = ({
                   onBack={() => goBack()}
                   onRun={() => {
                     if (checkStat.total > 0) {
-                      message.warning("Resolve all issues first 😊");
+                      message.warning(
+                        intl.formatMessage({
+                          id: "pages.hoconPreview.resolveIssuesFirst",
+                          defaultMessage: "Resolve all issues first 😊",
+                        }),
+                      );
                       return;
                     }
                     setRunVisible(true);

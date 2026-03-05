@@ -2,14 +2,21 @@ import Header from "@/components/Header";
 import { Col, Form, Input, message, Popover, Radio, Row } from "antd";
 import { useState } from "react";
 import { taskScheduleApi } from "../../type";
+import { useIntl } from "@umijs/max";
 
 function ScheduleConfig({ form }) {
+  const intl = useIntl();
   const [preview, setPreview] = useState<string[]>([]);
 
   const previewCron = async () => {
     const cron = form.getFieldValue("cronExpression");
     if (!cron) {
-      message.error("请先输入 cron 表达式");
+      message.error(
+        intl.formatMessage({
+          id: "pages.job.config.schedule.cronRequired",
+          defaultMessage: "Please input cron expression first",
+        }),
+      );
       return;
     }
 
@@ -24,7 +31,10 @@ function ScheduleConfig({ form }) {
       <Header
         title={
           <span style={{ fontSize: 12, fontWeight: 500 }}>
-            Schedule Setting
+            {intl.formatMessage({
+              id: "pages.job.config.schedule.title",
+              defaultMessage: "Schedule Setting",
+            })}
           </span>
         }
       />
@@ -33,21 +43,48 @@ function ScheduleConfig({ form }) {
         <Col>
           <Form.Item
             name="cronExpression"
-            label="Cron Expression"
-            rules={[{ required: true }]}
+            label={intl.formatMessage({
+              id: "pages.job.config.schedule.cronExpression",
+              defaultMessage: "Cron Expression",
+            })}
+            rules={[
+              {
+                required: true,
+                message: intl.formatMessage({
+                  id: "pages.job.config.schedule.cronExpression.required",
+                  defaultMessage: "Cron expression is required",
+                }),
+              },
+            ]}
           >
             <Input size="small" />
           </Form.Item>
         </Col>
+
         <Col>
           <Popover
-            title="Last 5 Runs"
-            content={preview.map((t, i) => (
-              <div key={i}>{t}</div>
-            ))}
+            title={intl.formatMessage({
+              id: "pages.job.config.schedule.last5Runs.title",
+              defaultMessage: "Last 5 Runs",
+            })}
+            content={
+              preview.length > 0 ? (
+                preview.map((t, i) => <div key={i}>{t}</div>)
+              ) : (
+                <div style={{ color: "gray" }}>
+                  {intl.formatMessage({
+                    id: "pages.job.config.schedule.last5Runs.empty",
+                    defaultMessage: "No preview yet",
+                  })}
+                </div>
+              )
+            }
           >
             <a onClick={previewCron} style={{ fontSize: 12 }}>
-              Last 5 Runs
+              {intl.formatMessage({
+                id: "pages.job.config.schedule.last5Runs.link",
+                defaultMessage: "Last 5 Runs",
+              })}
             </a>
           </Popover>
         </Col>
@@ -55,12 +92,33 @@ function ScheduleConfig({ form }) {
 
       <Form.Item
         name="scheduleStatus"
-        label="Enable Scheduling"
-        rules={[{ required: true }]}
+        label={intl.formatMessage({
+          id: "pages.job.config.schedule.enableScheduling",
+          defaultMessage: "Enable Scheduling",
+        })}
+        rules={[
+          {
+            required: true,
+            message: intl.formatMessage({
+              id: "pages.job.config.schedule.enableScheduling.required",
+              defaultMessage: "Please choose scheduling status",
+            }),
+          },
+        ]}
       >
         <Radio.Group>
-          <Radio value="ACTIVE">ACTIVE</Radio>
-          <Radio value="PAUSED">PAUSED</Radio>
+          <Radio value="ACTIVE">
+            {intl.formatMessage({
+              id: "pages.job.config.schedule.status.active",
+              defaultMessage: "ACTIVE",
+            })}
+          </Radio>
+          <Radio value="PAUSED">
+            {intl.formatMessage({
+              id: "pages.job.config.schedule.status.paused",
+              defaultMessage: "PAUSED",
+            })}
+          </Radio>
         </Radio.Group>
       </Form.Item>
     </>

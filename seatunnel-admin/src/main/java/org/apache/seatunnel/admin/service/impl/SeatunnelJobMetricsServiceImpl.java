@@ -1,10 +1,12 @@
 package org.apache.seatunnel.admin.service.impl;
 
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
+import jakarta.annotation.Resource;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.seatunnel.admin.dao.SeatunnelJobMetricsMapper;
 import org.apache.seatunnel.admin.service.SeatunnelJobMetricsService;
+import org.apache.seatunnel.admin.thirdparty.client.SeatunnelEngineRestClient;
 import org.apache.seatunnel.admin.thirdparty.metrics.EngineMetricsExtractorFactory;
 import org.apache.seatunnel.admin.thirdparty.metrics.IEngineMetricsExtractor;
 import org.apache.seatunnel.communal.bean.entity.Engine;
@@ -25,6 +27,7 @@ import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -47,6 +50,9 @@ import java.util.concurrent.ConcurrentHashMap;
 public class SeatunnelJobMetricsServiceImpl
         extends ServiceImpl<SeatunnelJobMetricsMapper, SeatunnelJobMetricsPO>
         implements SeatunnelJobMetricsService {
+
+    @Resource
+    private SeatunnelEngineRestClient engineRestClient;
 
     /**
      * Default engine version if not specified.
@@ -88,11 +94,183 @@ public class SeatunnelJobMetricsServiceImpl
      * Fetch real-time metrics map from engine by jobEngineId.
      */
     @Override
-    public Map<Integer, SeatunnelJobMetricsPO> getJobMetricsFromEngineMap(
-            @NonNull String jobEngineId) {
+    public Map<Integer, SeatunnelJobMetricsPO> getJobMetricsFromEngineMap(@NonNull String jobEngineId) {
+        Map<String, Object> jobInfo = engineRestClient.jobInfo(jobEngineId);
+        if (jobInfo == null) {
+            return new ConcurrentHashMap<>();
+        }
 
-        return getOrCreateExtractor(EngineType.SeaTunnel, defaultEngineVersion)
-                .getMetricsByJobEngineIdRTMap(jobEngineId);
+        Object metricsObj = jobInfo.get("metrics");
+        if (!(metricsObj instanceof Map)) {
+            return new ConcurrentHashMap<>();
+        }
+
+        @SuppressWarnings("unchecked")
+        Map<String, Object> metrics = (Map<String, Object>) metricsObj;
+
+        return parseMetricsToPipelineMap(metrics);
+    }
+
+    @SuppressWarnings({"rawtypes", "unchecked"})
+    private Map<Integer, SeatunnelJobMetricsPO> parseMetricsToPipelineMap(Map<String, Object> metrics) {
+        Map<Integer, SeatunnelJobMetricsPO> result = new ConcurrentHashMap<>();
+        if (metrics == null || metrics.isEmpty()) {
+            return result;
+        }
+
+        boolean pipelineKeyed = true;
+        for (String k : metrics.keySet()) {
+            if (!isNumeric(k)) { pipelineKeyed = false; break; }
+        }
+        if (pipelineKeyed) {
+            for (Map.Entry<String, Object> e : metrics.entrySet()) {
+                Integer pid = Integer.valueOf(e.getKey());
+                if (!(e.getValue() instanceof Map)) continue;
+                Map block = (Map) e.getValue();
+                SeatunnelJobMetricsPO po = mapBlock(pid, block);
+                result.put(pid, po);
+            }
+            return result;
+        }
+
+        SeatunnelJobMetricsPO po = new SeatunnelJobMetricsPO();
+        po.setPipelineId(0);
+
+        po.setReadRowCount(getLong(metrics, "SourceReceivedCount"));
+        po.setWriteRowCount(getLong(metrics, "SinkWriteCount"));
+
+        po.setReadQps(getLong(metrics, "SourceReceivedQPS"));
+        po.setWriteQps(getLong(metrics, "SinkWriteQPS"));
+
+        po.setReadBytes(getLong(metrics, "SourceReceivedBytes"));
+        po.setWriteBytes(getLong(metrics, "SinkWriteBytes"));
+
+        po.setReadBps(getLongFromDouble(metrics, "SourceReceivedBytesPerSeconds"));
+        po.setWriteBps(getLongFromDouble(metrics, "SinkWriteBytesPerSeconds"));
+
+        po.setIntermediateQueueSize(getLong(metrics, "IntermediateQueueSize"));
+
+        result.put(0, po);
+        return result;
+    }
+
+    private long getLongFromDouble(Map<String, Object> m, String key) {
+        Object v = getIgnoreCase(m, key);
+        if (v == null) return 0L;
+        try {
+            if (v instanceof Number) return ((Number) v).longValue();
+            return (long) Double.parseDouble(String.valueOf(v));
+        } catch (Exception e) {
+            return 0L;
+        }
+    }
+
+    private SeatunnelJobMetricsPO mapBlock(Integer pid, Map block) {
+        SeatunnelJobMetricsPO po = new SeatunnelJobMetricsPO();
+        po.setPipelineId(pid);
+
+        po.setReadRowCount(getLong(block, "readRowCount", "ReadRowCount", "SourceReceivedCount", "sourceReceivedCount"));
+        po.setWriteRowCount(getLong(block, "writeRowCount", "WriteRowCount", "SinkWriteCount", "sinkWriteCount"));
+
+        po.setReadQps(getLong(block, "readQps", "ReadQps", "SourceReceivedQPS", "SourceReceivedQps", "sourceReceivedQPS"));
+        po.setWriteQps(getLong(block, "writeQps", "WriteQps", "SinkWriteQPS", "SinkWriteQps", "sinkWriteQPS"));
+
+        po.setReadBytes(getLong(block, "readBytes", "ReadBytes", "SourceReceivedBytes", "sourceReceivedBytes"));
+        po.setWriteBytes(getLong(block, "writeBytes", "WriteBytes", "SinkWriteBytes", "sinkWriteBytes"));
+
+        po.setReadBps(getLong(block, "readBps", "ReadBps", "SourceReceivedBytesPerSeconds"));
+        po.setWriteBps(getLong(block, "writeBps", "WriteBps", "SinkWriteBytesPerSeconds"));
+
+        po.setIntermediateQueueSize(getLong(block, "intermediateQueueSize", "IntermediateQueueSize"));
+        po.setRecordDelay(getLong(block, "recordDelay", "RecordDelay", "RecordDelayMs"));
+
+        po.setLagCount(getLong(block, "lagCount", "LagCount"));
+        po.setLossRate(getDouble(block, "lossRate", "LossRate"));
+        po.setAvgRowSize(getLong(block, "avgRowSize", "AvgRowSize"));
+
+        return po;
+    }
+
+    private void applyByMetricName(SeatunnelJobMetricsPO po, String metricName, Number num) {
+        if (metricName == null || num == null) return;
+
+        String lower = metricName.toLowerCase(Locale.ROOT);
+        long v = num.longValue();
+        double d = num.doubleValue();
+
+
+        if (lower.contains("sourcesreceivedcount") || lower.contains("tablesourcereceivedcount") || lower.contains("readrow")) {
+            po.setReadRowCount(v);
+        } else if (lower.contains("sinkwritecount") || lower.contains("tablesinkwritecount") || lower.contains("writerow")) {
+            po.setWriteRowCount(v);
+        } else if (lower.contains("sourcereceivedqps") || lower.contains("readqps")) {
+            po.setReadQps(v);
+        } else if (lower.contains("sinkwriteqps") || lower.contains("writeqps")) {
+            po.setWriteQps(v);
+        } else if (lower.contains("sourcereceivedbytes") || lower.contains("readbytes")) {
+            po.setReadBytes(v);
+        } else if (lower.contains("sinkwritebytes") || lower.contains("writebytes")) {
+            po.setWriteBytes(v);
+        } else if (lower.contains("bytesperseconds") || lower.contains("bps")) {
+            // 这里无法区分读写就不填，或者你根据 metricName 更精确区分
+        } else if (lower.contains("intermediatequeuesize")) {
+            po.setIntermediateQueueSize(v);
+        } else if (lower.contains("recorddelay") || lower.contains("delay")) {
+            po.setRecordDelay(v);
+        } else if (lower.contains("lagcount")) {
+            po.setLagCount(v);
+        } else if (lower.contains("lossrate")) {
+            po.setLossRate(d);
+        } else if (lower.contains("avgrowsize")) {
+            po.setAvgRowSize(v);
+        }
+    }
+
+    private boolean isNumeric(String s) {
+        if (s == null) return false;
+        for (int i = 0; i < s.length(); i++) {
+            char c = s.charAt(i);
+            if (c < '0' || c > '9') return false;
+        }
+        return s.length() > 0;
+    }
+
+    private Number toNumber(Object o) {
+        if (o == null) return 0L;
+        if (o instanceof Number) return (Number) o;
+        try {
+            String s = String.valueOf(o);
+            if (s.contains(".")) return Double.valueOf(s);
+            return Long.valueOf(s);
+        } catch (Exception e) {
+            return 0L;
+        }
+    }
+
+    private long getLong(Map m, String... keys) {
+        for (String k : keys) {
+            Object v = getIgnoreCase(m, k);
+            if (v != null) return toNumber(v).longValue();
+        }
+        return 0L;
+    }
+
+    private double getDouble(Map m, String... keys) {
+        for (String k : keys) {
+            Object v = getIgnoreCase(m, k);
+            if (v != null) return toNumber(v).doubleValue();
+        }
+        return 0.0;
+    }
+
+    private Object getIgnoreCase(Map m, String key) {
+        if (m.containsKey(key)) return m.get(key);
+        for (Object k : m.keySet()) {
+            if (k != null && key.equalsIgnoreCase(String.valueOf(k))) {
+                return m.get(k);
+            }
+        }
+        return null;
     }
 
     /**

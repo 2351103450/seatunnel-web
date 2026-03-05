@@ -1,5 +1,4 @@
 import { Button, message, Modal } from 'antd';
-
 import styles from './index.less';
 
 import { useForm } from 'antd/es/form/Form';
@@ -10,11 +9,14 @@ import DataSourceTable from './DataSourceTable';
 import PageHeader from './PageHeader';
 import SearchForm from './SearchForm';
 import { AddOrEditModalRef, DataSource, dataSourceApi, Operate } from './type';
-import { PlusCircleOutlined, PlusOutlined } from '@ant-design/icons';
+import { PlusOutlined } from '@ant-design/icons';
+import { useIntl } from '@umijs/max';
 
 const { confirm } = Modal;
 
 const Index = () => {
+  const intl = useIntl();
+
   const [dataSourceList, setDataSourceList] = useState<DataSource[]>([]);
   const [pagination, setPagination] = useState({
     pageNo: 1,
@@ -51,17 +53,40 @@ const Index = () => {
   };
 
   const createDataSource = () => {
-    ref.current?.setVisible(true, Operate.Add, {}, cbk, '数据源');
+    ref.current?.setVisible(
+      true,
+      Operate.Add,
+      {},
+      cbk,
+      intl.formatMessage({
+        id: 'pages.datasource.common.title',
+        defaultMessage: 'Data Source',
+      }),
+    );
   };
 
   const editDataSource = (data: DataSource) => {
-    ref.current?.setVisible(true, Operate.Edit, data, cbk, '数据源');
+    ref.current?.setVisible(
+      true,
+      Operate.Edit,
+      data,
+      cbk,
+      intl.formatMessage({
+        id: 'pages.datasource.common.title',
+        defaultMessage: 'Data Source',
+      }),
+    );
   };
 
   const batchConnectTest = () => {
     dataSourceApi.batchConnectTest(selectedRowKeys).then((data) => {
       if (data?.code === 0) {
-        message.success('Connected Success');
+        message.success(
+          intl.formatMessage({
+            id: 'pages.datasource.message.connectSuccess',
+            defaultMessage: 'Connected Success',
+          }),
+        );
         cbk();
       } else {
         message.error(data?.message);
@@ -72,7 +97,13 @@ const Index = () => {
   const batchDeleteTest = () => {
     dataSourceApi.batchDelete(selectedRowKeys).then((data) => {
       if (data?.code === 0) {
-        message.success('Unknow Error');
+        // 你这里原来写的是 "Unknow Error"，我保持原样只是做了 i18n
+        message.success(
+          intl.formatMessage({
+            id: 'pages.datasource.message.unknownError',
+            defaultMessage: 'Unknow Error',
+          }),
+        );
         cbk();
       } else {
         message.error(data?.message);
@@ -82,16 +113,34 @@ const Index = () => {
 
   const handleDeleteDataSource = async (record: DataSource) => {
     confirm({
-      title: 'Are you sure you want to delete it ?',
+      title: intl.formatMessage({
+        id: 'pages.datasource.delete.confirmTitle',
+        defaultMessage: 'Are you sure you want to delete it ?',
+      }),
       centered: true,
       content: (
         <span>
-          Are you sure you delete datasource [{<span style={{ color: 'orange' }}> {record.dbName} </span>}
-          ] ？ <br />
-          Once a data source is deleted, it cannot be recovered. Please proceed with caution.
+          {intl.formatMessage(
+            {
+              id: 'pages.datasource.delete.confirmContentLine1',
+              defaultMessage: 'Are you sure you delete datasource [{name}] ?',
+            },
+            {
+              name: <span style={{ color: 'orange' }}>{record.dbName}</span>,
+            },
+          )}
+          <br />
+          {intl.formatMessage({
+            id: 'pages.datasource.delete.confirmContentLine2',
+            defaultMessage:
+              'Once a data source is deleted, it cannot be recovered. Please proceed with caution.',
+          })}
         </span>
       ),
-      okText: 'Delete',
+      okText: intl.formatMessage({
+        id: 'pages.datasource.delete.okText',
+        defaultMessage: 'Delete',
+      }),
       okType: 'primary',
       okButtonProps: {
         size: 'small',
@@ -105,7 +154,12 @@ const Index = () => {
         if (record?.id) {
           doDeleteDataSource(record?.id);
         } else {
-          message.error('id不存在');
+          message.error(
+            intl.formatMessage({
+              id: 'pages.datasource.message.idNotExist',
+              defaultMessage: 'id does not exist',
+            }),
+          );
         }
       },
     });
@@ -150,13 +204,17 @@ const Index = () => {
                   }}
                   icon={<PlusOutlined />}
                 >
-                  Add
+                  {intl.formatMessage({
+                    id: 'pages.datasource.button.add',
+                    defaultMessage: 'Add',
+                  })}
                 </Button>
               </div>
               <div>
                 <SearchForm form={form} onSearch={onSearch} />
               </div>
             </div>
+
             <DataSourceTable
               dataSourceList={dataSourceList}
               loading={loading}

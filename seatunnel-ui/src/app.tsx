@@ -66,7 +66,7 @@ export const layout: RunTimeLayoutConfig = ({
   return {
     actionsRender: () => [
       <Question key="doc" />,
-      // <SelectLang key="SelectLang" />,
+      <SelectLang key="SelectLang" />,
     ],
     avatarProps: {
       src: initialState?.currentUser?.avatar,

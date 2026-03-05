@@ -35,6 +35,6 @@ public class WorkflowWebSocketService {
      * @param message message payload
      */
     public void sendMessage(String channel, Map<String, Object> message) {
-        messagingTemplate.convertAndSend("/topic/log/" + channel, message);
+        messagingTemplate.convertAndSend("/topic/log/test", message);
     }
 }

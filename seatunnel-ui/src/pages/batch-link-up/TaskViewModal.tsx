@@ -1,21 +1,24 @@
-import { Modal, Splitter } from 'antd';
-import { forwardRef, useImperativeHandle, useRef, useState } from 'react';
+import { Modal, Splitter } from "antd";
+import React, { forwardRef, useImperativeHandle, useRef, useState } from "react";
+import { useIntl } from "@umijs/max";
 
-import './sumary.less';
-import TaskDetailPanel from './TaskDetailPanel';
-import TaskHistoryPanel from './TaskHistoryPanel';
+import "./sumary.less";
+import TaskDetailPanel from "./TaskDetailPanel";
+import TaskHistoryPanel from "./TaskHistoryPanel";
 
 interface CreateModalProps {
   onCreate?: (values: any) => void;
 }
 
 const TaskViewModal = forwardRef(({}: CreateModalProps, ref) => {
-  const [visible, setVisible] = useState<boolean>(false);
-  const [selectedItem, setSelectedItem] = useState<number | null>(null);
-  const [instanceItem, setInstanceItem] = useState<any>({});
-  const [statusFilter, setStatusFilter] = useState<string>('all');
+  const intl = useIntl();
 
-  const callback = useRef(() => {
+  const [visible, setVisible] = useState<boolean>(false);
+  const [selectedItem, setSelectedItem] = useState<any>(null); // ✅ 原来是 number|null，但实际传的是 record 对象
+  const [instanceItem, setInstanceItem] = useState<any>({});
+  const [statusFilter, setStatusFilter] = useState<string>("all");
+
+  const callback = useRef<() => void>(() => {
     return;
   });
 
@@ -35,14 +38,12 @@ const TaskViewModal = forwardRef(({}: CreateModalProps, ref) => {
     onOpen,
   }));
 
-
-
   return (
     <Modal
       title={<></>}
       open={visible}
       onCancel={onClose}
-      maskStyle={{ background: '#f2f4f7f2' }}
+      maskStyle={{ background: "#f2f4f7f2" }}
       destroyOnClose
       className="custom-modal"
       maskClosable={false}
@@ -50,9 +51,20 @@ const TaskViewModal = forwardRef(({}: CreateModalProps, ref) => {
       width="99vw"
       footer={null}
     >
-      <div style={{ height: 'calc(100vh - 43px)', padding: 16 }}>
-        <div style={{ marginBottom: 16, fontSize: 18, fontWeight: 600 }}>Run History</div>
-        <Splitter style={{ height: 'calc(100% - 43px)', boxShadow: '0 0 10px rgba(0, 0, 0, 0.1)' }}>
+      <div style={{ height: "calc(100vh - 43px)", padding: 16 }}>
+        <div style={{ marginBottom: 16, fontSize: 18, fontWeight: 600 }}>
+          {intl.formatMessage({
+            id: "pages.job.history.title",
+            defaultMessage: "Run History",
+          })}
+        </div>
+
+        <Splitter
+          style={{
+            height: "calc(100% - 43px)",
+            boxShadow: "0 0 10px rgba(0, 0, 0, 0.1)",
+          }}
+        >
           <Splitter.Panel defaultSize="20%" min="20%" max="70%">
             <TaskHistoryPanel
               selectedItem={selectedItem}
@@ -63,6 +75,7 @@ const TaskViewModal = forwardRef(({}: CreateModalProps, ref) => {
               instanceItem={instanceItem}
             />
           </Splitter.Panel>
+
           <Splitter.Panel>
             <TaskDetailPanel instanceItem={instanceItem} />
           </Splitter.Panel>

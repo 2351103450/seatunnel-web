@@ -8,6 +8,7 @@ import { Form, message, Tabs } from "antd";
 import "./index.less";
 import OutputFieldsTab from "./OutputFieldsTab";
 import SourceConfigTab from "./SourceConfigTab";
+import { useIntl } from "@umijs/max";
 
 interface AppProps {
   selectedNode: {
@@ -18,6 +19,8 @@ interface AppProps {
 }
 
 const App: FC<AppProps> = ({ selectedNode, onNodeDataChange }) => {
+  const intl = useIntl();
+
   const [sourceOption, setSourceOption] = useState<any[]>([]);
   const [sourceColumns, setSourceColumns] = useState<any[]>([]);
   const ref = useRef<any>(null);
@@ -36,14 +39,13 @@ const App: FC<AppProps> = ({ selectedNode, onNodeDataChange }) => {
   };
 
   useEffect(() => {
-    console.log(sourceColumns);
     if (sourceColumns && sourceColumns?.length > 0) {
       onNodeDataChange(selectedNode?.id, {
         ...selectedNode?.data,
         sourceColumns,
       });
-      console.log(selectedNode);
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [sourceColumns]);
 
   useEffect(() => {
@@ -58,13 +60,16 @@ const App: FC<AppProps> = ({ selectedNode, onNodeDataChange }) => {
             if (data?.data?.length > 0) {
               const firstOption = data.data[0];
               const firstSourceId = firstOption.value;
+
               sourceForm.setFieldValue("sourceId", firstSourceId);
               sourceForm.setFieldValue("taskExecuteType", "SINGLE_TABLE");
+
               onNodeDataChange(selectedNode?.id, {
                 ...selectedNode?.data,
                 sourceId: firstSourceId,
                 taskExecuteType: "SINGLE_TABLE",
               });
+
               getSourceTableList(firstOption.value);
             }
           } else {
@@ -72,7 +77,6 @@ const App: FC<AppProps> = ({ selectedNode, onNodeDataChange }) => {
           }
         });
       } else {
-        // 下一次来
         dataSourceApi.option(selectedNode?.data?.dbType).then((data) => {
           if (data?.code === 0) {
             setSourceOption(data?.data);
@@ -95,12 +99,16 @@ const App: FC<AppProps> = ({ selectedNode, onNodeDataChange }) => {
         });
       }
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedNode]);
 
   const items = [
     {
       key: "1",
-      label: "Source Setting",
+      label: intl.formatMessage({
+        id: "pages.job.node.source.tab.sourceSetting",
+        defaultMessage: "Source Setting",
+      }),
       children: (
         <SourceConfigTab
           selectedNode={selectedNode}
@@ -118,7 +126,10 @@ const App: FC<AppProps> = ({ selectedNode, onNodeDataChange }) => {
     },
     {
       key: "2",
-      label: "Output Fields",
+      label: intl.formatMessage({
+        id: "pages.job.node.source.tab.outputFields",
+        defaultMessage: "Output Fields",
+      }),
       children: (
         <OutputFieldsTab
           selectedNode={selectedNode}

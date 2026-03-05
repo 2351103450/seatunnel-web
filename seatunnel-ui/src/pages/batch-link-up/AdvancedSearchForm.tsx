@@ -4,30 +4,21 @@ import {
   DownOutlined,
   SyncOutlined,
 } from "@ant-design/icons";
-import {
-  Button,
-  Col,
-  DatePicker,
-  Form,
-  Input,
-  Row,
-  Select,
-  Space,
-  theme,
-} from "antd";
+import { Button, Col, DatePicker, Form, Input, Row, Select, Space, theme } from "antd";
 import moment from "moment";
 import { useState } from "react";
 import DatabaseIcons from "../data-source/icon/DatabaseIcons";
+import { useIntl } from "@umijs/max";
 
 interface AdvancedSearchFormProps {
   onSearch: (values: any) => void;
   onReset: () => void;
 }
+
 const { RangePicker } = DatePicker;
-const AdvancedSearchForm: React.FC<AdvancedSearchFormProps> = ({
-  onSearch,
-  onReset,
-}) => {
+
+const AdvancedSearchForm: React.FC<AdvancedSearchFormProps> = ({ onSearch, onReset }) => {
+  const intl = useIntl();
   const { token } = theme.useToken();
   const [form] = Form.useForm();
   const [expand, setExpand] = useState(false);
@@ -64,10 +55,7 @@ const AdvancedSearchForm: React.FC<AdvancedSearchFormProps> = ({
     createDataSourceOption("PgSQL", "PGSQL"),
   ];
 
-  const defaultTimeRange = [
-    moment().subtract(4, "days"),
-    moment().add(1, "days"),
-  ];
+  const defaultTimeRange = [moment().subtract(4, "days"), moment().add(1, "days")];
 
   const initialValues = {
     createTime: defaultTimeRange,
@@ -85,18 +73,25 @@ const AdvancedSearchForm: React.FC<AdvancedSearchFormProps> = ({
         <Col span={8}>
           <Form.Item
             name="jobName"
-            label="Job Name"
+            label={intl.formatMessage({ id: "pages.job.search.jobName", defaultMessage: "Job Name" })}
             labelCol={{ span: 5 }}
             wrapperCol={{ span: 19 }}
           >
-            <Input size="small" placeholder="Enter job name" allowClear />
+            <Input
+              size="small"
+              placeholder={intl.formatMessage({
+                id: "pages.job.search.jobName.placeholder",
+                defaultMessage: "Enter job name",
+              })}
+              allowClear
+            />
           </Form.Item>
         </Col>
 
         <Col span={8}>
           <Form.Item
             name="createTime"
-            label="Create Time"
+            label={intl.formatMessage({ id: "pages.job.search.createTime", defaultMessage: "Create Time" })}
             labelCol={{ span: 5 }}
             wrapperCol={{ span: 19 }}
           >
@@ -106,16 +101,12 @@ const AdvancedSearchForm: React.FC<AdvancedSearchFormProps> = ({
 
         <Col span={8} style={{ paddingTop: 4, paddingLeft: 42 }}>
           <Space size="small">
-            <Button
-              type="primary"
-              htmlType="submit"
-              size="small"
-              style={{ width: 70 }}
-            >
-              Search
+            <Button type="primary" htmlType="submit" size="small" style={{ width: 70 }}>
+              {intl.formatMessage({ id: "pages.job.search.button.search", defaultMessage: "Search" })}
             </Button>
+
             <Button onClick={handleReset} size="small" style={{ width: 70 }}>
-              Reset
+              {intl.formatMessage({ id: "pages.job.search.button.reset", defaultMessage: "Reset" })}
             </Button>
 
             <a
@@ -127,128 +118,176 @@ const AdvancedSearchForm: React.FC<AdvancedSearchFormProps> = ({
               onClick={() => setExpand(!expand)}
             >
               <DownOutlined rotate={expand ? 180 : 0} />{" "}
-              {expand ? "Collapse" : "Expand"}
+              {expand
+                ? intl.formatMessage({ id: "pages.job.search.collapse", defaultMessage: "Collapse" })
+                : intl.formatMessage({ id: "pages.job.search.expand", defaultMessage: "Expand" })}
             </a>
           </Space>
         </Col>
       </Row>
 
-      {/* 第二行：展开内容 */}
       {expand && (
-        <>
-          <Row gutter={24}>
-            <Col span={8}>
-              <Form.Item
-                name="id"
-                label="Job ID"
-                labelCol={{ span: 5 }}
-                wrapperCol={{ span: 19 }}
-              >
-                <Input size="small" placeholder="Enter job id" allowClear />
-              </Form.Item>
-            </Col>
+        <Row gutter={24}>
+          <Col span={8}>
+            <Form.Item
+              name="id"
+              label={intl.formatMessage({ id: "pages.job.search.jobId", defaultMessage: "Job ID" })}
+              labelCol={{ span: 5 }}
+              wrapperCol={{ span: 19 }}
+            >
+              <Input
+                size="small"
+                placeholder={intl.formatMessage({
+                  id: "pages.job.search.jobId.placeholder",
+                  defaultMessage: "Enter job id",
+                })}
+                allowClear
+              />
+            </Form.Item>
+          </Col>
 
-            <Col span={8}>
-              <Form.Item
-                name="status"
-                label="Status"
-                labelCol={{ span: 5 }}
-                wrapperCol={{ span: 19 }}
-              >
-                <Select
-                  placeholder="Select..."
-                  size="small"
-                  showSearch
-                  allowClear
-                  options={[
-                    {
-                      label: (
-                        <span>
-                          <SyncOutlined spin style={{ color: "blue" }} />
-                          &nbsp;&nbsp; RUNNING
-                        </span>
-                      ),
-                      value: "RUNNING",
-                    },
-                    {
-                      label: (
-                        <span>
-                          <CheckSquareOutlined style={{ color: "green" }} />
-                          &nbsp;&nbsp; COMPLETED
-                        </span>
-                      ),
-                      value: "COMPLETED",
-                    },
-                    {
-                      label: (
-                        <span>
-                          <CloseOutlined style={{ color: "red" }} />
-                          &nbsp;&nbsp; FAILED
-                        </span>
-                      ),
-                      value: "FAILED",
-                    },
-                  ]}
-                />
-              </Form.Item>
-            </Col>
+          <Col span={8}>
+            <Form.Item
+              name="status"
+              label={intl.formatMessage({ id: "pages.job.search.status", defaultMessage: "Status" })}
+              labelCol={{ span: 5 }}
+              wrapperCol={{ span: 19 }}
+            >
+              <Select
+                placeholder={intl.formatMessage({
+                  id: "pages.job.search.selectPlaceholder",
+                  defaultMessage: "Select...",
+                })}
+                size="small"
+                showSearch
+                allowClear
+                options={[
+                  {
+                    label: (
+                      <span>
+                        <SyncOutlined spin style={{ color: "blue" }} />
+                        &nbsp;&nbsp;
+                        {intl.formatMessage({
+                          id: "pages.job.status.running",
+                          defaultMessage: "RUNNING",
+                        })}
+                      </span>
+                    ),
+                    value: "RUNNING",
+                  },
+                  {
+                    label: (
+                      <span>
+                        <CheckSquareOutlined style={{ color: "green" }} />
+                        &nbsp;&nbsp;
+                        {intl.formatMessage({
+                          id: "pages.job.status.completed",
+                          defaultMessage: "COMPLETED",
+                        })}
+                      </span>
+                    ),
+                    value: "COMPLETED",
+                  },
+                  {
+                    label: (
+                      <span>
+                        <CloseOutlined style={{ color: "red" }} />
+                        &nbsp;&nbsp;
+                        {intl.formatMessage({
+                          id: "pages.job.status.failed",
+                          defaultMessage: "FAILED",
+                        })}
+                      </span>
+                    ),
+                    value: "FAILED",
+                  },
+                ]}
+              />
+            </Form.Item>
+          </Col>
 
-            <Col span={8}>
-              <Form.Item
-                name="sourceType"
-                label="Source"
-                labelCol={{ span: 5 }}
-                wrapperCol={{ span: 19 }}
-              >
-                <Select
-                  placeholder="Select..."
-                  size="small"
-                  options={dataSourceOption}
-                  allowClear
-                  showSearch
-                />
-              </Form.Item>
-            </Col>
+          <Col span={8}>
+            <Form.Item
+              name="sourceType"
+              label={intl.formatMessage({ id: "pages.job.search.source", defaultMessage: "Source" })}
+              labelCol={{ span: 5 }}
+              wrapperCol={{ span: 19 }}
+            >
+              <Select
+                placeholder={intl.formatMessage({
+                  id: "pages.job.search.selectPlaceholder",
+                  defaultMessage: "Select...",
+                })}
+                size="small"
+                options={dataSourceOption}
+                allowClear
+                showSearch
+              />
+            </Form.Item>
+          </Col>
 
-            <Col span={8}>
-              <Form.Item
-                name="sinkType"
-                label="Sink"
-                labelCol={{ span: 5 }}
-                wrapperCol={{ span: 19 }}
-              >
-                <Select
-                  placeholder="Select..."
-                  size="small"
-                  options={dataSourceOption}
-                  allowClear
-                  showSearch
-                />
-              </Form.Item>
-            </Col>
-            <Col span={8}>
-              <Form.Item
-                name="sourceTable"
-                label="Source Table"
-                labelCol={{ span: 5 }}
-                wrapperCol={{ span: 19 }}
-              >
-                <Input size="small" placeholder="Fuzzy match..." allowClear />
-              </Form.Item>
-            </Col>
+          <Col span={8}>
+            <Form.Item
+              name="sinkType"
+              label={intl.formatMessage({ id: "pages.job.search.sink", defaultMessage: "Sink" })}
+              labelCol={{ span: 5 }}
+              wrapperCol={{ span: 19 }}
+            >
+              <Select
+                placeholder={intl.formatMessage({
+                  id: "pages.job.search.selectPlaceholder",
+                  defaultMessage: "Select...",
+                })}
+                size="small"
+                options={dataSourceOption}
+                allowClear
+                showSearch
+              />
+            </Form.Item>
+          </Col>
 
-            <Col span={8}>
-              <Form.Item
-                name="sinkTable"
-                label="Sink Table"
-                labelCol={{ span: 5 }}
-                wrapperCol={{ span: 19 }}
-              >
-                <Input size="small" placeholder="Fuzzy match..." allowClear />
-              </Form.Item>
-            </Col>
-          </Row>
-        </>
+          <Col span={8}>
+            <Form.Item
+              name="sourceTable"
+              label={intl.formatMessage({
+                id: "pages.job.search.sourceTable",
+                defaultMessage: "Source Table",
+              })}
+              labelCol={{ span: 5 }}
+              wrapperCol={{ span: 19 }}
+            >
+              <Input
+                size="small"
+                placeholder={intl.formatMessage({
+                  id: "pages.job.search.fuzzyPlaceholder",
+                  defaultMessage: "Fuzzy match...",
+                })}
+                allowClear
+              />
+            </Form.Item>
+          </Col>
+
+          <Col span={8}>
+            <Form.Item
+              name="sinkTable"
+              label={intl.formatMessage({
+                id: "pages.job.search.sinkTable",
+                defaultMessage: "Sink Table",
+              })}
+              labelCol={{ span: 5 }}
+              wrapperCol={{ span: 19 }}
+            >
+              <Input
+                size="small"
+                placeholder={intl.formatMessage({
+                  id: "pages.job.search.fuzzyPlaceholder",
+                  defaultMessage: "Fuzzy match...",
+                })}
+                allowClear
+              />
+            </Form.Item>
+          </Col>
+        </Row>
       )}
     </Form>
   );

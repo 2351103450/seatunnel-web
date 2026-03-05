@@ -1,11 +1,11 @@
 import DatabaseIcons from "@/pages/data-source/icon/DatabaseIcons";
 import { dataSourceCatalogApi } from "@/pages/data-source/type";
-import { Button, Col, Form, Popover, Row, Select } from "antd";
+import { Button, Col, Form, Popover, Row, Select, message } from "antd";
 import { FC, useState } from "react";
 
-import { message } from "antd";
 import CustomQuerySource from "./CustomQuerySource";
 import SingleTableSink from "./SingleTableSink";
+import { useIntl } from "@umijs/max";
 
 interface SourceBasicConfigProps {
   selectedNode: {
@@ -35,6 +35,8 @@ const SinkBasicConfig: FC<SourceBasicConfigProps> = ({
   autoCreateTable,
   setAutoCreateTable,
 }) => {
+  const intl = useIntl();
+
   const [viewLoading, setViewLoading] = useState(false);
   const [countLoading, setCountLoading] = useState(false);
   const [recordCount, setRecordCount] = useState(0);
@@ -48,72 +50,99 @@ const SinkBasicConfig: FC<SourceBasicConfigProps> = ({
   };
 
   const getTop20Data = () => {
-    const autoCreateTable = sinkForm?.getFieldValue("generate_sink_sql");
-    if (autoCreateTable === true) {
-      message.warning("自动建表模式不支持数据预览");
+    const autoCreate = sinkForm?.getFieldValue("generate_sink_sql");
+    if (autoCreate === true) {
+      message.warning(
+        intl.formatMessage({
+          id: "pages.job.config.sink.basic.warn.previewNotSupportAutoCreate",
+          defaultMessage: "Auto-create table mode does not support data preview",
+        }),
+      );
       return;
     }
+
     const sinkId = sinkForm?.getFieldValue("sinkId");
     if (sinkId === undefined || sinkId === "") {
-      message.warning("请选择数据源");
-    } else {
-      const taskExecuteType = sinkForm?.getFieldValue("taskExecuteType");
-      const table = sinkForm?.getFieldValue("table");
-      const query = sinkForm?.getFieldValue("query");
-      setViewLoading(true);
-      dataSourceCatalogApi
-        .getTop20Data(sinkId, {
-          taskExecuteType: taskExecuteType,
-          table_path: table || "",
-          query: query || "",
-        })
-        .then((data) => {
-          if (data?.code === 0) {
-            qualityDetailRef.current?.onOpen(true, data);
-            setViewLoading(false);
-          } else {
-            message.error(data?.message);
-            setViewLoading(false);
-          }
-        });
+      message.warning(
+        intl.formatMessage({
+          id: "pages.job.config.sink.basic.warn.selectDatasource",
+          defaultMessage: "Please select a datasource",
+        }),
+      );
+      return;
     }
+
+    const taskExecuteType = sinkForm?.getFieldValue("taskExecuteType");
+    const table = sinkForm?.getFieldValue("table");
+    const query = sinkForm?.getFieldValue("query");
+
+    setViewLoading(true);
+    dataSourceCatalogApi
+      .getTop20Data(sinkId, {
+        taskExecuteType,
+        table_path: table || "",
+        query: query || "",
+      })
+      .then((data) => {
+        if (data?.code === 0) {
+          qualityDetailRef.current?.onOpen(true, data);
+        } else {
+          message.error(data?.message);
+        }
+      })
+      .finally(() => setViewLoading(false));
   };
 
   const count = () => {
-    const autoCreateTable = sinkForm?.getFieldValue("generate_sink_sql");
-    if (autoCreateTable === true) {
-      message.warning("自动建表模式不支持数据统计");
+    const autoCreate = sinkForm?.getFieldValue("generate_sink_sql");
+    if (autoCreate === true) {
+      message.warning(
+        intl.formatMessage({
+          id: "pages.job.config.sink.basic.warn.countNotSupportAutoCreate",
+          defaultMessage: "Auto-create table mode does not support data count",
+        }),
+      );
       return;
     }
-    const sourceId = sinkForm?.getFieldValue("sinkId");
 
-    if (sourceId === undefined || sourceId === "") {
-      message.warning("请选择数据源");
-    } else {
-      sinkForm.validateFields().then((value: any) => {
+    const sinkId = sinkForm?.getFieldValue("sinkId");
+    if (sinkId === undefined || sinkId === "") {
+      message.warning(
+        intl.formatMessage({
+          id: "pages.job.config.sink.basic.warn.selectDatasource",
+          defaultMessage: "Please select a datasource",
+        }),
+      );
+      return;
+    }
+
+    setCountLoading(true);
+    sinkForm
+      .validateFields()
+      .then(() => {
         const taskExecuteType = sinkForm?.getFieldValue("taskExecuteType");
         const table = sinkForm?.getFieldValue("table");
         const query = sinkForm?.getFieldValue("query");
 
-        dataSourceCatalogApi
-          .count(sourceId, {
-            taskExecuteType: taskExecuteType,
-            table_path: table || "",
-            query: query || "",
-          })
-          .then((data) => {
-            if (data?.code === 0) {
-              setRecordCount(data?.data || 0);
-            } else {
-              message.error(data?.message);
-            }
-          });
-      });
-    }
+        return dataSourceCatalogApi.count(sinkId, {
+          taskExecuteType,
+          table_path: table || "",
+          query: query || "",
+        });
+      })
+      .then((data) => {
+        if (!data) return;
+        if (data?.code === 0) {
+          setRecordCount(data?.data || 0);
+        } else {
+          message.error(data?.message);
+        }
+      })
+      .finally(() => setCountLoading(false));
   };
 
   const renderSink = () => {
-    const selectedType = sinkForm?.getFieldValue("taskExecuteType"); // 从表单获取
+    const selectedType = sinkForm?.getFieldValue("taskExecuteType");
     switch (selectedType) {
       case "SINGLE_TABLE":
         return (
@@ -137,7 +166,7 @@ const SinkBasicConfig: FC<SourceBasicConfigProps> = ({
                     onNodeDataChange(selectedNode.id, {
                       ...selectedNode.data,
                       sinkFields: data?.data,
-                      table: sinkForm?.getFieldValue("table")
+                      table: sinkForm?.getFieldValue("table"),
                     });
                   }
                 } else {
@@ -163,14 +192,10 @@ const SinkBasicConfig: FC<SourceBasicConfigProps> = ({
       initialValues={{
         taskExecuteType: "SINGLE_TABLE",
       }}
-      //   autoComplete="off"
       onValuesChange={(changedValues, allValues) => {
         if (changedValues.sinkId !== undefined) {
-          // 触发获取表列表
           getSinkTableList(changedValues.sinkId);
         }
-
-        // 通知父组件
         if (onNodeDataChange && selectedNode) {
           onNodeDataChange(selectedNode.id, {
             ...selectedNode.data,
@@ -179,7 +204,22 @@ const SinkBasicConfig: FC<SourceBasicConfigProps> = ({
         }
       }}
     >
-      <Form.Item label="Datasource" name="sinkId" rules={[{ required: true }]}>
+      <Form.Item
+        label={intl.formatMessage({
+          id: "pages.job.config.sink.basic.datasource",
+          defaultMessage: "Datasource",
+        })}
+        name="sinkId"
+        rules={[
+          {
+            required: true,
+            message: intl.formatMessage({
+              id: "pages.job.config.sink.basic.datasource.required",
+              defaultMessage: "Please select a datasource",
+            }),
+          },
+        ]}
+      >
         <Select
           prefix={
             <DatabaseIcons
@@ -194,30 +234,41 @@ const SinkBasicConfig: FC<SourceBasicConfigProps> = ({
             sinkForm.setFieldValue("query", undefined);
             getSinkTableList(value);
           }}
-          placeholder="请选择数据源"
+          placeholder={intl.formatMessage({
+            id: "pages.job.config.sink.basic.datasource.placeholder",
+            defaultMessage: "Select datasource",
+          })}
           options={sinkOption || []}
         />
       </Form.Item>
 
       <Form.Item
-        label="Sync Type"
+        label={intl.formatMessage({
+          id: "pages.job.config.sink.basic.syncType",
+          defaultMessage: "Sync Type",
+        })}
         name="taskExecuteType"
-        rules={[{ required: true, message: "请选择同步类型" }]}
+        rules={[
+          {
+            required: true,
+            message: intl.formatMessage({
+              id: "pages.job.config.sink.basic.syncType.required",
+              defaultMessage: "Please select sync type",
+            }),
+          },
+        ]}
       >
         <Select
           size="small"
           options={[
-            {
-              label: "SINGLE_TABLE",
-              value: "SINGLE_TABLE",
-            },
-            {
-              label: "TABLE_CUSTOM",
-              value: "TABLE_CUSTOM",
-            },
+            { label: "SINGLE_TABLE", value: "SINGLE_TABLE" },
+            { label: "TABLE_CUSTOM", value: "TABLE_CUSTOM" },
           ]}
           onChange={handleTaskTypeChange}
-          placeholder="请选择同步类型"
+          placeholder={intl.formatMessage({
+            id: "pages.job.config.sink.basic.syncType.placeholder",
+            defaultMessage: "Select sync type",
+          })}
         />
       </Form.Item>
 
@@ -233,15 +284,25 @@ const SinkBasicConfig: FC<SourceBasicConfigProps> = ({
               onClick={getTop20Data}
               loading={viewLoading}
             >
-              Data Preview
+              {intl.formatMessage({
+                id: "pages.job.config.sink.basic.preview",
+                defaultMessage: "Data Preview",
+              })}
             </Button>
           </Col>
+
           <Col span={12}>
             <Popover
-              title="数据统计"
+              title={intl.formatMessage({
+                id: "pages.job.config.sink.basic.count.title",
+                defaultMessage: "Data Count",
+              })}
               content={
                 <div>
-                  数据总量：
+                  {intl.formatMessage({
+                    id: "pages.job.config.sink.basic.count.total",
+                    defaultMessage: "Total records:",
+                  })}{" "}
                   <span style={{ color: "blue" }}>{recordCount || 0}</span>
                 </div>
               }
@@ -254,7 +315,10 @@ const SinkBasicConfig: FC<SourceBasicConfigProps> = ({
                 size="small"
                 onClick={count}
               >
-                Data Count
+                {intl.formatMessage({
+                  id: "pages.job.config.sink.basic.count",
+                  defaultMessage: "Data Count",
+                })}
               </Button>
             </Popover>
           </Col>

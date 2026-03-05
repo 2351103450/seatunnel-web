@@ -1,6 +1,5 @@
 import { DownOutlined } from "@ant-design/icons";
 import { Dropdown, Modal, Popconfirm, Space, message } from "antd";
-// import CreateModal from '../modal/CreateModal';
 import { useRef, useState } from "react";
 import {
   seatunnelJobDefinitionApi,
@@ -9,6 +8,7 @@ import {
 } from "./api";
 import TaskViewModal from "./TaskViewModal";
 import { taskExecutionApi } from "./type";
+import { useIntl } from "@umijs/max";
 
 interface ActionColumnProps {
   record: any;
@@ -25,6 +25,8 @@ const ActionColumn: React.FC<ActionColumnProps> = ({
   cbk,
   goDetail,
 }) => {
+  const intl = useIntl();
+
   const ref = useRef<any>(null);
   const [runOpen, setRunOpen] = useState(false);
   const [runLoading, setRunLoading] = useState(false);
@@ -46,17 +48,29 @@ const ActionColumn: React.FC<ActionColumnProps> = ({
 
   const handleDeleteTask = async (record: any) => {
     confirm({
-      title: "Confirm delete ?",
+      title: intl.formatMessage({
+        id: "pages.job.action.delete.confirmTitle",
+        defaultMessage: "Confirm delete?",
+      }),
       centered: true,
       content: (
         <span>
-          Are you sure you want to delete the task [
-          <span style={{ color: "orange" }}> {record.jobName} </span>
-          ]?
+          {intl.formatMessage(
+            {
+              id: "pages.job.action.delete.confirmContent",
+              defaultMessage: "Are you sure you want to delete the task [{name}]?",
+            },
+            {
+              name: <span style={{ color: "orange" }}>{record.jobName}</span>,
+            },
+          )}
           <br />
         </span>
       ),
-      okText: "Delete",
+      okText: intl.formatMessage({
+        id: "pages.job.action.delete.okText",
+        defaultMessage: "Delete",
+      }),
       okType: "primary",
       okButtonProps: {
         size: "small",
@@ -68,15 +82,20 @@ const ActionColumn: React.FC<ActionColumnProps> = ({
       maskClosable: true,
       onOk() {
         if (record?.id) {
-          doDeleteDataSource(record?.id);
+          doDeleteTask(record?.id);
         } else {
-          message.error("id is not exist");
+          message.error(
+            intl.formatMessage({
+              id: "pages.job.message.idNotExist",
+              defaultMessage: "id is not exist",
+            }),
+          );
         }
       },
     });
   };
 
-  const doDeleteDataSource = async (id: string) => {
+  const doDeleteTask = async (id: string) => {
     const response = await seatunnelJobDefinitionApi.delete(id);
     if (response.code === 0) {
       message.success(response.message);
@@ -94,30 +113,46 @@ const ActionColumn: React.FC<ActionColumnProps> = ({
       ref.current.onOpen(true, record, cbk);
     } else if (info?.key === "edit") {
       goDetail(item?.id, item);
-    } else if (info?.key === "4") {
     }
   };
+
+  const yesText = intl.formatMessage({ id: "pages.common.yes", defaultMessage: "Yes" });
+  const noText = intl.formatMessage({ id: "pages.common.no", defaultMessage: "No" });
 
   return (
     <>
       <Space size="middle">
         {record?.lastJobStatus === "RUNNING" ? (
           <Popconfirm
-            title="Stop Task"
+            title={intl.formatMessage({
+              id: "pages.job.action.stop.title",
+              defaultMessage: "Stop Task",
+            })}
             description={
               <div style={{ marginRight: 12 }}>
-                Are you sure stop this job?
+                {intl.formatMessage({
+                  id: "pages.job.action.stop.desc",
+                  defaultMessage: "Are you sure stop this job?",
+                })}
               </div>
             }
-            okText="Yes"
-            cancelText="No"
+            okText={yesText}
+            cancelText={noText}
             onConfirm={handleStop}
           >
-            <a style={{ fontWeight: 500 }}>Stop</a>
+            <a style={{ fontWeight: 500 }}>
+              {intl.formatMessage({
+                id: "pages.job.action.stop",
+                defaultMessage: "Stop",
+              })}
+            </a>
           </Popconfirm>
         ) : (
           <Popconfirm
-            title="Run Task"
+            title={intl.formatMessage({
+              id: "pages.job.action.run.title",
+              defaultMessage: "Run Task",
+            })}
             open={runOpen}
             onOpenChange={(open) => {
               if (!runLoading) {
@@ -127,21 +162,27 @@ const ActionColumn: React.FC<ActionColumnProps> = ({
             okButtonProps={{ loading: runLoading }}
             description={
               <div style={{ marginRight: 12 }}>
-                Are you sure to run this job?
+                {intl.formatMessage({
+                  id: "pages.job.action.run.desc",
+                  defaultMessage: "Are you sure to run this job?",
+                })}
               </div>
             }
-            okText="Yes"
-            cancelText="No"
+            okText={yesText}
+            cancelText={noText}
             onConfirm={async () => {
               try {
                 setRunLoading(true);
-
                 const data = await seatunnelJobExecuteApi.execute(record?.id);
-
                 if (data?.code === 0) {
-                  message.success("Success");
+                  message.success(
+                    intl.formatMessage({
+                      id: "pages.common.success",
+                      defaultMessage: "Success",
+                    }),
+                  );
                   cbk();
-                  setRunOpen(false); 
+                  setRunOpen(false);
                 } else {
                   message.error(data?.message);
                 }
@@ -150,66 +191,108 @@ const ActionColumn: React.FC<ActionColumnProps> = ({
               }
             }}
           >
-            <a style={{ fontWeight: 500 }}>Run</a>
+            <a style={{ fontWeight: 500 }}>
+              {intl.formatMessage({
+                id: "pages.job.action.run",
+                defaultMessage: "Run",
+              })}
+            </a>
           </Popconfirm>
         )}
 
         {record?.scheduleStatus === "ACTIVE" ? (
           <Popconfirm
-            title="Scheduled Task"
+            title={intl.formatMessage({
+              id: "pages.job.action.schedule.title",
+              defaultMessage: "Scheduled Task",
+            })}
             description={
               <div style={{ marginRight: 12 }}>
-                Are you sure offline this scheduled task?
+                {intl.formatMessage({
+                  id: "pages.job.action.schedule.offline.desc",
+                  defaultMessage: "Are you sure offline this scheduled task?",
+                })}
               </div>
             }
-            okText="Yes"
-            cancelText="No"
+            okText={yesText}
+            cancelText={noText}
             onConfirm={async () => {
               if (record?.scheduleId) {
-                const response = await seatunnelJobScheduleApi.stopSchedule(
-                  record?.scheduleId
-                );
+                const response = await seatunnelJobScheduleApi.stopSchedule(record?.scheduleId);
                 if (response?.code === 0) {
                   cbk();
-                  message.success("Offline Success");
+                  message.success(
+                    intl.formatMessage({
+                      id: "pages.job.action.schedule.offline.success",
+                      defaultMessage: "Offline Success",
+                    }),
+                  );
                 } else {
                   message.error(response?.message);
                 }
               } else {
-                message.error("任务调度ID不存在");
+                message.error(
+                  intl.formatMessage({
+                    id: "pages.job.message.scheduleIdNotExist",
+                    defaultMessage: "Schedule ID does not exist",
+                  }),
+                );
               }
             }}
           >
-            <a style={{ fontWeight: 500 }}>Disable</a>
+            <a style={{ fontWeight: 500 }}>
+              {intl.formatMessage({
+                id: "pages.job.action.schedule.disable",
+                defaultMessage: "Disable",
+              })}
+            </a>
           </Popconfirm>
         ) : (
           <Popconfirm
-            title="Scheduled Task"
+            title={intl.formatMessage({
+              id: "pages.job.action.schedule.title",
+              defaultMessage: "Scheduled Task",
+            })}
             description={
               <div style={{ marginRight: 12 }}>
-                Are you sure online this scheduled task?
+                {intl.formatMessage({
+                  id: "pages.job.action.schedule.online.desc",
+                  defaultMessage: "Are you sure online this scheduled task?",
+                })}
               </div>
             }
-            okText="Yes"
-            cancelText="No"
+            okText={yesText}
+            cancelText={noText}
             onConfirm={async () => {
               if (record?.scheduleId) {
-                const response = await seatunnelJobScheduleApi.startSchedule(
-                  record?.scheduleId
-                );
-                console.log(response);
+                const response = await seatunnelJobScheduleApi.startSchedule(record?.scheduleId);
                 if (response?.code === 0) {
                   cbk();
-                  message.success("Online Success");
+                  message.success(
+                    intl.formatMessage({
+                      id: "pages.job.action.schedule.online.success",
+                      defaultMessage: "Online Success",
+                    }),
+                  );
                 } else {
                   message.error(response?.message);
                 }
               } else {
-                message.error("UnKnown Error");
+                message.error(
+                  intl.formatMessage({
+                    id: "pages.job.message.unknownError",
+                    defaultMessage: "Unknown Error",
+                  }),
+                );
               }
             }}
           >
-            <a style={{ fontWeight: 500 }}>Enable</a>
+            <a style={{ fontWeight: 500 }}>
+              {intl.formatMessage({
+                id: "pages.job.action.schedule.enable",
+                defaultMessage: "Enable",
+              })}
+            </a>
           </Popconfirm>
         )}
 
@@ -222,9 +305,11 @@ const ActionColumn: React.FC<ActionColumnProps> = ({
           }}
         >
           <a style={{ fontWeight: 500 }}>
-            More <DownOutlined style={{ fontSize: 12 }} />
+            {intl.formatMessage({ id: "pages.job.action.more", defaultMessage: "More" })}{" "}
+            <DownOutlined style={{ fontSize: 12 }} />
           </a>
         </Dropdown>
+
         <TaskViewModal ref={ref} />
       </Space>
     </>

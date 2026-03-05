@@ -10,6 +10,7 @@ import "./index.less";
 import OutputFieldsTab from "./OutputFieldsTab";
 import SinkConfigTab from "./SinkConfigTab";
 import UpstreamFieldValidateTab from "./UpstreamFieldValidateTab";
+import { useIntl } from "@umijs/max";
 
 interface AppProps {
   selectedNode: {
@@ -20,6 +21,8 @@ interface AppProps {
 }
 
 const App: FC<AppProps> = ({ selectedNode, onNodeDataChange }) => {
+  const intl = useIntl();
+
   const [sinkOption, setSinkOption] = useState<any[]>([]);
   const [sinkColumns, setSinkColumns] = useState<any[]>([]);
   const ref = useRef<any>(null);
@@ -36,7 +39,7 @@ const App: FC<AppProps> = ({ selectedNode, onNodeDataChange }) => {
     });
   };
 
-  const { getEdges, getNode, getNodes } = useReactFlow();
+  const { getEdges, getNode } = useReactFlow();
 
   const getSinkTableList = (id: string) => {
     dataSourceCatalogApi.listTable(id).then((data) => {
@@ -49,11 +52,9 @@ const App: FC<AppProps> = ({ selectedNode, onNodeDataChange }) => {
   };
 
   useEffect(() => {
-    console.log(selectedNode);
     if (selectedNode) {
       const sinkId = selectedNode?.data?.sinkId;
       if (sinkId === undefined || sinkId === "") {
-        console.log(sinkId);
         dataSourceApi.option(selectedNode?.data?.dbType).then((data) => {
           if (data?.code === 0) {
             setSinkOption(data?.data);
@@ -61,15 +62,18 @@ const App: FC<AppProps> = ({ selectedNode, onNodeDataChange }) => {
             if (data?.data?.length > 0) {
               const firstOption = data.data[0];
               const firstSinkId = firstOption.value;
+
               sinkForm.setFieldValue("sinkId", firstSinkId);
               sinkForm.setFieldValue("taskExecuteType", "SINGLE_TABLE");
               sinkForm.setFieldValue("generate_sink_sql", true);
+
               onNodeDataChange(selectedNode?.id, {
                 ...selectedNode?.data,
                 sinkId: firstSinkId,
                 taskExecuteType: "SINGLE_TABLE",
                 generate_sink_sql: true,
               });
+
               const lastPrevNodes = getPrevNodes(selectedNode?.id);
               let lastNode: any = {};
               if (lastPrevNodes && lastPrevNodes?.length > 0) {
@@ -85,7 +89,6 @@ const App: FC<AppProps> = ({ selectedNode, onNodeDataChange }) => {
           }
         });
       } else {
-        console.log("----");
         const lastPrevNodes = getPrevNodes(selectedNode?.id);
         let lastNode: any = {};
         if (lastPrevNodes && lastPrevNodes?.length > 0) {
@@ -105,14 +108,12 @@ const App: FC<AppProps> = ({ selectedNode, onNodeDataChange }) => {
           }
         });
 
-        if (
-          selectedNode?.data?.generate_sink_sql === true &&
-          lastNode?.data?.sourceFields
-        ) {
+        if (selectedNode?.data?.generate_sink_sql === true && lastNode?.data?.sourceFields) {
           setSinkColumns(lastNode?.data?.sourceFields || []);
         } else {
           setSinkColumns(selectedNode?.data?.sinkFields || []);
         }
+
         sinkForm.setFieldsValue({
           sinkId: selectedNode?.data?.sinkId || undefined,
           taskExecuteType: selectedNode?.data?.taskExecuteType || undefined,
@@ -120,9 +121,11 @@ const App: FC<AppProps> = ({ selectedNode, onNodeDataChange }) => {
           table: selectedNode?.data?.table || undefined,
           generate_sink_sql: selectedNode?.data?.generate_sink_sql || undefined,
         });
+
         setAutoCreateTable(selectedNode?.data?.generate_sink_sql);
       }
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedNode]);
 
   const getPrevNodes = (currentNodeId: string) => {
@@ -136,7 +139,10 @@ const App: FC<AppProps> = ({ selectedNode, onNodeDataChange }) => {
   const items = [
     {
       key: "1",
-      label: "Sink Setting",
+      label: intl.formatMessage({
+        id: "pages.job.node.sink.tab.sinkSetting",
+        defaultMessage: "Sink Setting",
+      }),
       children: (
         <SinkConfigTab
           selectedNode={selectedNode}
@@ -156,7 +162,10 @@ const App: FC<AppProps> = ({ selectedNode, onNodeDataChange }) => {
       ? [
           {
             key: "2",
-            label: "Fields Validate",
+            label: intl.formatMessage({
+              id: "pages.job.node.sink.tab.fieldsValidate",
+              defaultMessage: "Fields Validate",
+            }),
             children: (
               <UpstreamFieldValidateTab
                 selectedNode={selectedNode}
@@ -170,7 +179,10 @@ const App: FC<AppProps> = ({ selectedNode, onNodeDataChange }) => {
       : []),
     {
       key: "3",
-      label: "Output Fields",
+      label: intl.formatMessage({
+        id: "pages.job.node.sink.tab.outputFields",
+        defaultMessage: "Output Fields",
+      }),
       children: (
         <OutputFieldsTab
           selectedNode={selectedNode}

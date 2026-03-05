@@ -1,5 +1,6 @@
 import React from 'react';
 import { Segmented, Select } from 'antd';
+import { useIntl } from '@umijs/max';
 import { TimeRange, TaskType } from './types';
 import { timeRangeMap, taskTypeOptions } from './utils';
 
@@ -16,10 +17,15 @@ const Header: React.FC<HeaderProps> = ({
   onTimeRangeChange,
   onTaskTypeChange,
 }) => {
+  const intl = useIntl();
+
   const getDefaultSegmentedValue = () => {
     const entries = Object.entries(timeRangeMap);
     const found = entries.find(([_, value]) => value === timeRange);
-    return found ? found[0] : '最近24小时';
+    return found ? found[0] : intl.formatMessage({
+      id: 'pages.job.overview.timerange.24h',
+      defaultMessage: 'Last 24 Hours',
+    });
   };
 
   return (
@@ -30,6 +36,7 @@ const Header: React.FC<HeaderProps> = ({
         boxShadow: '0 2px 8px #0000000d, inset 0 -1px 0 0 rgba(227,228,230,1)',
       }}
     >
+      {/* Title */}
       <div
         style={{
           fontSize: 16,
@@ -39,15 +46,33 @@ const Header: React.FC<HeaderProps> = ({
           display: 'flex',
           alignItems: 'center',
           marginRight: 120,
-          fontWeight: 500
+          fontWeight: 500,
         }}
       >
-       📊 Job Overview
+        📊 {intl.formatMessage({
+          id: 'pages.job.overview.title',
+          defaultMessage: 'Job Overview',
+        })}
       </div>
 
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-        <div style={{ margin: '6px 0 ' }}>
-          <span style={{ fontWeight: 400, fontSize: 12 }}>✨ Job Mode：</span>
+      <div
+        style={{
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+        }}
+      >
+        {/* Job Mode */}
+        <div style={{ margin: '6px 0' }}>
+          <span style={{ fontWeight: 400, fontSize: 12 }}>
+            ✨{' '}
+            {intl.formatMessage({
+              id: 'pages.job.overview.mode',
+              defaultMessage: 'Job Mode',
+            })}
+            ：
+          </span>
+
           <Select
             size="small"
             style={{ width: '30vh' }}
@@ -57,6 +82,7 @@ const Header: React.FC<HeaderProps> = ({
           />
         </div>
 
+        {/* Time Range */}
         <div style={{ width: '330px' }}>
           <Segmented
             options={Object.keys(timeRangeMap)}
@@ -64,7 +90,9 @@ const Header: React.FC<HeaderProps> = ({
             block
             value={getDefaultSegmentedValue()}
             onChange={(value) => {
-              onTimeRangeChange(timeRangeMap[value as keyof typeof timeRangeMap]);
+              onTimeRangeChange(
+                timeRangeMap[value as keyof typeof timeRangeMap],
+              );
             }}
           />
         </div>

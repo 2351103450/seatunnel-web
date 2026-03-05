@@ -7,11 +7,13 @@ interface HeaderProps {
   onClose: () => void;
 }
 
-export const Header = ({
-  connectionStatus,
-  latestMetrics,
-  onClose,
-}: HeaderProps) => {
+export const Header = ({ connectionStatus, latestMetrics, onClose }: HeaderProps) => {
+  // ✅ 只支持新结构：metrics 是 Map 序列化后的对象
+  const firstPipeline =
+    latestMetrics && latestMetrics.metrics
+      ? Object.values(latestMetrics.metrics)[0]
+      : undefined;
+
   return (
     <div
       style={{
@@ -29,8 +31,7 @@ export const Header = ({
             fontSize: "11px",
             padding: "0px 4px",
             borderRadius: "4px",
-            backgroundColor:
-              connectionStatus === "CONNECTED" ? "#f6ffed" : "#fff2e8",
+            backgroundColor: connectionStatus === "已连接" ? "#f6ffed" : "#fff2e8",
             color: connectionStatus === "已连接" ? "#52c41a" : "#fa8c16",
             border: `1px solid ${
               connectionStatus === "已连接" ? "#b7eb8f" : "#ffd591"
@@ -42,8 +43,7 @@ export const Header = ({
 
         {latestMetrics && (
           <span style={{ fontSize: "12px", color: "#1890ff" }}>
-            Sync: {Object.values(latestMetrics.vertices)[0]?.readRowCount || 0}{" "}
-            rows
+            Sync: {firstPipeline?.readRowCount ?? 0} rows
           </span>
         )}
       </div>

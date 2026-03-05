@@ -2,11 +2,13 @@ package org.apache.seatunnel.admin.thirdparty.metrics;
 
 import jakarta.annotation.Resource;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.seatunnel.engine.client.job.ClientJobProxy;
+import org.apache.seatunnel.admin.thirdparty.client.SeatunnelRestClient;
 import org.apache.seatunnel.engine.common.job.JobResult;
 import org.apache.seatunnel.engine.common.job.JobStatus;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
+import java.util.Map;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
@@ -14,12 +16,7 @@ import java.util.concurrent.Executors;
 @Slf4j
 public class JobResultWatcher {
 
-    /**
-     * Thread pool used to asynchronously wait for job completion.
-     * Cached thread pool allows dynamic thread allocation based on workload.
-     */
-    private final ExecutorService executor =
-            Executors.newCachedThreadPool();
+    private final ExecutorService executor = Executors.newCachedThreadPool();
 
     @Resource
     private JobMetricsMonitor metricsMonitor;
@@ -27,43 +24,77 @@ public class JobResultWatcher {
     @Resource
     private JobResultHandler resultHandler;
 
-    /**
-     * Register a job result watcher for a running job.
-     *
-     * This method submits an asynchronous task that:
-     * 1. Blocks until the job finishes
-     * 2. Handles success or failure result
-     * 3. Unregisters metrics monitoring
-     *
-     * @param context Job runtime context containing instance information
-     * @param proxy   Client proxy used to interact with the SeaTunnel engine
-     */
-    public void register(JobRuntimeContext context, ClientJobProxy proxy) {
+    @Resource
+    private SeatunnelRestClient seatunnelRestClient;
 
+    @Value("${seatunnel.result.poll-interval-ms:2000}")
+    private long pollIntervalMs;
+
+    @Value("${seatunnel.result.poll-timeout-ms:0}") // 0 表示不超时
+    private long pollTimeoutMs;
+
+    public void registerByRest(JobRuntimeContext context) {
         executor.submit(() -> {
+            long start = System.currentTimeMillis();
+            Long instanceId = context.getInstanceId();
+            String engineId = context.getEngineId();
 
             try {
-                // Block until the job completes (success or failure)
-                JobResult result = proxy.waitForJobCompleteV2();
+                while (true) {
+                    if (pollTimeoutMs > 0 && (System.currentTimeMillis() - start) > pollTimeoutMs) {
+                        throw new IllegalStateException("Polling job-info timeout, engineId=" + engineId);
+                    }
 
-                // Handle job completion status
-                if (result.getStatus() == JobStatus.FINISHED) {
-                    // Job completed successfully
-                    resultHandler.handleSuccess(context.getInstanceId());
-                } else {
-                    // Job finished with failure or abnormal status
-                    resultHandler.handleFailure(context.getInstanceId(), result);
+                    Map jobInfo = seatunnelRestClient.jobInfo(Long.parseLong(engineId));
+                    String statusStr = (jobInfo == null) ? null : String.valueOf(jobInfo.get("jobStatus"));
+
+                    if (statusStr == null || "null".equals(statusStr)) {
+                        // 文档说：查不到 job 可能只返回 {"jobId":""}
+                        log.warn("job-info returned no status, engineId={}, resp={}", engineId, jobInfo);
+                        Thread.sleep(pollIntervalMs);
+                        continue;
+                    }
+
+                    JobStatus status = parseJobStatus(statusStr);
+
+                    if (status == JobStatus.RUNNING) {
+                        Thread.sleep(pollIntervalMs);
+                        continue;
+                    }
+
+                    // 结束态
+                    if (status == JobStatus.FINISHED) {
+                        resultHandler.handleSuccess(instanceId);
+                    } else {
+                        // 你现有 handleFailure(instanceId, JobResult) 需要 JobResult，这里做个最小封装
+                        JobResult jr = new JobResult(JobStatus.FAILED);
+                        jr.setStatus(status);
+                        jr.setError(String.valueOf(jobInfo.get("errorMsg")));
+                        resultHandler.handleFailure(instanceId, jr);
+                    }
+
+                    // 最终 metrics 入库 + 清理
+                    metricsMonitor.finalizeAndPersist(instanceId);
+                    return;
                 }
-
             } catch (Exception e) {
-                // Handle unexpected exception during job execution
-                resultHandler.handleFailure(context.getInstanceId(), e);
+                resultHandler.handleFailure(instanceId, e);
+                try {
+                    metricsMonitor.finalizeAndPersist(instanceId);
+                } catch (Exception ignored) {}
             } finally {
-                // Always unregister metrics monitoring after job completion
-
-                log.info("Job result watcher finished: {}",
-                        context.getInstanceId());
+                log.info("REST job result watcher finished: {}", instanceId);
             }
         });
+    }
+
+    private JobStatus parseJobStatus(String s) {
+        try {
+            return JobStatus.valueOf(s);
+        } catch (Exception e) {
+            // 兼容可能出现的不同拼写（比如 CANCELED vs CANCELLED）
+            if ("CANCELLED".equalsIgnoreCase(s)) return JobStatus.CANCELED;
+            return JobStatus.UNKNOWABLE;
+        }
     }
 }

@@ -4,7 +4,18 @@ server:
     accept-count: 1000
     max-connections: 10000
 
+seatunnel:
+  client:
+    base-url: http://192.168.1.115:8080
+    context-path:
+    connect-timeout-ms: 2000
+    read-timeout-ms: 10000
+
 spring:
+  servlet:
+    multipart:
+      max-file-size: 200MB
+      max-request-size: 200MB
   application:
     name: seatunnel-web
   profiles:
@@ -16,7 +27,7 @@ spring:
 
   ai:
     deepseek:
-      api-key: sk-d615692a05d44e8997e993ad4f290a48
+      api-key: sk-****
       base-url: "https://api.deepseek.com"
       chat:
         options:
@@ -27,10 +38,10 @@ spring:
 
   datasource:
     cockpit:
-      jdbc-url: jdbc:mariadb://192.168.1.113:3306/seatunnel_web?useUnicode=true&characterEncoding=utf8&useSSL=false&serverTimezone=GMT%2B8
+      jdbc-url: jdbc:mysql://192.168.1.113:3306/seatunnel_web?useUnicode=true&characterEncoding=utf8&useSSL=false&serverTimezone=GMT%2B8
       username: root
       password: 123456
-      driver-class-name: org.mariadb.jdbc.Driver
+      driver-class-name: com.mysql.cj.jdbc.Driver
       maximum-pool-size: 20
       idle-timeout: 30000
       connection-test-query: SELECT 1

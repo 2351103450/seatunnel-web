@@ -13,13 +13,19 @@
 export default [
   {
     icon: 'database',
-    name: 'DataSource',
+    name: 'datasource',
     path: '/data-source',
     component: './data-source',
   },
   {
+    icon: 'monitor',
+    name: 'client',
+    path: '/client',
+    component: './client',
+  },
+  {
     icon: 'product',
-    name: 'Data Sync',
+    name: 'data-sync',
     path: '/sync',
     routes: [
       {
@@ -27,12 +33,12 @@ export default [
         redirect: '/sync/batch-link-up',
       },
       {
-        name: 'Batch',
+        name: 'batch',
         path: '/sync/batch-link-up',
         component: './batch-link-up',
       },
       {
-        name: 'Stream',
+        name: 'stream',
         path: '/sync/stream-link-up',
         component: './stream-link-up',
       },
@@ -40,7 +46,7 @@ export default [
   },
   {
     icon: 'monitor',
-    name: 'Metrics',
+    name: 'metrics',
     path: '/metrics',
     component: './metrics',
   },
@@ -48,8 +54,8 @@ export default [
     icon: ' ',
     name: 'Login',
     path: '/login',
-    layout: false,
     component: './login',
+    layout: false,
   },
   {
     path: '/',

@@ -1,28 +1,48 @@
 import { Badge, message, Popover } from "antd";
 import { useState } from "react";
 import { seatunnelJobScheduleApi } from "./api";
+import { useIntl } from "@umijs/max";
 
 interface ExecutionStatusProps {
   record: any;
 }
 
 const ScheduleInfo: React.FC<ExecutionStatusProps> = ({ record }) => {
-  const renderStatus = (status: string) => {
-    if (status === "ACTIVE") {
-      return <span style={{ color: "green" }}>{status}</span>;
-    } else {
-      return <span style={{ color: "red" }}>{status}</span>;
-    }
-  };
+  const intl = useIntl();
   const [cronExpression, setCronExpression] = useState<any[]>([]);
+
+  const renderStatus = (status: string) => {
+    const label =
+      status === "ACTIVE"
+        ? intl.formatMessage({
+            id: "pages.job.schedule.status.active",
+            defaultMessage: "ACTIVE",
+          })
+        : intl.formatMessage({
+            id: "pages.job.schedule.status.inactive",
+            defaultMessage: "INACTIVE",
+          });
+
+    if (status === "ACTIVE") {
+      return <span style={{ color: "green" }}>{label}</span>;
+    }
+    return <span style={{ color: "red" }}>{label}</span>;
+  };
+
   return (
     <>
       <div style={{ display: "flex", alignItems: "center" }}>
         <span style={{ fontWeight: 700, fontSize: 19, marginRight: 8 }}>·</span>
-        <span style={{ marginRight: 58, fontWeight: 700 }}>Cron: </span>
+        <span style={{ marginRight: 45, fontWeight: 700 }}>
+          {intl.formatMessage({
+            id: "pages.job.schedule.cron",
+            defaultMessage: "Cron:",
+          })}{" "}
+        </span>
+
         <Popover
           content={
-            <div style={{padding: "0 0 0 6px"}}>
+            <div style={{ padding: "0 0 0 6px" }}>
               {cronExpression.map((item, index) => (
                 <div
                   key={index}
@@ -33,12 +53,15 @@ const ScheduleInfo: React.FC<ExecutionStatusProps> = ({ record }) => {
                     fontSize: 12,
                   }}
                 >
-                  <Badge status="success" text={item || '-'} />
+                  <Badge status="success" text={item || "-"} />
                 </div>
               ))}
             </div>
           }
-          title="⏰ Last 5 Run Times"
+          title={intl.formatMessage({
+            id: "pages.job.schedule.last5RunsTitle",
+            defaultMessage: "⏰ Last 5 Run Times",
+          })}
           trigger="click"
         >
           <a
@@ -54,7 +77,12 @@ const ScheduleInfo: React.FC<ExecutionStatusProps> = ({ record }) => {
                     }
                   });
               } else {
-                message.error("Unkonw Error");
+                message.error(
+                  intl.formatMessage({
+                    id: "pages.job.message.unknownError",
+                    defaultMessage: "Unknown Error",
+                  }),
+                );
               }
             }}
             style={{
@@ -63,29 +91,42 @@ const ScheduleInfo: React.FC<ExecutionStatusProps> = ({ record }) => {
               color: "#1890ff",
               cursor: "pointer",
             }}
-            type="text"
           >
             {record?.cronExpression || "-"}
           </a>
         </Popover>
       </div>
+
       <div style={{ display: "flex", alignItems: "center" }}>
         <span style={{ fontWeight: 700, fontSize: 19, marginRight: 8 }}>·</span>
-        <span style={{ marginRight: 56, fontWeight: 700 }}>Status: </span>
-        <span style={{ color: "gray" }}>
-          {renderStatus(record?.scheduleStatus)}
+        <span style={{ marginRight: 56, fontWeight: 700 }}>
+          {intl.formatMessage({
+            id: "pages.job.schedule.status",
+            defaultMessage: "Status:",
+          })}{" "}
         </span>
+        <span style={{ color: "gray" }}>{renderStatus(record?.scheduleStatus)}</span>
       </div>
+
       <div style={{ display: "flex", alignItems: "center" }}>
         <span style={{ fontWeight: 700, fontSize: 19, marginRight: 8 }}>·</span>
         <span style={{ marginRight: 12, fontWeight: 700 }}>
-          Last Run Time:{" "}
+          {intl.formatMessage({
+            id: "pages.job.schedule.lastRunTime",
+            defaultMessage: "Last Run Time:",
+          })}{" "}
         </span>
         <span style={{ color: "gray" }}>{record?.lastScheduleTime || "-"}</span>
       </div>
+
       <div style={{ display: "flex", alignItems: "center" }}>
         <span style={{ fontWeight: 700, fontSize: 19, marginRight: 8 }}>·</span>
-        <span style={{ marginRight: 9, fontWeight: 700 }}>Next Run Time: </span>
+        <span style={{ marginRight: 12, fontWeight: 700 }}>
+          {intl.formatMessage({
+            id: "pages.job.schedule.nextRunTime",
+            defaultMessage: "Next Run Time:",
+          })}{" "}
+        </span>
         <span style={{ color: "gray" }}>{record?.nextScheduleTime || "-"}</span>
       </div>
     </>

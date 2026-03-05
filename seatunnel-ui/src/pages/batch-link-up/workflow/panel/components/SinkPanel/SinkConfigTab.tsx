@@ -1,4 +1,4 @@
-// components/SourceConfigTab/index.tsx
+// components/SinkConfigTab/index.tsx
 import { FC, useState } from "react";
 
 import Header from "@/components/Header";
@@ -6,6 +6,7 @@ import { InfoCircleOutlined } from "@ant-design/icons";
 import { Divider } from "antd";
 import ExtraParamsConfig from "./ExtraParamsConfig";
 import SinkBasicConfig from "./SinkBasicConfig";
+import { useIntl } from "@umijs/max";
 
 interface SinkConfigTabProps {
   selectedNode: {
@@ -23,7 +24,7 @@ interface SinkConfigTabProps {
   autoCreateTable: any;
 }
 
-const SourceConfigTab: FC<SinkConfigTabProps> = ({
+const SinkConfigTab: FC<SinkConfigTabProps> = ({
   selectedNode,
   sinkOption,
   onNodeDataChange,
@@ -33,12 +34,12 @@ const SourceConfigTab: FC<SinkConfigTabProps> = ({
   getSinkTableList,
   sinkTableOption,
   setAutoCreateTable,
-  autoCreateTable
+  autoCreateTable,
 }) => {
+  const intl = useIntl();
   const [params, setParams] = useState<any[]>(selectedNode?.data?.params || []);
 
   const handleParamsChange = (newParams: any[]) => {
-    
     setParams(newParams);
     if (selectedNode && onNodeDataChange) {
       const values = {}; // 这里需要获取form的值
@@ -53,8 +54,16 @@ const SourceConfigTab: FC<SinkConfigTabProps> = ({
   return (
     <div style={{ marginTop: 8 }}>
       <Header
-        title={<span style={{ fontSize: 13, fontWeight: 500 }}>Basic Setting</span>}
+        title={
+          <span style={{ fontSize: 13, fontWeight: 500 }}>
+            {intl.formatMessage({
+              id: "pages.job.config.sink.basicSetting",
+              defaultMessage: "Basic Setting",
+            })}
+          </span>
+        }
       />
+
       <SinkBasicConfig
         selectedNode={selectedNode}
         sinkOption={sinkOption}
@@ -73,8 +82,16 @@ const SourceConfigTab: FC<SinkConfigTabProps> = ({
       <Header
         title={
           <span style={{ fontSize: 13, fontWeight: 400 }}>
-            Extra Custom Parameters{" "}
-            <a>
+            {intl.formatMessage({
+              id: "pages.job.config.sink.extraParams",
+              defaultMessage: "Extra Custom Parameters",
+            })}{" "}
+            <a
+              title={intl.formatMessage({
+                id: "pages.job.config.sink.extraParams.tip",
+                defaultMessage: "Configure extra custom parameters",
+              })}
+            >
               <InfoCircleOutlined />
             </a>
           </span>
@@ -90,4 +107,4 @@ const SourceConfigTab: FC<SinkConfigTabProps> = ({
   );
 };
 
-export default SourceConfigTab;
+export default SinkConfigTab;

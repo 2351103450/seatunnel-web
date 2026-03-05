@@ -6,8 +6,10 @@ import org.apache.seatunnel.communal.bean.entity.PaginationResult;
 import org.apache.seatunnel.communal.bean.po.DataSourcePO;
 import org.apache.seatunnel.communal.bean.vo.DBOptionVO;
 import org.apache.seatunnel.communal.bean.vo.DataSourceVO;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
+import java.util.Map;
 
 public interface DataSourceService extends IService<DataSourcePO> {
 
@@ -111,4 +113,6 @@ public interface DataSourceService extends IService<DataSourcePO> {
      * List all data sources (no pagination).
      */
     List<DataSourceVO> listAll();
+
+    Map<String, Object> uploadJdbcDriver(MultipartFile file, String pluginType, boolean overwrite);
 }

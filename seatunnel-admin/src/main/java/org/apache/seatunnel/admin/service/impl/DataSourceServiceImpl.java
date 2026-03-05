@@ -25,8 +25,13 @@ import org.apache.seatunnel.plugin.datasource.api.utils.DataSourceUtils;
 import org.springframework.dao.DuplicateKeyException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.multipart.MultipartFile;
 
+import java.io.IOException;
+import java.nio.file.*;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 @Slf4j
@@ -142,6 +147,69 @@ public class DataSourceServiceImpl extends ServiceImpl<DataSourceMapper, DataSou
         return ConvertUtil.sourceListToTarget(entities, DataSourceVO.class);
     }
 
+    @Override
+    public Map<String, Object> uploadJdbcDriver(MultipartFile file, String pluginType, boolean overwrite) {
+        if (file == null || file.isEmpty()) {
+            throw new RuntimeException("file is empty");
+        }
+
+        String original = file.getOriginalFilename();
+        String filename = StringUtils.isNotBlank(original) ? Paths.get(original).getFileName().toString() : null;
+        if (!StringUtils.isNotBlank(filename)) {
+            throw new RuntimeException("invalid filename");
+        }
+
+        String lower = filename.toLowerCase();
+        if (!lower.endsWith(".jar")) {
+            throw new RuntimeException("only .jar is allowed");
+        }
+
+        long max = 200L * 1024 * 1024;
+        if (file.getSize() > max) {
+            throw new RuntimeException("file too large (>200MB)");
+        }
+
+        String userHome = System.getProperty("user.dir");
+        Path targetDir = Paths.get(userHome, "jdbc-drivers");
+
+        try {
+            Files.createDirectories(targetDir);
+
+            Path targetFile = targetDir.resolve(filename).normalize();
+
+            if (!targetFile.startsWith(targetDir)) {
+                throw new RuntimeException("invalid file path");
+            }
+
+            if (Files.exists(targetFile) && !overwrite) {
+                throw new RuntimeException("file already exists, set overwrite=true to replace");
+            }
+
+            Path tmp = Files.createTempFile(targetDir, filename + ".", ".uploading");
+            try {
+                Files.copy(file.getInputStream(), tmp, StandardCopyOption.REPLACE_EXISTING);
+                Files.move(tmp, targetFile, overwrite
+                        ? new CopyOption[]{StandardCopyOption.REPLACE_EXISTING, StandardCopyOption.ATOMIC_MOVE}
+                        : new CopyOption[]{StandardCopyOption.ATOMIC_MOVE});
+            } finally {
+                try {
+                    Files.deleteIfExists(tmp);
+                } catch (Exception ignore) {
+                }
+            }
+
+            Map<String, Object> data = new HashMap<>();
+            data.put("fileName", filename);
+            data.put("absolutePath", targetFile.toAbsolutePath().toString());
+            data.put("driverLocation", filename);
+
+            return data;
+        } catch (IOException e) {
+            log.error("Upload JDBC driver failed, filename={}", filename, e);
+            throw new RuntimeException("upload failed: " + e.getMessage());
+        }
+    }
+
     private DbType extractDbType(String connJson) {
         JSONObject json = JSON.parseObject(connJson);
         return DbType.valueOf(json.getString("type"));
@@ -157,7 +225,7 @@ public class DataSourceServiceImpl extends ServiceImpl<DataSourceMapper, DataSou
         } catch (Exception e) {
             log.error("Connection test failed for data source: {}", po.getId(), e);
             updateConnectionStatus(po, ConnStatus.CONNECTED_FAILED);
-            return false;
+            throw new RuntimeException(e.getMessage());
         }
     }
 
@@ -171,7 +239,7 @@ public class DataSourceServiceImpl extends ServiceImpl<DataSourceMapper, DataSou
             return true;
         } catch (Exception e) {
             log.error("Error checking connection for dbType {}: {}", dbType, e.getMessage());
-            return false;
+            throw new RuntimeException(e.getMessage());
         }
     }
 
