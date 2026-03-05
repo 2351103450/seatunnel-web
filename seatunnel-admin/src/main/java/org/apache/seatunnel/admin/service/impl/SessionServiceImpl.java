@@ -12,6 +12,7 @@ import org.apache.seatunnel.communal.bean.po.User;
 import org.apache.seatunnel.communal.constant.Constant;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.util.WebUtils;
 
@@ -21,6 +22,7 @@ import java.util.Date;
 import java.util.List;
 import java.util.UUID;
 
+@Service
 public class SessionServiceImpl extends ServiceImpl<SessionMapper, Session>
         implements SessionService {
     private static final Logger logger = LoggerFactory.getLogger(SessionService.class);
