@@ -14,9 +14,10 @@ import type { RequestConfig, RunTimeLayoutConfig } from "@umijs/max";
 import { history, Link } from "@umijs/max";
 import defaultSettings from "../config/defaultSettings";
 import { errorConfig } from "./requestErrorConfig";
+import HttpUtils from "./utils/HttpUtils";
 
 const isDev = process.env.NODE_ENV === "development";
-const loginPath = "/data-source";
+const loginPath = '/login';
 
 /**
  * @see https://umijs.org/docs/api/runtime-config#getinitialstate
@@ -29,17 +30,17 @@ export async function getInitialState(): Promise<{
 }> {
   const fetchUserInfo = async () => {
     try {
-      const msg = await queryCurrentUser({
-        skipErrorHandler: true,
-      });
+      console.log("-0-0-29093")
+      const msg = await HttpUtils.get<API.CurrentUser | undefined>("/api/v1/users/currentUser");
+      console.log(msg);
       return msg.data;
     } catch (_error) {
-      // history.push(loginPath);
+      history.push(loginPath);
     }
     return undefined;
   };
   // 如果不是登录页面，执行
-  // const { location } = history;
+  const { location } = history;
   if (
     ![loginPath, "/user/register", "/user/register-result"].includes(
       location.pathname
@@ -81,10 +82,11 @@ export const layout: RunTimeLayoutConfig = ({
     footerRender: () => <Footer />,
     onPageChange: () => {
       const { location } = history;
+      console.log(initialState?.currentUser);
       // 如果没有登录，重定向到 login
-      // if (!initialState?.currentUser && location.pathname !== loginPath) {
-      //   history.push(loginPath);
-      // }
+      if (!initialState?.currentUser && location.pathname !== loginPath) {
+        history.push(loginPath);
+      }
     },
     bgLayoutImgList: [
       {

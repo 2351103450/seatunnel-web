@@ -8,13 +8,12 @@ import org.apache.commons.lang3.StringUtils;
 import org.apache.seatunnel.admin.aspect.AccessLogAnnotation;
 import org.apache.seatunnel.admin.security.Authenticator;
 import org.apache.seatunnel.admin.service.SessionService;
+import org.apache.seatunnel.admin.service.UsersService;
+import org.apache.seatunnel.communal.bean.dto.UserDTO;
 import org.apache.seatunnel.communal.bean.entity.Result;
 import org.apache.seatunnel.communal.bean.po.User;
 import org.apache.seatunnel.communal.constant.Constant;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 import java.util.Map;
 
@@ -23,7 +22,7 @@ import java.util.Map;
  * login controller
  */
 @RestController
-@RequestMapping("")
+@RequestMapping("/api/v1")
 public class SeaTunnelLoginController extends BaseController {
 
     @Resource
@@ -32,11 +31,13 @@ public class SeaTunnelLoginController extends BaseController {
     @Resource
     private Authenticator authenticator;
 
+    @Resource
+    private UsersService usersService;
+
     /**
      * login
      *
-     * @param userName     user name
-     * @param userPassword user password
+     * @param userDTO     userDTO
      * @param request      request
      * @param response     response
      * @return login result
@@ -44,19 +45,18 @@ public class SeaTunnelLoginController extends BaseController {
 
     @PostMapping(value = "/login")
     @AccessLogAnnotation(ignoreRequestArgs = {"userPassword", "request", "response"})
-    public Result<Boolean> login(@RequestParam(value = "userName") String userName,
-                                 @RequestParam(value = "userPassword") String userPassword,
+    public Result<Boolean> login(@RequestBody UserDTO userDTO,
                                  HttpServletRequest request,
                                  HttpServletResponse response) {
         // user name check
-        if (StringUtils.isEmpty(userName)) {
+        if (StringUtils.isEmpty(userDTO.getUserName())) {
             throw new RuntimeException("user name is null");
         }
 
         String ip = getClientIpAddress(request);
 
         // verify username and password
-        Map<String, String> cookieMap = authenticator.authenticate(userName, userPassword, ip);
+        Map<String, String> cookieMap = authenticator.authenticate(userDTO.getUserName(), userDTO.getUserPassword(), ip);
 
         for (Map.Entry<String, String> cookieEntry : cookieMap.entrySet()) {
             Cookie cookie = new Cookie(cookieEntry.getKey(), cookieEntry.getValue());

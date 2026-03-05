@@ -1,4 +1,4 @@
-package org.apache.seatunnel.communal.bean.po;
+package org.apache.seatunnel.communal.bean.dto;
 
 import com.baomidou.mybatisplus.annotation.IdType;
 import com.baomidou.mybatisplus.annotation.TableId;
@@ -9,10 +9,8 @@ import org.apache.seatunnel.communal.enums.UserType;
 import java.util.Date;
 
 @Data
-@TableName("t_ds_user")
-public class User {
+public class UserDTO {
 
-    @TableId(value = "id", type = IdType.AUTO)
     private Integer id;
 
     private String userName;
@@ -26,6 +24,8 @@ public class User {
     private UserType userType;
 
     private int state;
+
+    private String timeZone;
 
     private Date createTime;
 

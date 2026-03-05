@@ -2,7 +2,7 @@
 /** Request 网络请求工具 更详细的 api 文档: https://github.com/umijs/umi-request */
 import { extend } from "umi-request";
 import { message, notification } from "antd";
-import {history} from "umi";
+import { history } from "umi";
 
 const codeMessage: Record<number, string> = {
   10000: "系统未知错误，请反馈给管理员",
@@ -28,7 +28,7 @@ const errorHandler = (error: { response: Response }): Response => {
   const { response } = error;
   if (response && response.status) {
 
-   
+
 
     const errorText = codeMessage[response.status] || response.statusText;
     const { status, url } = response;
@@ -57,53 +57,21 @@ function createClient() {
 const request = createClient();
 
 // 更换令牌的时间区间
-// const checkRegion = 5 * 60 * 1000;
+
 export const goLogin = () => {
   if (!window.location.pathname.toLowerCase().startsWith('/data-source')) {
-    history.push( `/data-source`);
+    history.push(`/data-source`);
   }
 };
 
 request.interceptors.request.use((url: string, options: any) => {
 
   const headers = options.headers ? options.headers : [];
-  // const user = Utils.getCookie('X-SSO-USER');
-  // const id = Utils.getCookie('X-SSO-USER-ID');
 
-  // if (!user || !id) {
-  //   goLogin();
-  // } else {
-  //   headers['X-SSO-USER'] = user; // 请求携带token
-  //   headers['X-SSO-USER-ID'] = id;
-  //   headers['Trick-Login-Switch'] = 'on';
-  //     return {
-  //         url,
-  //         options: { ...options, headers },
-  //       };
-  //   }
 
   if (headers["Authorization"] === "" || headers["Authorization"] == null) {
-    // const expireTime = getTokenExpireTime();
-    // if (expireTime) {
-    //   const left = Number(expireTime) - new Date().getTime();
-    //   const refreshToken = getRefreshToken();
-    //   if (left < checkRegion && refreshToken) {
-    //     if (left < 0) {
-    //       clearSessionToken();
-    //       history.push(LoginPageUrl);
-    //     }
-    //   } else {
-    //     const accessToken = getAccessToken();
-    //     if (accessToken) {
-    //       headers["Authorization"] = `Bearer ${accessToken}`;
-    //     }
-    //   }
-    // } else {
-    //   clearSessionToken();
-    //   history.push(LoginPageUrl);
-    //   return undefined;
-    // }
- 
+
+
     return {
       url,
       options: { ...options, headers },
@@ -115,35 +83,4 @@ request.interceptors.request.use((url: string, options: any) => {
     };
   }
 });
-
-// 响应拦截器
-// request.interceptors.response.use(async (response: Response) => {
-//   try {
-//     const { status } = response;
-//     if (status === 401 || status === 403 ) {
-//       // const msg = codeMessage[status] || codeMessage[10000];
-//       // message.warn(`${status} ${msg}`);
-//       goLogin();
-//     }
-//   } catch(error) {
-
-//   }
-
-//   try {
-//     response.clone().json().then(dataItem => {
-
-//       if(dataItem?.code !== 0) {
-//         customNotification.error({
-//           description: dataItem?.message || "未知错误",
-//           message: "错误"
-//         });
-//         return;
-//       }
-//     })
-//   } catch(error) {
-
-//   }
-//   return response;
-// });
-
 export default request;

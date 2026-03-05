@@ -1,5 +1,7 @@
 import { GoogleOutlined, LockOutlined, MailOutlined } from "@ant-design/icons";
+import { useIntl, useModel } from "@umijs/max";
 import {
+  App,
   Button,
   Checkbox,
   Divider,
@@ -9,7 +11,9 @@ import {
   Typography,
 } from "antd";
 import React, { useMemo, useRef, useState } from "react";
+import { flushSync } from "react-dom";
 import ZetaIcon from "../batch-link-up/workflow/sider/icon/ZetaIcon";
+import { loginApi } from "./type";
 
 /** 复用你已有的 ActionType */
 type ActionType =
@@ -141,20 +145,6 @@ export default function LoginPanel({ onFire }: LoginPanelProps) {
     transformOrigin: "center",
   };
 
-  const iconGlowStyle: React.CSSProperties = {
-    content: '""' as any,
-    position: "absolute",
-    inset: -10,
-    borderRadius: 18,
-    background:
-      "radial-gradient(circle at 30% 30%, rgba(99,102,241,0.35), transparent 60%)," +
-      "radial-gradient(circle at 70% 70%, rgba(56,189,248,0.30), transparent 55%)",
-    filter: "blur(10px)",
-    opacity: 0.45,
-    animation: "stw-glow 2.8s ease-in-out infinite",
-    zIndex: 0,
-  };
-
   const brandTextStyle: React.CSSProperties = {
     marginLeft: 10,
     fontWeight: 700,
@@ -165,7 +155,7 @@ export default function LoginPanel({ onFire }: LoginPanelProps) {
     backgroundClip: "text",
     color: "transparent",
     fontSize: 32,
-    marginBottom: 12
+    marginBottom: 12,
   };
 
   // 主按钮：微光扫过（hover/常驻都可以，这里做 hover 时更明显）
@@ -201,23 +191,56 @@ export default function LoginPanel({ onFire }: LoginPanelProps) {
     animation: "stw-shine 2.8s ease-in-out infinite",
   };
 
-  const handleSubmit = async (values: any) => {
-    setLoading(true);
-    try {
-      onFire("THANKS");
-      await new Promise((r) => setTimeout(r, 600));
-    } catch (e) {
-      onFire("SURPRISE");
-    } finally {
-      setLoading(false);
+  const [userLoginState, setUserLoginState] = useState<any>({});
+  const [type, setType] = useState<string>("account");
+  const { initialState, setInitialState } = useModel("@@initialState");
+
+  const { message } = App.useApp();
+  const intl = useIntl();
+
+  const fetchUserInfo = async () => {
+    const userInfo = await initialState?.fetchUserInfo?.();
+    if (userInfo) {
+      flushSync(() => {
+        setInitialState((s) => ({
+          ...s,
+          currentUser: userInfo,
+        }));
+      });
     }
   };
 
+  const handleSubmit = async (values: API.LoginParams) => {
+    try {
+      // 登录
+      const data = await loginApi.login({ ...values, type });
+      if (data.code === 0) {
+        const defaultLoginSuccessMessage = intl.formatMessage({
+          id: "pages.login.success",
+          defaultMessage: "登录成功！",
+        });
+        message.success(defaultLoginSuccessMessage);
+        await fetchUserInfo();
+        const urlParams = new URL(window.location.href).searchParams;
+        window.location.href = urlParams.get("redirect") || "/";
+        return;
+      } else {
+        onFire("TILT");
+        message.error(data?.message || "")
+      }
+    } catch (error) {
+      const defaultLoginFailureMessage = intl.formatMessage({
+        id: "pages.login.failure",
+        defaultMessage: "登录失败，请重试！",
+      });
+      console.log(error);
+      message.error(defaultLoginFailureMessage);
+    }
+  };
+  const { status, type: loginType } = userLoginState;
+
   return (
     <div style={wrapStyle}>
-
-
-
       <style>{keyframes}</style>
       <div style={animatedBgStyle} />
 
@@ -252,8 +275,6 @@ export default function LoginPanel({ onFire }: LoginPanelProps) {
           <span style={brandTextStyle}>SeaTunnel Web</span>
         </div>
 
-        
-
         <Typography.Title level={3} style={{ margin: 0, color: "#111827" }}>
           Welcome back!
         </Typography.Title>
@@ -269,12 +290,12 @@ export default function LoginPanel({ onFire }: LoginPanelProps) {
 
         <Form layout="vertical" onFinish={handleSubmit} requiredMark={false}>
           <Form.Item
-            label="Email"
-            name="email"
-            rules={[
-              { required: true, message: "Please enter your email" },
-              { type: "email", message: "Invalid email format" },
-            ]}
+            label="userName"
+            name="userName"
+            // rules={[
+            //   { required: true, message: "Please enter your email" },
+            //   { type: "email", message: "Invalid email format" },
+            // ]}
             style={{ marginBottom: 12 }}
           >
             <Input
@@ -289,8 +310,8 @@ export default function LoginPanel({ onFire }: LoginPanelProps) {
           </Form.Item>
 
           <Form.Item
-            label="Password"
-            name="password"
+            label="userPassword"
+            name="userPassword"
             rules={[{ required: true, message: "Please enter your password" }]}
             style={{ marginBottom: 8 }}
           >
@@ -338,9 +359,6 @@ export default function LoginPanel({ onFire }: LoginPanelProps) {
             loading={loading}
             style={primaryBtnStyle}
             onMouseEnter={() => fireThrottled("login_hover", "SMILE", 700)}
-            onClick={() => {
-                onFire("TILT")
-            }}
           >
             <span style={{ position: "relative", zIndex: 1 }}>Login</span>
             <span style={shineLayerStyle} aria-hidden>
@@ -372,11 +390,7 @@ export default function LoginPanel({ onFire }: LoginPanelProps) {
             <Typography.Text style={{ color: "rgba(17,24,39,0.55)" }}>
               Don’t have an account?
             </Typography.Text>
-            <Button
-              type="link"
-              style={{ padding: 0 }}
-             
-            >
+            <Button type="link" style={{ padding: 0 }}>
               Sign up
             </Button>
           </Space>
