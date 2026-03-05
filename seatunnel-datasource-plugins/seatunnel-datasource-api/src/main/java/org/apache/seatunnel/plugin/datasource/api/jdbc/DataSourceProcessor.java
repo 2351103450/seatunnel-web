@@ -3,7 +3,11 @@ package org.apache.seatunnel.plugin.datasource.api.jdbc;
 import org.apache.seatunnel.communal.BaseConnectionParam;
 import org.apache.seatunnel.communal.DbType;
 import org.apache.seatunnel.communal.config.OptionRule;
+import org.apache.seatunnel.communal.form.FormFieldConfig;
+import org.apache.seatunnel.plugin.datasource.api.form.ReflectionFormGenerator;
 import org.apache.seatunnel.plugin.datasource.api.hocon.DataSourceHoconBuilder;
+
+import java.util.List;
 
 /**
  * Data-source-level plugin entry.
@@ -51,4 +55,12 @@ public interface DataSourceProcessor {
      * Allows each thread to obtain an isolated copy.
      */
     DataSourceProcessor create();
+
+    default List<FormFieldConfig> generateFormFields() {
+
+        BaseConnectionParam param =
+                getParamConverter().createConnectionParams("{}");
+
+        return ReflectionFormGenerator.generate(param.getClass());
+    }
 }

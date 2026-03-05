@@ -4,9 +4,7 @@ import lombok.Data;
 
 import java.util.List;
 
-/**
- * 表单字段配置
- */
+
 @Data
 public class FormFieldConfig {
     private String key;
@@ -14,7 +12,7 @@ public class FormFieldConfig {
     private FieldType type;
     private String placeholder;
     private Object defaultValue;
-    private List<Option> options; // 用于SELECT类型
-    private List<Rule> rules; // 验证规则
-
+    private List<Option> options;
+    private List<Rule> rules;
+    private int order;
 }

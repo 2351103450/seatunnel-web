@@ -4,6 +4,8 @@ import lombok.Data;
 import lombok.EqualsAndHashCode;
 import org.apache.seatunnel.communal.BaseConnectionParam;
 import org.apache.seatunnel.communal.KeyValuePair;
+import org.apache.seatunnel.communal.form.FieldType;
+import org.apache.seatunnel.communal.form.FormField;
 
 import java.util.HashMap;
 import java.util.List;
@@ -14,7 +16,24 @@ import java.util.stream.Collectors;
 @EqualsAndHashCode(callSuper = true)
 public class MySQLConnectionParam extends BaseConnectionParam {
 
+    @FormField(
+            label = "连接参数",
+            type = FieldType.CUSTOM_SELECT,
+            order = 7,
+            defaultValue = "[{\"key\":\"useSSL\",\"value\":\"false\"},{\"key\":\"allowPublicKeyRetrieval\",\"value\":\"true\"}]"
+    )
     protected List<KeyValuePair> other;
+
+    @FormField(
+            label = "驱动Jar包",
+            order = 6,
+            defaultValue = "mysql-connector-java-8.0.29.jar"
+    )
+
+    protected String driverLocation;
+
+    @FormField(label = "Port", required = true, order = 2, defaultValue = "3306")
+    protected String port;
 
     public Map<String, String> getOtherAsMap() {
         if (other == null) {

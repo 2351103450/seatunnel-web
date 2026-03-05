@@ -20,4 +20,6 @@ public interface DatasourcePluginService extends IService<DataSourcePluginConfig
      * @throws RuntimeException if the plugin is unknown or its configuration cannot be loaded
      */
     PluginConfigResponse getPluginConfig(String pluginName);
+
+    void installPlugin(String pluginType);
 }

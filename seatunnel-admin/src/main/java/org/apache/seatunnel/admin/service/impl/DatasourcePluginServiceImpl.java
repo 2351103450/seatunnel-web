@@ -7,8 +7,12 @@ import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.seatunnel.admin.dao.DatasourcePluginConfigMapper;
 import org.apache.seatunnel.admin.service.DatasourcePluginService;
+import org.apache.seatunnel.communal.BaseConnectionParam;
+import org.apache.seatunnel.communal.DbType;
 import org.apache.seatunnel.communal.bean.po.DataSourcePluginConfigPO;
 import org.apache.seatunnel.communal.form.*;
+import org.apache.seatunnel.plugin.datasource.api.jdbc.DataSourceProcessor;
+import org.apache.seatunnel.plugin.datasource.api.utils.DataSourceUtils;
 import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
@@ -40,6 +44,36 @@ public class DatasourcePluginServiceImpl
         response.setPluginType(config.getPluginType());
         response.setFormFields(formFields);
         return response;
+    }
+
+    @Override
+    public void installPlugin(String pluginType) {
+        DbType dbType;
+        try {
+            dbType = DbType.valueOf(pluginType.toUpperCase());
+        } catch (Exception e) {
+            throw new IllegalArgumentException("Unknown pluginType: " + pluginType);
+        }
+
+        LambdaQueryWrapper<DataSourcePluginConfigPO> wrapper = new LambdaQueryWrapper<>();
+        wrapper.eq(DataSourcePluginConfigPO::getPluginType, dbType);
+        DataSourcePluginConfigPO exist = this.getOne(wrapper);
+        if (exist != null) {
+            return;
+        }
+
+        DataSourceProcessor processor =
+                DataSourceUtils.getDatasourceProcessor(dbType);
+        List<FormFieldConfig> fields = processor.generateFormFields();
+
+        JSONObject schema = new JSONObject();
+        schema.put("fields", fields);
+
+        DataSourcePluginConfigPO po = new DataSourcePluginConfigPO();
+        po.setPluginType(dbType);
+        po.setConfigSchema(schema.toJSONString());
+        po.initInsert();
+        this.save(po);
     }
 
     /**

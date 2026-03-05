@@ -13,6 +13,7 @@ import static java.util.stream.Collectors.toMap;
 public enum DbType {
 
     MYSQL("MYSQL", "MYSQL", "MYSQL"),
+    ORACLE("ORACLE", "ORACLE", "ORACLE"),
     PGSQL("PGSQL", "PGSQL", "PGSQL");
 
     private static final Map<String, DbType> DB_TYPE_MAP =

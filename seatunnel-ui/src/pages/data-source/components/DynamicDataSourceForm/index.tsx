@@ -1,9 +1,18 @@
 import HttpUtils from "@/utils/HttpUtils";
 import { LoadingOutlined } from "@ant-design/icons";
 import { useIntl } from "@umijs/max";
-import { Form, Input, InputNumber, message, Select, Switch } from "antd";
+import {
+  Button,
+  Form,
+  Input,
+  InputNumber,
+  message,
+  Select,
+  Switch,
+} from "antd";
 import TextArea from "antd/es/input/TextArea";
 import { useEffect, useState } from "react";
+import DatabaseIcons from "../../icon/DatabaseIcons";
 import { DynamicDataSourceFormProps, FormField } from "../../type";
 import CustomKVList from "./components/CustomKVList";
 import DriverLocationField from "./components/DriverLocationField";
@@ -20,6 +29,10 @@ const DynamicDataSourceForm: React.FC<DynamicDataSourceFormProps> = ({
   const [formConfig, setFormConfig] = useState<FormField[]>([]);
   const [loading, setLoading] = useState<boolean>(false);
 
+  const [needInstall, setNeedInstall] = useState(false);
+  const [installing, setInstalling] = useState(false);
+  const [loadErrMsg, setLoadErrMsg] = useState<string>("");
+
   useEffect(() => {
     loadFormConfig();
   }, [dbType]);
@@ -27,12 +40,17 @@ const DynamicDataSourceForm: React.FC<DynamicDataSourceFormProps> = ({
   const loadFormConfig = async (): Promise<void> => {
     try {
       setLoading(true);
+      setNeedInstall(false);
+      setLoadErrMsg("");
+
       const response = await HttpUtils.get<any>(
         `/api/v1/data-source/plugin/config?pluginType=${dbType}`
       );
+
       if (response?.code === 0) {
         const fields = response?.data?.formFields || [];
         setFormConfig(fields);
+
         const init = getConfigInitialValues(fields);
         const current = configForm.getFieldsValue(true);
 
@@ -44,21 +62,46 @@ const DynamicDataSourceForm: React.FC<DynamicDataSourceFormProps> = ({
           }
         });
 
-        if (Object.keys(patch).length) {
-          configForm.setFieldsValue(patch);
-        }
+        if (Object.keys(patch).length) configForm.setFieldsValue(patch);
       } else {
-        message.error(response?.message);
+        // 这里识别“未安装/未初始化”，你也可以根据 message 关键字更精确判断
+        setNeedInstall(true);
+        setLoadErrMsg(response?.message || "Plugin config not available");
+        setFormConfig([]);
       }
-    } catch (error) {
-      message.error(
-        intl.formatMessage({
-          id: "pages.datasource.form.loadConfigFail",
-          defaultMessage: "Failed to load form config",
-        })
+    } catch (error: any) {
+      setNeedInstall(true);
+      setLoadErrMsg(
+        error?.message ||
+          intl.formatMessage({
+            id: "pages.datasource.form.loadConfigFail",
+            defaultMessage: "Failed to load form config",
+          })
       );
+      setFormConfig([]);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const installPlugin = async () => {
+    try {
+      setInstalling(true);
+      const resp = await HttpUtils.post<any>(
+        `/api/v1/data-source/plugin/config/install?pluginType=${dbType}`,
+        {}
+      );
+
+      if (resp?.code === 0) {
+        message.success("Plugin installed");
+        await loadFormConfig();
+      } else {
+        message.error(resp?.message || "Install failed");
+      }
+    } catch (e: any) {
+      message.error(e?.message || "Install failed");
+    } finally {
+      setInstalling(false);
     }
   };
 
@@ -214,6 +257,27 @@ const DynamicDataSourceForm: React.FC<DynamicDataSourceFormProps> = ({
         <Form.Item name="connectionParams" hidden>
           <Input type="hidden" />
         </Form.Item>
+
+        {/* 👇 这里新增 */}
+        {needInstall && (
+          <div
+            style={{ margin: "-8px 0 16px 0", paddingLeft: 110, marginTop: 20 }}
+          >
+            {/* <div style={{ marginBottom: 8, color: "rgba(0,0,0,0.65)" }}>
+              {loadErrMsg || "Plugin not installed."}
+            </div> */}
+            <Button
+              type="dashed"
+              loading={installing}
+              onClick={installPlugin}
+              style={{ width: "70%" }}
+            >
+              Install plugin (
+              {dbType}
+              {<DatabaseIcons dbType={dbType} height="18" width="18" />})
+            </Button>
+          </div>
+        )}
 
         <Form
           form={configForm}
