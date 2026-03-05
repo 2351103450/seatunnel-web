@@ -13,6 +13,19 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
+/**
+ * A lightweight REST client for interacting with the SeaTunnel engine REST API.
+ *
+ * <p>This client wraps {@link RestTemplate} and provides:
+ * <ul>
+ *   <li>Convenient methods for common engine endpoints</li>
+ *   <li>Simple URL construction based on a configured base API URL</li>
+ *   <li>Unified exception wrapping into {@link SeatunnelClientException}</li>
+ * </ul>
+ *
+ * <p><strong>Note:</strong> This class currently returns raw {@link Map}/{@link List}
+ * for flexibility. Consider introducing typed DTOs in the future for better safety.</p>
+ */
 @SuppressWarnings({"unchecked", "rawtypes"})
 @Service
 public class SeatunnelRestClient {
@@ -20,18 +33,35 @@ public class SeatunnelRestClient {
     private final RestTemplate restTemplate;
     private final String baseApiUrl;
 
+    /**
+     * @param restTemplate Spring RestTemplate instance
+     * @param baseApiUrl base URL for the engine API, e.g. http://host:port
+     */
     public SeatunnelRestClient(RestTemplate restTemplate, String baseApiUrl) {
         this.restTemplate = restTemplate;
         this.baseApiUrl = baseApiUrl;
     }
 
-
+    /**
+     * Builds a full URL by joining {@code baseApiUrl} and an endpoint path.
+     *
+     * @param path endpoint path such as "/overview" or "overview"
+     * @return full URL
+     */
     private String url(String path) {
         if (path == null || path.isEmpty()) return baseApiUrl;
         if (!path.startsWith("/")) path = "/" + path;
         return baseApiUrl + path;
     }
 
+    /**
+     * Wraps exceptions thrown by RestTemplate into a {@link SeatunnelClientException}.
+     * If the exception contains an HTTP status + response body, they will be included.
+     *
+     * @param e original exception
+     * @param hint human-readable hint (endpoint + operation)
+     * @return runtime exception to throw
+     */
     private RuntimeException wrap(Exception e, String hint) {
         if (e instanceof HttpStatusCodeException) {
             HttpStatusCodeException he = (HttpStatusCodeException) e;
@@ -45,8 +75,10 @@ public class SeatunnelRestClient {
         return new SeatunnelClientException(hint, -1, "", e);
     }
 
+    /** Null-safe string helper. */
     private String safe(String s) { return s == null ? "" : s; }
 
+    /** Default JSON headers used for JSON APIs. */
     private HttpHeaders jsonHeaders() {
         HttpHeaders h = new HttpHeaders();
         h.setContentType(MediaType.APPLICATION_JSON);
@@ -54,6 +86,12 @@ public class SeatunnelRestClient {
         return h;
     }
 
+    /**
+     * Text payload headers.
+     *
+     * <p>Used for endpoints where request body is plain text (e.g. SQL/HOCON/JSON text),
+     * but server response is JSON.</p>
+     */
     private HttpHeaders textHeaders() {
         HttpHeaders h = new HttpHeaders();
         h.setContentType(MediaType.TEXT_PLAIN);
@@ -61,8 +99,14 @@ public class SeatunnelRestClient {
         return h;
     }
 
+    /* ===================== GET ===================== */
 
-    /** GET /overview?tag1=v1&tag2=v2 */
+    /**
+     * GET /overview?tag1=v1&tag2=v2
+     *
+     * @param tags optional tags as query parameters; may be null/empty
+     * @return overview response as a map
+     */
     public Map overview(Map<String, String> tags) {
         try {
             StringBuilder sb = new StringBuilder(url("/overview"));
@@ -99,7 +143,11 @@ public class SeatunnelRestClient {
         }
     }
 
-    /** GET /finished-jobs/{state} */
+    /**
+     * GET /finished-jobs/{state}
+     *
+     * @param state job state string; if blank, a fallback value will be used
+     */
     public List finishedJobs(String state) {
         try {
             if (state == null || state.trim().isEmpty()) state = "UNKNOWABLE";
@@ -118,7 +166,15 @@ public class SeatunnelRestClient {
         }
     }
 
-    /** GET /logs 或 /logs/{jobId}  支持 ?format=json */
+    /**
+     * GET /logs or /logs/{jobId}
+     *
+     * <p>Supports optional query param: ?format=json</p>
+     *
+     * @param jobIdOrNull when null, fetches /logs; otherwise /logs/{jobId}
+     * @param formatOrNull optional format query param
+     * @return raw response (could be JSON or text depending on server)
+     */
     public Object logs(Long jobIdOrNull, String formatOrNull) {
         try {
             String path = (jobIdOrNull == null) ? "/logs" : ("/logs/" + jobIdOrNull);
@@ -132,7 +188,7 @@ public class SeatunnelRestClient {
         }
     }
 
-    /** GET /log (单节点日志列表) */
+    /** GET /log (single-node log list) */
     public Object nodeLogs() {
         try {
             return restTemplate.getForObject(url("/log"), Object.class);
@@ -141,7 +197,15 @@ public class SeatunnelRestClient {
         }
     }
 
-    /** GET /metrics 或 /openmetrics (一般是文本) */
+    /**
+     * GET /metrics or /openmetrics
+     *
+     * <p>These endpoints usually return plain text. We use exchange()
+     * to retrieve the raw string body.</p>
+     *
+     * @param openMetrics whether to call /openmetrics instead of /metrics
+     * @return metrics text body
+     */
     public String metrics(boolean openMetrics) {
         try {
             String path = openMetrics ? "/openmetrics" : "/metrics";
@@ -161,7 +225,8 @@ public class SeatunnelRestClient {
 
     /**
      * POST /submit-job?format=json|hocon|sql&jobId=..&jobName=..&isStartWithSavePoint=..
-     * body = 配置文本
+     *
+     * <p>Request body is plain text (config content).</p>
      */
     public Map submitJobText(String configText, String format, String jobId, String jobName, Boolean isStartWithSavePoint) {
         try {
@@ -173,14 +238,14 @@ public class SeatunnelRestClient {
             if (jobName != null && !jobName.trim().isEmpty()) sb.append("&jobName=").append(jobName);
             if (isStartWithSavePoint != null) sb.append("&isStartWithSavePoint=").append(isStartWithSavePoint);
 
-            HttpEntity<String> entity = new HttpEntity<String>(configText == null ? "" : configText, textHeaders());
+            HttpEntity<String> entity = new HttpEntity<>(configText == null ? "" : configText, textHeaders());
             return restTemplate.postForObject(sb.toString(), entity, Map.class);
         } catch (Exception e) {
             throw wrap(e, "POST /submit-job failed");
         }
     }
 
-    /** POST /submit-job (json 对象) */
+    /** POST /submit-job with JSON object body */
     public Map submitJobJson(Object configJsonObject, String jobId, String jobName, Boolean isStartWithSavePoint) {
         try {
             StringBuilder sb = new StringBuilder(url("/submit-job"));
@@ -189,18 +254,23 @@ public class SeatunnelRestClient {
             if (jobName != null && !jobName.trim().isEmpty()) sb.append("&jobName=").append(jobName);
             if (isStartWithSavePoint != null) sb.append("&isStartWithSavePoint=").append(isStartWithSavePoint);
 
-            HttpEntity<Object> entity = new HttpEntity<Object>(configJsonObject, jsonHeaders());
+            HttpEntity<Object> entity = new HttpEntity<>(configJsonObject, jsonHeaders());
             return restTemplate.postForObject(sb.toString(), entity, Map.class);
         } catch (Exception e) {
             throw wrap(e, "POST /submit-job(json) failed");
         }
     }
 
-    /** POST /submit-job/upload multipart key=config_file */
+    /**
+     * POST /submit-job/upload (multipart)
+     *
+     * <p>Form field name is "config_file".</p>
+     */
     public Map submitJobUpload(byte[] fileBytes, String filename) {
         try {
-            MultiValueMap<String, Object> body = new LinkedMultiValueMap<String, Object>();
+            MultiValueMap<String, Object> body = new LinkedMultiValueMap<>();
 
+            // Wrap bytes as a Resource so RestTemplate can send it as multipart file
             ByteArrayResource resource = new ByteArrayResource(fileBytes == null ? new byte[0] : fileBytes) {
                 @Override
                 public String getFilename() {
@@ -214,7 +284,7 @@ public class SeatunnelRestClient {
             headers.setContentType(MediaType.MULTIPART_FORM_DATA);
             headers.setAccept(Collections.singletonList(MediaType.APPLICATION_JSON));
 
-            HttpEntity<MultiValueMap<String, Object>> req = new HttpEntity<MultiValueMap<String, Object>>(body, headers);
+            HttpEntity<MultiValueMap<String, Object>> req = new HttpEntity<>(body, headers);
 
             ResponseEntity<Map> resp = restTemplate.exchange(
                     url("/submit-job/upload"),
@@ -228,10 +298,14 @@ public class SeatunnelRestClient {
         }
     }
 
-    /** POST /submit-jobs 批量提交（body是数组） */
+    /**
+     * POST /submit-jobs (batch submit)
+     *
+     * <p>Request body is a JSON array of job configs.</p>
+     */
     public List submitJobsBatch(List jobConfigs) {
         try {
-            HttpEntity<Object> entity = new HttpEntity<Object>(jobConfigs, jsonHeaders());
+            HttpEntity<Object> entity = new HttpEntity<>(jobConfigs, jsonHeaders());
             ResponseEntity<List> resp = restTemplate.exchange(url("/submit-jobs"), HttpMethod.POST, entity, List.class);
             return resp.getBody();
         } catch (Exception e) {
@@ -239,24 +313,29 @@ public class SeatunnelRestClient {
         }
     }
 
-    /** POST /stop-job */
+    /**
+     * POST /stop-job
+     *
+     * @param jobId engine job id
+     * @param isStopWithSavePoint whether to stop with savepoint
+     */
     public Map stopJob(long jobId, boolean isStopWithSavePoint) {
         try {
-            Map<String, Object> body = new java.util.LinkedHashMap<String, Object>();
+            Map<String, Object> body = new java.util.LinkedHashMap<>();
             body.put("jobId", jobId);
             body.put("isStopWithSavePoint", isStopWithSavePoint);
 
-            HttpEntity<Object> entity = new HttpEntity<Object>(body, jsonHeaders());
+            HttpEntity<Object> entity = new HttpEntity<>(body, jsonHeaders());
             return restTemplate.postForObject(url("/stop-job"), entity, Map.class);
         } catch (Exception e) {
             throw wrap(e, "POST /stop-job failed");
         }
     }
 
-    /** POST /stop-jobs */
+    /** POST /stop-jobs (batch stop) */
     public List stopJobsBatch(List<Map<String, Object>> items) {
         try {
-            HttpEntity<Object> entity = new HttpEntity<Object>(items, jsonHeaders());
+            HttpEntity<Object> entity = new HttpEntity<>(items, jsonHeaders());
             ResponseEntity<List> resp = restTemplate.exchange(url("/stop-jobs"), HttpMethod.POST, entity, List.class);
             return resp.getBody();
         } catch (Exception e) {
@@ -267,38 +346,46 @@ public class SeatunnelRestClient {
     /** POST /encrypt-config */
     public Map encryptConfig(Object config) {
         try {
-            HttpEntity<Object> entity = new HttpEntity<Object>(config, jsonHeaders());
+            HttpEntity<Object> entity = new HttpEntity<>(config, jsonHeaders());
             return restTemplate.postForObject(url("/encrypt-config"), entity, Map.class);
         } catch (Exception e) {
             throw wrap(e, "POST /encrypt-config failed");
         }
     }
 
-    /** POST /update-tags (body 是 Map；空 Map 表示清空) */
+    /**
+     * POST /update-tags
+     *
+     * <p>Request body is a JSON map; an empty map indicates clearing tags.</p>
+     */
     public Map updateTags(Map<String, String> tags) {
         try {
-            Map<String, String> body = (tags == null) ? Collections.<String, String>emptyMap() : tags;
-            HttpEntity<Object> entity = new HttpEntity<Object>(body, jsonHeaders());
+            Map<String, String> body = (tags == null) ? Collections.emptyMap() : tags;
+            HttpEntity<Object> entity = new HttpEntity<>(body, jsonHeaders());
             return restTemplate.postForObject(url("/update-tags"), entity, Map.class);
         } catch (Exception e) {
             throw wrap(e, "POST /update-tags failed");
         }
     }
 
-    /* ===================== convenience ===================== */
+    /* ===================== Convenience ===================== */
 
+    /** Submits a SQL job (format=sql). */
     public Map submitJobSql(String sql, String jobName) {
         return submitJobText(sql, "sql", null, jobName, null);
     }
 
+    /** Submits a HOCON job (format=hocon). */
     public Map submitJobHocon(String hocon, String jobName) {
         return submitJobText(hocon, "hocon", null, jobName, null);
     }
 
+    /** Submits a JSON text job (format=json). */
     public Map submitJobJsonText(String json, String jobName) {
         return submitJobText(json, "json", null, jobName, null);
     }
 
+    /** Submits a job by uploading a config file generated from plain text. */
     public Map submitJobUploadText(String text, String filename) {
         byte[] bytes = (text == null ? "" : text).getBytes(StandardCharsets.UTF_8);
         return submitJobUpload(bytes, filename);

@@ -5,10 +5,8 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
 @ConfigurationProperties(prefix = "seatunnel.client")
 public class SeatunnelClientProperties {
 
-    /** e.g. http://127.0.0.1:8080 */
     private String baseUrl;
 
-    /** e.g. /seatunnel or empty */
     private String contextPath = "";
 
     private int connectTimeoutMs = 2000;
