@@ -12,7 +12,8 @@ import {
 } from "antd";
 import React, { useMemo, useRef, useState } from "react";
 import { flushSync } from "react-dom";
-import ZetaIcon from "../batch-link-up/workflow/sider/icon/ZetaIcon";
+import "./index.less";
+import SeaTunnelIcon from "./SeaTunnelIcon";
 import { loginApi } from "./type";
 
 /** 复用你已有的 ActionType */
@@ -121,7 +122,7 @@ export default function LoginPanel({ onFire }: LoginPanelProps) {
       padding: 24,
       display: "flex",
       flexDirection: "column",
-      justifyContent: "center",
+      //   justifyContent: "center",
       position: "relative",
       zIndex: 1,
       animation: "stw-fadeUp 520ms ease-out both",
@@ -150,7 +151,7 @@ export default function LoginPanel({ onFire }: LoginPanelProps) {
     fontWeight: 700,
     letterSpacing: 0.2,
     background:
-      "linear-gradient(90deg, rgba(17,24,39,0.92), rgba(99,102,241,0.95), rgba(56,189,248,0.95))",
+      "linear-gradient(90deg, rgba(136,183,213,1), rgba(90,145,191,1), rgba(34,96,163,1))",
     WebkitBackgroundClip: "text",
     backgroundClip: "text",
     color: "transparent",
@@ -226,7 +227,7 @@ export default function LoginPanel({ onFire }: LoginPanelProps) {
         return;
       } else {
         onFire("TILT");
-        message.error(data?.message || "")
+        message.error(data?.message || "");
       }
     } catch (error) {
       const defaultLoginFailureMessage = intl.formatMessage({
@@ -245,7 +246,7 @@ export default function LoginPanel({ onFire }: LoginPanelProps) {
       <div style={animatedBgStyle} />
 
       <div style={cardStyle}>
-        <div
+        {/* <div
           style={{
             width: "100%",
             display: "flex",
@@ -256,7 +257,7 @@ export default function LoginPanel({ onFire }: LoginPanelProps) {
           }}
         >
           <div style={iconWrapStyle} aria-hidden>
-            {/* <div style={iconGlowStyle} /> */}
+            
             <div
               style={{
                 width: 24,
@@ -273,20 +274,54 @@ export default function LoginPanel({ onFire }: LoginPanelProps) {
           </div>
 
           <span style={brandTextStyle}>SeaTunnel Web</span>
-        </div>
-
-        <Typography.Title level={3} style={{ margin: 0, color: "#111827" }}>
-          Welcome back!
-        </Typography.Title>
-        <Typography.Paragraph
+        </div> */}
+        <div
           style={{
-            marginTop: 6,
-            marginBottom: 18,
-            color: "rgba(17,24,39,0.55)",
+            position: "relative",
+            margin: "1rem 2rem",
           }}
         >
-          Please enter your details
-        </Typography.Paragraph>
+          <div className="header_main">
+            <div className="header_spinner2"></div>
+            <div className="header_spinner_closer2">
+              <div
+                style={{
+                  display: "flex",
+                  marginTop: "11.5rem",
+                  //   alignItems: "end",
+                  justifyContent: "center",
+                  height: "100%",
+                }}
+              >
+                <SeaTunnelIcon />
+              </div>
+            </div>
+            <div className="header_spinner">
+              <div className="innersphere innersphere1"></div>
+              <div className="innersphere innersphere2"></div>
+              <div className="innersphere innersphere3"></div>
+              <div className="innersphere innersphere4"></div>
+            </div>
+            <div className="header_spinner_closer">
+              <div
+                style={{
+                  width: "100%",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  marginBottom: 70,
+                  userSelect: "none",
+                }}
+              >
+                <span style={brandTextStyle}>SeaTunnel Web</span>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div className="portfolio_text_container">
+          <hr className="header_separator" />
+          <h1 className="portfolio_text">WelCome Back</h1>
+        </div>
 
         <Form layout="vertical" onFinish={handleSubmit} requiredMark={false}>
           <Form.Item
