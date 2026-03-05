@@ -15,8 +15,11 @@ public abstract class BaseConnectionParam implements ConnectionParam {
     @FormField(label = "主机地址IP", required = true, placeholder = "localhost", order = 1, defaultValue = "localhost")
     private String host;
 
-    @FormField(label = "端口号", required = true, placeholder = "3306", order = 2)
+    @FormField(label = "端口号", required = true, placeholder = "3306", type = FieldType.NUMBER, order = 2)
     private String port;
+
+    @FormField(label = "数据库", required = true, order = 3)
+    protected String database;
 
     @FormField(label = "用户名", required = true, order = 4)
     protected String user;
@@ -30,9 +33,6 @@ public abstract class BaseConnectionParam implements ConnectionParam {
     protected String driver;
 
     protected DbType dbType;
-
-    @FormField(label = "数据库", required = true, order = 3)
-    protected String database;
 
     protected String schemaName;
 
