@@ -272,9 +272,12 @@ const DynamicDataSourceForm: React.FC<DynamicDataSourceFormProps> = ({
               onClick={installPlugin}
               style={{ width: "70%" }}
             >
-              Install plugin (
-              {dbType}
-              {<DatabaseIcons dbType={dbType} height="18" width="18" />})
+              {intl.formatMessage({
+                id: "pages.datasource.form.installPlugin",
+                defaultMessage: "Install Plugin",
+              })}{" "}
+              ({dbType}
+              <DatabaseIcons dbType={dbType} height="18" width="18" />)
             </Button>
           </div>
         )}

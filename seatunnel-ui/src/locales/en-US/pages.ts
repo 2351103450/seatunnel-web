@@ -380,4 +380,6 @@ export default {
   "pages.job.detail.schedule.info": "Schedule Info",
 
   "pages.job.history.title": "Run History",
+
+  "pages.datasource.form.installPlugin": "Install Plugin",
 };
