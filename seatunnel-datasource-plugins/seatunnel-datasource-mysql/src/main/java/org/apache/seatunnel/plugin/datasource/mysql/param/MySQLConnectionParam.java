@@ -32,7 +32,7 @@ public class MySQLConnectionParam extends BaseConnectionParam {
 
     protected String driverLocation;
 
-    @FormField(label = "Port", required = true, order = 2, defaultValue = "3306")
+    @FormField(label = "Port", required = true, order = 2, defaultValue = "3306", type = FieldType.NUMBER)
     protected String port;
 
     public Map<String, String> getOtherAsMap() {
