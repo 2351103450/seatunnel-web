@@ -1,4 +1,3 @@
-import { Col, Row } from "antd";
 import React, {
   CSSProperties,
   forwardRef,
@@ -7,6 +6,8 @@ import React, {
   useRef,
   useState,
 } from "react";
+import WebGLMouseTrail from "./WebGLMouseTrail";
+import { Col, Row } from "antd";
 import LoginPanel from "./LoginPanel";
 
 /** ===================== Layout (center group) ===================== */
@@ -789,30 +790,37 @@ export default function BlueCrewDemo() {
   const fire = (type: ActionType) => setAction({ type, nonce: Date.now() });
 
   return (
-    <Row gutter={24} style={{ margin: 0, padding: 0 }}>
-      <Col span={18} style={{ margin: 0, padding: 0 }}>
-        <CharactersScene
-          ref={stageRef}
-          mouse={mouse}
-          action={action}
-          globalTilt={globalTilt}
-          bootT={bootT}
-          stageW={stageSize.w}
-          stageH={stageSize.h}
-        />
-      </Col>
-
-      <Col
-        span={6}
-        style={{
-          display: "flex",
-          flexDirection: "column",
-          margin: 0,
-          padding: 0,
-        }}
+    <>
+      <div
+        style={{ position: "relative", height: "100vh"}}
       >
-        <LoginPanel onFire={fire} />
-      </Col>
-    </Row>
+        <WebGLMouseTrail />
+        <Row gutter={24} style={{ margin: 0, padding: 0 }}>
+          <Col span={18} style={{ margin: 0, padding: 0 }}>
+            <CharactersScene
+              ref={stageRef}
+              mouse={mouse}
+              action={action}
+              globalTilt={globalTilt}
+              bootT={bootT}
+              stageW={stageSize.w}
+              stageH={stageSize.h}
+            />
+          </Col>
+
+          <Col
+            span={6}
+            style={{
+              display: "flex",
+              flexDirection: "column",
+              margin: 0,
+              padding: 0,
+            }}
+          >
+            <LoginPanel onFire={fire} />
+          </Col>
+        </Row>
+      </div>
+    </>
   );
 }
