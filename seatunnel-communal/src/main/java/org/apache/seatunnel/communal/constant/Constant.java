@@ -10,12 +10,45 @@ public class Constant {
 
     private Constant() {
     }
+
+    /**
+     * session timeout
+     */
+    public static final int SESSION_TIME_OUT = 7200;
+    public static final int MAX_FILE_SIZE = 1024 * 1024 * 1024;
+    public static final String UDF = "UDF";
+    public static final String CLASS = "class";
+
     public static final String FUNCTION_START_WITH = "$";
     public static final String EMPTY_STRING = "";
 
     public static final String COMMON_TASK_TYPE = "COMMON";
     public static final long DEPENDENT_ALL_TASK_CODE = 0;
     public static final String DEPENDENT_SPLIT = ":||";
+
+    /**
+     * Security authentication types (supported types: PASSWORD,LDAP)
+     */
+    public static final String SECURITY_CONFIG_TYPE = "securityConfigType";
+
+    public static final String SECURITY_CONFIG_TYPE_PASSWORD = "PASSWORD";
+
+    public static final String SECURITY_CONFIG_TYPE_LDAP = "LDAP";
+
+    /**
+     * http header
+     */
+    public static final String HTTP_HEADER_UNKNOWN = "unKnown";
+
+    /**
+     * http X-Forwarded-For
+     */
+    public static final String HTTP_X_FORWARDED_FOR = "X-Forwarded-For";
+
+    /**
+     * http X-Real-IP
+     */
+    public static final String HTTP_X_REAL_IP = "X-Real-IP";
     /**
      * short sleep 100ms
      */
