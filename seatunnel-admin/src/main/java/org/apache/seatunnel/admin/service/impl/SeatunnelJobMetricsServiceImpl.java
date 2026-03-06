@@ -7,8 +7,6 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.seatunnel.admin.dao.SeatunnelJobMetricsMapper;
 import org.apache.seatunnel.admin.service.SeatunnelJobMetricsService;
 import org.apache.seatunnel.admin.thirdparty.client.SeatunnelEngineRestClient;
-import org.apache.seatunnel.admin.thirdparty.metrics.EngineMetricsExtractorFactory;
-import org.apache.seatunnel.admin.thirdparty.metrics.IEngineMetricsExtractor;
 import org.apache.seatunnel.communal.bean.entity.Engine;
 import org.apache.seatunnel.communal.bean.entity.EngineType;
 import org.apache.seatunnel.communal.bean.entity.Scale;
@@ -55,12 +53,6 @@ public class SeatunnelJobMetricsServiceImpl
     private SeatunnelEngineRestClient engineRestClient;
 
     /**
-     * Default engine version if not specified.
-     */
-    @Value("${seatunnel.engine.version:2.3.12}")
-    private String defaultEngineVersion;
-
-    /**
      * Default time zone used for metrics calculation.
      */
     private static final ZoneId ZONE_ID = ZoneId.of("Asia/Shanghai");
@@ -71,24 +63,6 @@ public class SeatunnelJobMetricsServiceImpl
     private static final DateTimeFormatter DT =
             DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
 
-    /**
-     * Cache of engine metrics extractors.
-     * Key format: engineType:version
-     */
-    private final ConcurrentHashMap<String, IEngineMetricsExtractor> extractorCache =
-            new ConcurrentHashMap<>();
-
-    /**
-     * Get or create engine metrics extractor (cached).
-     */
-    private IEngineMetricsExtractor getOrCreateExtractor(EngineType type, String version) {
-        String key = type.name() + ":" + version;
-        return extractorCache.computeIfAbsent(key, k -> {
-            Engine engine = new Engine(type, version);
-            return new EngineMetricsExtractorFactory(engine)
-                    .getEngineMetricsExtractor();
-        });
-    }
 
     /**
      * Fetch real-time metrics map from engine by jobEngineId.

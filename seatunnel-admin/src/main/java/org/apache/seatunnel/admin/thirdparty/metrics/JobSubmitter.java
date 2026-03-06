@@ -18,7 +18,7 @@ public class JobSubmitter {
     private JobConfigFileService configFileService;
 
     @Resource
-    private SeatunnelRestClient seatunnelRestClient; // ✅ 新增：REST 客户端
+    private SeatunnelRestClient seatunnelRestClient;
 
     @Resource
     private JobMetricsMonitor metricsMonitor;

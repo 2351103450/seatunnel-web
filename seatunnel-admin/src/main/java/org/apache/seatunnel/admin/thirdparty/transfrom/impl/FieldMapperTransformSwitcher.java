@@ -4,7 +4,7 @@ import com.google.auto.service.AutoService;
 import com.typesafe.config.Config;
 import com.typesafe.config.ConfigFactory;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.commons.collections4.CollectionUtils;
+import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.seatunnel.admin.thirdparty.transfrom.TransformConfigSwitcher;
 import org.apache.seatunnel.admin.thirdparty.transfrom.domain.FieldMapperField;

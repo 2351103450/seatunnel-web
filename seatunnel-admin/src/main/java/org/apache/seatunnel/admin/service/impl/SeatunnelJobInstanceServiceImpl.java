@@ -26,7 +26,7 @@ import org.apache.seatunnel.communal.bean.vo.SeatunnelJobInstanceVO;
 import org.apache.seatunnel.communal.enums.RunMode;
 import org.apache.seatunnel.communal.utils.CodeGenerateUtils;
 import org.apache.seatunnel.communal.utils.ConvertUtil;
-import org.apache.seatunnel.engine.common.job.JobStatus;
+import org.apache.seatunnel.communal.enums.JobStatus;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.context.annotation.Scope;

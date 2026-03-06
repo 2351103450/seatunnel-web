@@ -4,8 +4,8 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.seatunnel.admin.service.SeatunnelJobInstanceService;
 import org.apache.seatunnel.admin.utils.JobUtils;
 import org.apache.seatunnel.communal.bean.po.SeatunnelJobInstancePO;
-import org.apache.seatunnel.engine.common.job.JobResult;
-import org.apache.seatunnel.engine.common.job.JobStatus;
+import org.apache.seatunnel.communal.enums.JobResult;
+import org.apache.seatunnel.communal.enums.JobStatus;
 import org.springframework.stereotype.Component;
 
 import java.util.Date;

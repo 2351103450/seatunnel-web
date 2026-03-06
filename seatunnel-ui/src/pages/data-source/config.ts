@@ -20,7 +20,7 @@ export type EditConfigProps = Omit<ConfigProps, 'operator'>;
 
 export const sourceList = [
   {
-    groupName: "Relational Databases",
+    groupName: "关系型数据库",
     datasourceList: [
 
       {

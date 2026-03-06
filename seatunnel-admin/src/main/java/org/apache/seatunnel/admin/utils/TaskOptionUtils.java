@@ -2,7 +2,6 @@ package org.apache.seatunnel.admin.utils;
 
 import org.apache.commons.lang3.StringUtils;
 import org.apache.seatunnel.admin.thirdparty.transfrom.domain.*;
-import org.apache.seatunnel.common.utils.JsonUtils;
 
 import java.io.IOException;
 
@@ -61,7 +60,6 @@ public class TaskOptionUtils {
      *
      * <p>
      * This method performs basic validation and delegates the actual
-     * deserialization to {@link JsonUtils}.
      * </p>
      *
      * @param transformOptionsStr JSON string containing transform configuration

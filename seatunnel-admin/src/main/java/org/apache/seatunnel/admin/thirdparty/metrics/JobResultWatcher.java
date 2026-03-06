@@ -3,8 +3,8 @@ package org.apache.seatunnel.admin.thirdparty.metrics;
 import jakarta.annotation.Resource;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.seatunnel.admin.thirdparty.client.SeatunnelRestClient;
-import org.apache.seatunnel.engine.common.job.JobResult;
-import org.apache.seatunnel.engine.common.job.JobStatus;
+import org.apache.seatunnel.communal.enums.JobResult;
+import org.apache.seatunnel.communal.enums.JobStatus;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
