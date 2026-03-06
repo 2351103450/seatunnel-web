@@ -10,26 +10,15 @@
         <version>1.0.0</version>
     </parent>
 
-    <artifactId>seatunnel-datasource-all</artifactId>
+    <artifactId>seatunnel-datasource-oracle</artifactId>
     <version>1.0.0</version>
 
     <dependencies>
         <dependency>
             <groupId>org.apache.seatunnel</groupId>
-            <artifactId>seatunnel-datasource-mysql</artifactId>
-            <version>1.0.0</version>
-        </dependency>
-        <dependency>
-            <groupId>org.apache.seatunnel</groupId>
-            <artifactId>seatunnel-datasource-oracle</artifactId>
-            <version>1.0.0</version>
-        </dependency>
-        <dependency>
-            <groupId>org.apache.seatunnel</groupId>
-            <artifactId>seatunnel-datasource-pgsql</artifactId>
+            <artifactId>seatunnel-datasource-api</artifactId>
             <version>1.0.0</version>
         </dependency>
     </dependencies>
-
 
 </project>

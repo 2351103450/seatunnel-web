@@ -19,8 +19,8 @@
         <module>seatunnel-datasource-all</module>
         <module>seatunnel-datasource-api</module>
         <module>seatunnel-datasource-mysql</module>
+        <module>seatunnel-datasource-oracle</module>
         <module>seatunnel-datasource-pgsql</module>
-
     </modules>
 
 
