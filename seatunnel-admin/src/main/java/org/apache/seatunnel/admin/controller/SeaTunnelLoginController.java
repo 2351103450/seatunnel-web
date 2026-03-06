@@ -11,7 +11,7 @@ import org.apache.seatunnel.admin.service.SessionService;
 import org.apache.seatunnel.admin.service.UsersService;
 import org.apache.seatunnel.communal.bean.dto.UserDTO;
 import org.apache.seatunnel.communal.bean.entity.Result;
-import org.apache.seatunnel.communal.bean.po.User;
+import org.apache.seatunnel.communal.bean.po.UserPO;
 import org.apache.seatunnel.communal.constant.Constant;
 import org.springframework.web.bind.annotation.*;
 
@@ -70,16 +70,16 @@ public class SeaTunnelLoginController extends BaseController {
     /**
      * sign out
      *
-     * @param loginUser login user
+     * @param loginUserPO login user
      * @param request   request
      * @return sign out result
      */
     @PostMapping(value = "/signOut")
     @AccessLogAnnotation(ignoreRequestArgs = {"loginUser", "request"})
-    public Result<Boolean> signOut(User loginUser,
+    public Result<Boolean> signOut(UserPO loginUserPO,
                                    HttpServletRequest request) {
         String ip = getClientIpAddress(request);
-        sessionService.signOut(ip, loginUser);
+        sessionService.signOut(ip, loginUserPO);
         // clear session
         request.removeAttribute(Constant.SESSION_USER);
         return Result.buildSuc();

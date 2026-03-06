@@ -2,7 +2,7 @@ package org.apache.seatunnel.admin.aspect;
 
 import jakarta.servlet.http.HttpServletRequest;
 import org.apache.commons.lang3.StringUtils;
-import org.apache.seatunnel.communal.bean.po.User;
+import org.apache.seatunnel.communal.bean.po.UserPO;
 import org.apache.seatunnel.communal.constant.Constant;
 import org.aspectj.lang.ProceedingJoinPoint;
 import org.aspectj.lang.annotation.Around;
@@ -133,9 +133,9 @@ public class AccessLogAspect {
 
     private String parseLoginInfo(HttpServletRequest request) {
         String userName = "NOT LOGIN";
-        User loginUser = (User) (request.getAttribute(Constant.SESSION_USER));
-        if (loginUser != null) {
-            userName = loginUser.getUserName();
+        UserPO loginUserPO = (UserPO) (request.getAttribute(Constant.SESSION_USER));
+        if (loginUserPO != null) {
+            userName = loginUserPO.getUserName();
         }
         return userName;
     }

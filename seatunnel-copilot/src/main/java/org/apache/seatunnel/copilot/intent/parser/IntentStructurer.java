@@ -33,8 +33,8 @@ public class IntentStructurer {
 
 
         String system = buildSystemPrompt();
-        String user = buildUserPrompt(intentType, prompt);
-        String json = llmClient.callJson(system, user);
+        String userPO = buildUserPrompt(intentType, prompt);
+        String json = llmClient.callJson(system, userPO);
         json = cleanJsonFence(json);
         try {
             JsonNode node = om.readTree(json);
@@ -97,7 +97,7 @@ public class IntentStructurer {
 
     private String buildUserPrompt(String intentType, String prompt) {
         return """
-                Given the user prompt, extract intent fields and output JSON.
+                Given the userPO prompt, extract intent fields and output JSON.
 
                 Required output schema:
                 {

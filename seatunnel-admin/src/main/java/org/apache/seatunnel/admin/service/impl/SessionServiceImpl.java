@@ -7,8 +7,8 @@ import org.apache.commons.lang3.StringUtils;
 import org.apache.seatunnel.admin.controller.BaseController;
 import org.apache.seatunnel.admin.dao.SessionMapper;
 import org.apache.seatunnel.admin.service.SessionService;
-import org.apache.seatunnel.communal.bean.po.Session;
-import org.apache.seatunnel.communal.bean.po.User;
+import org.apache.seatunnel.communal.bean.po.SessionPO;
+import org.apache.seatunnel.communal.bean.po.UserPO;
 import org.apache.seatunnel.communal.constant.Constant;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -23,12 +23,12 @@ import java.util.List;
 import java.util.UUID;
 
 @Service
-public class SessionServiceImpl extends ServiceImpl<SessionMapper, Session>
+public class SessionServiceImpl extends ServiceImpl<SessionMapper, SessionPO>
         implements SessionService {
     private static final Logger logger = LoggerFactory.getLogger(SessionService.class);
 
     @Override
-    public Session getSession(HttpServletRequest request) {
+    public SessionPO getSession(HttpServletRequest request) {
         String sessionId = request.getHeader(Constant.SESSION_ID);
 
         if (StringUtils.isBlank(sessionId)) {
@@ -51,72 +51,72 @@ public class SessionServiceImpl extends ServiceImpl<SessionMapper, Session>
 
     @Override
     @Transactional
-    public String createSession(User user, String ip) {
-        Session session = null;
+    public String createSession(UserPO userPO, String ip) {
+        SessionPO sessionPO = null;
 
-        LambdaQueryWrapper<Session> sessionLambdaQueryWrapper = new LambdaQueryWrapper<>();
-        sessionLambdaQueryWrapper.eq(Session::getUserId, user.getId());
+        LambdaQueryWrapper<SessionPO> sessionLambdaQueryWrapper = new LambdaQueryWrapper<>();
+        sessionLambdaQueryWrapper.eq(SessionPO::getUserId, userPO.getId());
         // logined
-        List<Session> sessionList = getBaseMapper().selectList(sessionLambdaQueryWrapper);
+        List<SessionPO> sessionPOList = getBaseMapper().selectList(sessionLambdaQueryWrapper);
 
         Date now = new Date();
 
         /*
          * if you have logged in and are still valid, return directly
          */
-        if (CollectionUtils.isNotEmpty(sessionList)) {
+        if (CollectionUtils.isNotEmpty(sessionPOList)) {
             // is session list greater 1 ， delete other ，get one
-            if (sessionList.size() > 1) {
-                for (int i = 1; i < sessionList.size(); i++) {
-                    removeById(sessionList.get(i).getId());
+            if (sessionPOList.size() > 1) {
+                for (int i = 1; i < sessionPOList.size(); i++) {
+                    removeById(sessionPOList.get(i).getId());
                 }
             }
-            session = sessionList.get(0);
-            if (now.getTime() - session.getLastLoginTime().getTime() <= Constant.SESSION_TIME_OUT * 1000) {
+            sessionPO = sessionPOList.get(0);
+            if (now.getTime() - sessionPO.getLastLoginTime().getTime() <= Constant.SESSION_TIME_OUT * 1000) {
                 /*
                  * updateProcessInstance the latest login time
                  */
-                session.setLastLoginTime(now);
-                getBaseMapper().updateById(session);
+                sessionPO.setLastLoginTime(now);
+                getBaseMapper().updateById(sessionPO);
 
-                return session.getId();
+                return sessionPO.getId();
 
             } else {
                 /*
                  * session expired, then delete this session first
                  */
-                removeById(session.getId());
+                removeById(sessionPO.getId());
             }
         }
 
         // assign new session
-        session = new Session();
+        sessionPO = new SessionPO();
 
-        session.setId(UUID.randomUUID().toString());
-        session.setIp(ip);
-        session.setUserId(user.getId());
-        session.setLastLoginTime(now);
+        sessionPO.setId(UUID.randomUUID().toString());
+        sessionPO.setIp(ip);
+        sessionPO.setUserId(userPO.getId());
+        sessionPO.setLastLoginTime(now);
 
-        save(session);
+        save(sessionPO);
 
-        return session.getId();
+        return sessionPO.getId();
     }
 
     @Override
-    public void signOut(String ip, User loginUser) {
+    public void signOut(String ip, UserPO loginUserPO) {
         try {
             /*
              * query session by user id and ip
              */
-            LambdaQueryWrapper<Session> sessionLambdaQueryWrapper = new LambdaQueryWrapper<>();
-            sessionLambdaQueryWrapper.eq(Session::getUserId, loginUser.getId());
-            sessionLambdaQueryWrapper.eq(Session::getIp, ip);
-            Session session = getBaseMapper().selectOne(sessionLambdaQueryWrapper);
+            LambdaQueryWrapper<SessionPO> sessionLambdaQueryWrapper = new LambdaQueryWrapper<>();
+            sessionLambdaQueryWrapper.eq(SessionPO::getUserId, loginUserPO.getId());
+            sessionLambdaQueryWrapper.eq(SessionPO::getIp, ip);
+            SessionPO sessionPO = getBaseMapper().selectOne(sessionLambdaQueryWrapper);
 
             //delete session
-            removeById(session.getId());
+            removeById(sessionPO.getId());
         } catch (Exception e) {
-            logger.warn("userId : {} , ip : {} , find more one session", loginUser.getId(), ip);
+            logger.warn("userId : {} , ip : {} , find more one session", loginUserPO.getId(), ip);
         }
     }
 }

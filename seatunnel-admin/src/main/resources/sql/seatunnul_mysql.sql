@@ -145,6 +145,29 @@ CREATE TABLE IF NOT EXISTS `t_seatunnel_cdc_server_ids`
     UNIQUE KEY `uq_job_jobid_server` (`job_id`,`server_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
+CREATE TABLE IF NOT EXISTS `t_seatunnel_user` (
+    `id` int NOT NULL COMMENT 'User ID',
+    `user_name` varchar(64) DEFAULT NULL COMMENT 'Username',
+    `user_password` varchar(64) DEFAULT NULL COMMENT 'User password',
+    `user_type` int DEFAULT NULL COMMENT 'User type',
+    `email` varchar(64) DEFAULT NULL COMMENT 'Email address',
+    `phone` varchar(11) DEFAULT NULL COMMENT 'Phone number',
+    `create_time` timestamp NULL DEFAULT NULL COMMENT 'Creation time',
+    `update_time` timestamp NULL DEFAULT NULL COMMENT 'Last update time',
+    `state` tinyint DEFAULT '1' COMMENT 'State: 0=disabled, 1=enabled',
+    PRIMARY KEY (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8 COMMENT='User table';
+
+CREATE TABLE IF NOT EXISTS `t_seatunnel_session` (
+   `id` varchar(64) NOT NULL COMMENT 'Session ID',
+   `user_id` int DEFAULT NULL COMMENT 'Associated userPO ID',
+   `ip` varchar(45) DEFAULT NULL COMMENT 'Client IP address',
+   `last_login_time` timestamp NULL DEFAULT NULL COMMENT 'Last login timestamp',
+   PRIMARY KEY (`id`)
+) ENGINE=InnoDB
+DEFAULT CHARSET=utf8
+COMMENT='User sessionPO table';
+
 -- ----------------------------
 -- Table structure for qrtz_blob_triggers
 -- ----------------------------
@@ -322,3 +345,4 @@ CREATE TABLE `QRTZ_TRIGGERS`
     `job_data`       blob NULL,
     PRIMARY KEY (`sched_name`, `trigger_name`, `trigger_group`) USING BTREE
 ) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_general_ci ROW_FORMAT = Dynamic;
+

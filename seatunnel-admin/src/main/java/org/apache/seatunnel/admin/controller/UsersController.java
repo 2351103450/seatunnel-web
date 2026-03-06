@@ -8,7 +8,7 @@ import org.apache.seatunnel.admin.service.SessionService;
 import org.apache.seatunnel.admin.service.UsersService;
 import org.apache.seatunnel.communal.bean.dto.UserDTO;
 import org.apache.seatunnel.communal.bean.entity.Result;
-import org.apache.seatunnel.communal.bean.po.User;
+import org.apache.seatunnel.communal.bean.po.UserPO;
 import org.apache.seatunnel.communal.constant.Constant;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -34,36 +34,36 @@ public class UsersController extends BaseController {
     /**
      * get user info
      *
-     * @param loginUser login user
+     * @param loginUserPO login user
      * @return user info
      */
     @GetMapping(value = "/get-user-info")
     @ResponseStatus(HttpStatus.OK)
     @AccessLogAnnotation
-    public Result<User> getUserInfo(@RequestAttribute(value = Constant.SESSION_USER) User loginUser) {
-        return Result.buildSuc(usersService.getUserInfo(loginUser));
+    public Result<UserPO> getUserInfo(@RequestAttribute(value = Constant.SESSION_USER) UserPO loginUserPO) {
+        return Result.buildSuc(usersService.getUserInfo(loginUserPO));
 
     }
 
     @GetMapping("/currentUser")
     public Result<UserDTO> currentUser(HttpServletRequest request) {
 
-        User loginUser = (User) request.getAttribute(Constant.SESSION_USER);
+        UserPO loginUserPO = (UserPO) request.getAttribute(Constant.SESSION_USER);
 
-        if (loginUser == null) {
+        if (loginUserPO == null) {
             var session = sessionService.getSession(request);
             if (session == null) {
                 return Result.buildFailure("NOT_LOGIN");
             }
-            loginUser = usersService.getById(session.getUserId());
+            loginUserPO = usersService.getById(session.getUserId());
         }
 
-        if (loginUser == null) {
+        if (loginUserPO == null) {
             return Result.buildFailure("NOT_LOGIN");
         }
 
         UserDTO dto = new UserDTO();
-        dto.setUserName(loginUser.getUserName());
+        dto.setUserName(loginUserPO.getUserName());
         return Result.buildSuc(dto);
     }
 }

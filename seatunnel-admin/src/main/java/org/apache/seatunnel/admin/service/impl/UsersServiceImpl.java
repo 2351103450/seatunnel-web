@@ -5,31 +5,31 @@ import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import org.apache.seatunnel.admin.dao.UserMapper;
 import org.apache.seatunnel.admin.service.UsersService;
 import org.apache.seatunnel.admin.utils.EncryptionUtils;
-import org.apache.seatunnel.communal.bean.po.User;
+import org.apache.seatunnel.communal.bean.po.UserPO;
 import org.apache.seatunnel.communal.enums.UserType;
 import org.springframework.stereotype.Service;
 
 @Service
-public class UsersServiceImpl extends ServiceImpl<UserMapper, User>
+public class UsersServiceImpl extends ServiceImpl<UserMapper, UserPO>
         implements UsersService {
 
     @Override
-    public User queryUser(String name, String password) {
+    public UserPO queryUser(String name, String password) {
         String md5 = EncryptionUtils.getMd5(password);
-        LambdaQueryWrapper<User> wrapper = new LambdaQueryWrapper<>();
-        wrapper.eq(User::getUserName, name)
-                .eq(User::getUserPassword, md5);
+        LambdaQueryWrapper<UserPO> wrapper = new LambdaQueryWrapper<>();
+        wrapper.eq(UserPO::getUserName, name)
+                .eq(UserPO::getUserPassword, md5);
         return getBaseMapper().selectOne(wrapper);
     }
 
     @Override
-    public User getUserInfo(User loginUser) {
-        User user;
-        if (loginUser.getUserType() == UserType.ADMIN_USER) {
-            user = loginUser;
+    public UserPO getUserInfo(UserPO loginUserPO) {
+        UserPO userPO;
+        if (loginUserPO.getUserType() == UserType.ADMIN_USER) {
+            userPO = loginUserPO;
         } else {
-            user = getById(loginUser.getId());
+            userPO = getById(loginUserPO.getId());
         }
-        return user;
+        return userPO;
     }
 }

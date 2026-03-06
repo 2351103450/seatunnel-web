@@ -9,8 +9,8 @@ import java.util.Date;
 /**
  * session
  */
-@TableName("t_ds_session")
-public class Session {
+@TableName("t_seatunnel_session")
+public class SessionPO {
 
     /**
      * id
@@ -84,18 +84,18 @@ public class Session {
             return false;
         }
 
-        Session session = (Session) o;
+        SessionPO sessionPO = (SessionPO) o;
 
-        if (userId != session.userId) {
+        if (userId != sessionPO.userId) {
             return false;
         }
-        if (!id.equals(session.id)) {
+        if (!id.equals(sessionPO.id)) {
             return false;
         }
-        if (!lastLoginTime.equals(session.lastLoginTime)) {
+        if (!lastLoginTime.equals(sessionPO.lastLoginTime)) {
             return false;
         }
-        return ip.equals(session.ip);
+        return ip.equals(sessionPO.ip);
     }
 
     @Override
