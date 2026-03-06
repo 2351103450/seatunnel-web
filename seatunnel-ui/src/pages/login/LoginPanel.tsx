@@ -73,21 +73,6 @@ export default function LoginPanel({ onFire }: LoginPanelProps) {
   `;
 
   // ====== ✨ 新增：整体包裹层（让 SeaTunnel Web 不再单调） ======
-  const wrapStyle = useMemo<React.CSSProperties>(
-    () => ({
-      width: "100%",
-      height: "100%",
-      position: "relative",
-      overflow: "hidden",
-      borderRadius: 16,
-      // 你可以把这层放到外面容器也行：这里假设 LoginPanel 自己就是一块区域
-      background:
-        "radial-gradient(1200px 700px at 20% 10%, rgba(79,70,229,0.12) 0%, rgba(79,70,229,0) 60%)," +
-        "radial-gradient(900px 600px at 90% 40%, rgba(56,189,248,0.12) 0%, rgba(56,189,248,0) 55%)," +
-        "linear-gradient(180deg, rgba(17,24,39,0.02) 0%, rgba(17,24,39,0.00) 40%)",
-    }),
-    []
-  );
 
   // 背景微动效：柔和网格 + 流动光斑（很克制）
   const animatedBgStyle: React.CSSProperties = {
@@ -112,7 +97,7 @@ export default function LoginPanel({ onFire }: LoginPanelProps) {
     () => ({
       width: "100%",
       height: "100%",
-      borderRadius: 16,
+      // borderRadius: 16,
       background: "rgba(255,255,255,0.88)",
       backdropFilter: "blur(10px)",
       WebkitBackdropFilter: "blur(10px)",
@@ -147,19 +132,19 @@ export default function LoginPanel({ onFire }: LoginPanelProps) {
   };
 
   const brandTextStyle: React.CSSProperties = {
-  marginLeft: 10,
-  fontWeight: 700,
-  letterSpacing: 0.2,
-  background:
-    "linear-gradient(90deg, rgba(136,183,213,1), rgba(90,145,191,1), rgba(34,96,163,1))",
-  WebkitBackgroundClip: "text",
-  backgroundClip: "text",
-  color: "transparent",
-  fontSize: "clamp(1.6rem, 3.2vw, 2rem)",
-  lineHeight: 1.1,
-  marginBottom: 12,
-  textAlign: "center",
-};
+    marginLeft: 10,
+    fontWeight: 700,
+    letterSpacing: 0.2,
+    background:
+      "linear-gradient(90deg, rgba(136,183,213,1), rgba(90,145,191,1), rgba(34,96,163,1))",
+    WebkitBackgroundClip: "text",
+    backgroundClip: "text",
+    color: "transparent",
+    fontSize: "clamp(1.6rem, 3.2vw, 2rem)",
+    lineHeight: 1.1,
+    marginBottom: 12,
+    textAlign: "center",
+  };
 
   // 主按钮：微光扫过（hover/常驻都可以，这里做 hover 时更明显）
   const primaryBtnStyle: React.CSSProperties = {
@@ -240,10 +225,17 @@ export default function LoginPanel({ onFire }: LoginPanelProps) {
       message.error(defaultLoginFailureMessage);
     }
   };
-  const { status, type: loginType } = userLoginState;
+
 
   return (
-    <div style={wrapStyle}>
+    <div
+      style={{
+        width: "100%",
+        height: "100vh",
+        position: "relative",
+        overflowY: "auto",
+      }}
+    >
       <style>{keyframes}</style>
       <div style={animatedBgStyle} />
 
@@ -280,15 +272,13 @@ export default function LoginPanel({ onFire }: LoginPanelProps) {
         <div
           style={{
             position: "relative",
-            margin: "1rem 2rem",
+            margin: "0 2rem",
           }}
         >
           <div className="header_main">
             <div className="header_spinner2"></div>
             <div className="header_spinner_closer2">
-              <div
-                className="header_spinner_closer2_inner"
-              >
+              <div className="header_spinner_closer2_inner">
                 <SeaTunnelIcon />
               </div>
             </div>
@@ -301,12 +291,10 @@ export default function LoginPanel({ onFire }: LoginPanelProps) {
             <div className="header_spinner_closer">
               <div
                 style={{
-                  width: "100%",
                   display: "flex",
-                  alignItems: "center",
+                  // marginTop: "11.5rem",
                   justifyContent: "center",
-                  marginBottom: 70,
-                  userSelect: "none",
+                  height: "100%",
                 }}
               >
                 <span style={brandTextStyle}>SeaTunnel Web</span>
@@ -315,7 +303,7 @@ export default function LoginPanel({ onFire }: LoginPanelProps) {
           </div>
         </div>
         <div className="portfolio_text_container">
-          <hr className="header_separator" />
+          {/* <hr className="header_separator" /> */}
           <h1 className="portfolio_text">WelCome Back</h1>
         </div>
 

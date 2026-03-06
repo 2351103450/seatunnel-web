@@ -718,7 +718,7 @@ const CharactersScene = forwardRef<
         width: "100%",
         height: "100vh",
         background: "#f6f6f8",
-        borderRadius: 16,
+        // borderRadius: 16,
         position: "relative",
         overflow: "hidden",
       }}
