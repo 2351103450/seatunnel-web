@@ -147,17 +147,19 @@ export default function LoginPanel({ onFire }: LoginPanelProps) {
   };
 
   const brandTextStyle: React.CSSProperties = {
-    marginLeft: 10,
-    fontWeight: 700,
-    letterSpacing: 0.2,
-    background:
-      "linear-gradient(90deg, rgba(136,183,213,1), rgba(90,145,191,1), rgba(34,96,163,1))",
-    WebkitBackgroundClip: "text",
-    backgroundClip: "text",
-    color: "transparent",
-    fontSize: 32,
-    marginBottom: 12,
-  };
+  marginLeft: 10,
+  fontWeight: 700,
+  letterSpacing: 0.2,
+  background:
+    "linear-gradient(90deg, rgba(136,183,213,1), rgba(90,145,191,1), rgba(34,96,163,1))",
+  WebkitBackgroundClip: "text",
+  backgroundClip: "text",
+  color: "transparent",
+  fontSize: "clamp(1.6rem, 3.2vw, 2rem)",
+  lineHeight: 1.1,
+  marginBottom: 12,
+  textAlign: "center",
+};
 
   // 主按钮：微光扫过（hover/常驻都可以，这里做 hover 时更明显）
   const primaryBtnStyle: React.CSSProperties = {
@@ -285,13 +287,7 @@ export default function LoginPanel({ onFire }: LoginPanelProps) {
             <div className="header_spinner2"></div>
             <div className="header_spinner_closer2">
               <div
-                style={{
-                  display: "flex",
-                  marginTop: "11.5rem",
-                  //   alignItems: "end",
-                  justifyContent: "center",
-                  height: "100%",
-                }}
+                className="header_spinner_closer2_inner"
               >
                 <SeaTunnelIcon />
               </div>

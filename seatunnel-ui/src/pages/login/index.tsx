@@ -1,3 +1,4 @@
+import { Col, Row } from "antd";
 import React, {
   CSSProperties,
   forwardRef,
@@ -6,18 +7,14 @@ import React, {
   useRef,
   useState,
 } from "react";
-import WebGLMouseTrail from "./WebGLMouseTrail";
-import { Col, Row } from "antd";
 import LoginPanel from "./LoginPanel";
+import WebGLMouseTrail from "./WebGLMouseTrail";
 
-/** ===================== Layout (center group) ===================== */
-const LAYOUT = {
-  absLeft: { orange: 34, blue: 150, black: 325, yellow: 405 } as const,
+/** ===================== Base Layout (unscaled design values) ===================== */
+const BASE_LAYOUT = {
+  absLeft: { orange: 34, blue: 150, black: 280, yellow: 360 } as const,
   absBottom: { orange: 18, blue: 18, black: 22, yellow: 18 } as const,
 };
-
-const GROUP_SCALE = 1.4; // 例如 0.9 变小，1.1 变大
-const S = (n: number) => Math.round(n * GROUP_SCALE);
 
 /** ===================== Types ===================== */
 type Pt = { x: number; y: number };
@@ -53,56 +50,15 @@ type CharacterSpec = {
 
   shape: "rect" | "pill" | "semiTop";
 
-  // small personality:
-  actionDelayBaseMs: number; // each action gets a small delay so they aren't perfectly synced
-  actionAmp: number; // slight amplitude personality
+  actionDelayBaseMs: number;
+  actionAmp: number;
 };
 
-function computeLayout() {
-  const absL = LAYOUT.absLeft;
-  const absB = LAYOUT.absBottom;
-
-  const minLeft = Math.min(...(Object.values(absL) as number[]));
-
-  const relLeft: Record<Variant, number> = {
-    orange: absL.orange - minLeft,
-    blue: absL.blue - minLeft,
-    black: absL.black - minLeft,
-    yellow: absL.yellow - minLeft,
-  };
-
-  const groupW =
-    Math.max(
-      absL.orange + SPECS.orange.w,
-      absL.blue + SPECS.blue.w,
-      absL.black + SPECS.black.w,
-      absL.yellow + SPECS.yellow.w
-    ) - minLeft;
-
-  // 组高度：max(bottom + height) - min(bottom)（以“组的最低点”为基准）
-  const minBottom = Math.min(...(Object.values(absB) as number[]));
-
-  const relBottom: Record<Variant, number> = {
-    orange: absB.orange - minBottom,
-    blue: absB.blue - minBottom,
-    black: absB.black - minBottom,
-    yellow: absB.yellow - minBottom,
-  };
-
-  const groupH = Math.max(
-    relBottom.orange + SPECS.orange.h,
-    relBottom.blue + SPECS.blue.h,
-    relBottom.black + SPECS.black.h,
-    relBottom.yellow + SPECS.yellow.h
-  );
-
-  return { relLeft, groupW, relBottom, groupH };
-}
-
-const SPECS: Record<Variant, CharacterSpec> = {
+/** ===================== Base Specs (unscaled) ===================== */
+const BASE_SPECS: Record<Variant, CharacterSpec> = {
   orange: {
-    w: S(190),
-    h: S(110),
+    w: 190,
+    h: 110,
     bg: "#FF8B2B",
     radius: 999,
     faceTop: 34,
@@ -119,8 +75,8 @@ const SPECS: Record<Variant, CharacterSpec> = {
     actionAmp: 0.95,
   },
   blue: {
-    w: S(150),
-    h: S(290),
+    w: 150,
+    h: 330,
     bg: "#5B3BFF",
     radius: 12,
     faceTop: 42,
@@ -137,8 +93,8 @@ const SPECS: Record<Variant, CharacterSpec> = {
     actionAmp: 1.0,
   },
   black: {
-    w: S(84),
-    h: S(215),
+    w: 94,
+    h: 235,
     bg: "#14161C",
     radius: 12,
     faceTop: 38,
@@ -155,8 +111,8 @@ const SPECS: Record<Variant, CharacterSpec> = {
     actionAmp: 1.1,
   },
   yellow: {
-    w: S(110),
-    h: S(185),
+    w: 110,
+    h: 185,
     bg: "#FFD33D",
     radius: 999,
     faceTop: 48,
@@ -174,16 +130,15 @@ const SPECS: Record<Variant, CharacterSpec> = {
   },
 };
 
-/** ===================== Entry Config (change this!) ===================== */
-const ENTRY: Record<
+/** ===================== Base Entry Config ===================== */
+const BASE_ENTRY: Record<
   Variant,
   { mode: EntryMode; delayMs: number; dist?: number }
 > = {
-  // 你可以随意调整顺序/方式
-  orange: { mode: "bottomBounce", delayMs: 0, dist: S(220) },
-  blue: { mode: "bottomBounce", delayMs: 80, dist: S(240) },
-  black: { mode: "topDrop", delayMs: 160, dist: S(220) },
-  yellow: { mode: "sideSlide", delayMs: 240, dist: S(260) },
+  orange: { mode: "bottomBounce", delayMs: 0, dist: 220 },
+  blue: { mode: "bottomBounce", delayMs: 80, dist: 240 },
+  black: { mode: "topDrop", delayMs: 160, dist: 220 },
+  yellow: { mode: "sideSlide", delayMs: 240, dist: 260 },
 };
 
 /** ===================== Utils ===================== */
@@ -191,13 +146,11 @@ function clamp(n: number, min: number, max: number) {
   return Math.max(min, Math.min(max, n));
 }
 
-// smooth-ish step
 function smooth01(t: number) {
   const x = clamp(t, 0, 1);
   return x * x * (3 - 2 * x);
 }
 
-// a bouncy curve 0..1 -> 0..1
 function bounceOut(t: number) {
   let x = clamp(t, 0, 1);
   const n1 = 7.5625;
@@ -223,7 +176,6 @@ function getCenter(el: HTMLElement | null): Pt | null {
   return { x: r.left + r.width / 2, y: r.top + r.height / 2 };
 }
 
-// deterministic tiny jitter based on nonce + key
 function hash01(nonce: number, key: string) {
   let h = 2166136261;
   const s = `${nonce}:${key}`;
@@ -231,22 +183,125 @@ function hash01(nonce: number, key: string) {
     h ^= s.charCodeAt(i);
     h = Math.imul(h, 16777619);
   }
-  // 0..1
   return ((h >>> 0) % 1000) / 1000;
+}
+
+function getResponsiveScale(stageW: number, stageH: number) {
+  if (!stageW || !stageH) return 1;
+
+  // 参考设计尺寸，可按你的页面继续微调
+  const scaleX = stageW / 1100;
+  const scaleY = stageH / 760;
+
+  // 取保守值，避免高度不够时溢出
+  const scale = Math.min(scaleX, scaleY);
+
+  // 限制范围，避免极端尺寸下失真
+  return clamp(scale, 0.58, 1.42);
+}
+
+function scaleSpec(spec: CharacterSpec, scale: number): CharacterSpec {
+  const px = (n: number) => Math.max(1, Math.round(n * scale));
+
+  return {
+    ...spec,
+    w: px(spec.w),
+    h: px(spec.h),
+    radius: spec.radius >= 999 ? 999 : px(spec.radius),
+    faceTop: px(spec.faceTop),
+    eyeGap: px(spec.eyeGap),
+    eyeSize: px(spec.eyeSize),
+    pupilSize: px(spec.pupilSize),
+    pupilMaxR: px(spec.pupilMaxR),
+    mouthTop: px(spec.mouthTop),
+  };
+}
+
+function getScaledSpecs(scale: number): Record<Variant, CharacterSpec> {
+  return {
+    orange: scaleSpec(BASE_SPECS.orange, scale),
+    blue: scaleSpec(BASE_SPECS.blue, scale),
+    black: scaleSpec(BASE_SPECS.black, scale),
+    yellow: scaleSpec(BASE_SPECS.yellow, scale),
+  };
+}
+
+function getScaledLayout(scale: number) {
+  const px = (n: number) => Math.round(n * scale);
+  return {
+    absLeft: {
+      orange: px(BASE_LAYOUT.absLeft.orange),
+      blue: px(BASE_LAYOUT.absLeft.blue),
+      black: px(BASE_LAYOUT.absLeft.black),
+      yellow: px(BASE_LAYOUT.absLeft.yellow),
+    },
+    absBottom: {
+      orange: px(BASE_LAYOUT.absBottom.orange),
+      blue: px(BASE_LAYOUT.absBottom.blue),
+      black: px(BASE_LAYOUT.absBottom.black),
+      yellow: px(BASE_LAYOUT.absBottom.yellow),
+    },
+  };
+}
+
+function computeLayout(
+  layout: ReturnType<typeof getScaledLayout>,
+  specs: Record<Variant, CharacterSpec>
+) {
+  const absL = layout.absLeft;
+  const absB = layout.absBottom;
+
+  const minLeft = Math.min(...(Object.values(absL) as number[]));
+
+  const relLeft: Record<Variant, number> = {
+    orange: absL.orange - minLeft,
+    blue: absL.blue - minLeft,
+    black: absL.black - minLeft,
+    yellow: absL.yellow - minLeft,
+  };
+
+  const groupW =
+    Math.max(
+      absL.orange + specs.orange.w,
+      absL.blue + specs.blue.w,
+      absL.black + specs.black.w,
+      absL.yellow + specs.yellow.w
+    ) - minLeft;
+
+  const minBottom = Math.min(...(Object.values(absB) as number[]));
+
+  const relBottom: Record<Variant, number> = {
+    orange: absB.orange - minBottom,
+    blue: absB.blue - minBottom,
+    black: absB.black - minBottom,
+    yellow: absB.yellow - minBottom,
+  };
+
+  const groupH = Math.max(
+    relBottom.orange + specs.orange.h,
+    relBottom.blue + specs.blue.h,
+    relBottom.black + specs.black.h,
+    relBottom.yellow + specs.yellow.h
+  );
+
+  return { relLeft, groupW, relBottom, groupH };
 }
 
 /** ===================== Character ===================== */
 function Character(props: {
   variant: Variant;
+  spec: CharacterSpec;
+  scale: number;
   mouse: Pt;
   action: GlobalAction;
   globalTilt: number;
-  bootT: number; // global clock (ms since mount)
+  bootT: number;
   style?: CSSProperties;
 }) {
-  const { variant, mouse, action, globalTilt, bootT, style } = props;
-  const spec = SPECS[variant];
-  const entry = ENTRY[variant];
+  const { variant, spec, scale, mouse, action, globalTilt, bootT, style } =
+    props;
+
+  const entry = BASE_ENTRY[variant];
 
   const eyeLeftRef = useRef<HTMLDivElement | null>(null);
   const eyeRightRef = useRef<HTMLDivElement | null>(null);
@@ -254,22 +309,21 @@ function Character(props: {
   const [expression, setExpression] = useState<Expression>("idle");
   const [blink, setBlink] = useState(false);
 
-  // local transforms
   const [tilt, setTilt] = useState(0);
   const [bow, setBow] = useState(0);
 
-  // timers management
   const timersRef = useRef<number[]>([]);
+
   const clearTimers = () => {
     timersRef.current.forEach((t) => window.clearTimeout(t));
     timersRef.current = [];
   };
+
   const runAction = (fn: () => void) => {
     clearTimers();
     fn();
   };
 
-  // pupils follow mouse
   const offsets = useMemo(() => {
     const cL = getCenter(eyeLeftRef.current);
     const cR = getCenter(eyeRightRef.current);
@@ -293,16 +347,16 @@ function Character(props: {
     };
   }, [mouse, spec.pupilMaxR]);
 
-  /** ===== Entry animation (per-character mode + delay) ===== */
-  const dist = entry.dist ?? 220;
-  const enterDur = 650; // ms
+  /** ===== Entry animation ===== */
+  const dist = Math.round((entry.dist ?? 220) * scale);
+  const enterDur = 650;
   const t01 = (bootT - entry.delayMs) / enterDur;
   const p = clamp(t01, 0, 1);
-  const b = bounceOut(p); // bouncy position
+  const b = bounceOut(p);
 
-  // position offsets
   let enterX = 0;
   let enterY = 0;
+
   if (entry.mode === "bottomBounce") {
     enterY = (1 - b) * dist;
   } else if (entry.mode === "topDrop") {
@@ -311,17 +365,8 @@ function Character(props: {
     enterX = -(1 - b) * dist;
   }
 
-  // scale pop near the end
-  const pop = smooth01((p - 0.72) / 0.28); // 0..1 late
-  const enterScale = 1 + 0.05 * pop * (1 - (p > 0.95 ? (p - 0.95) / 0.05 : 0)); // slight pop then settle
-
-  /** ===== Shadow (bigger when in-air, smaller when landed) ===== */
-  // When enterY is large => in air => shadow larger and lighter.
-  // Convert "height" to 0..1
-  const height01 = clamp(Math.abs(enterY) / dist, 0, 1);
-  const shadowScaleX = 1 + height01 * 0.9;
-  const shadowOpacity = 0.22 + (1 - height01) * 0.18; // darker near ground
-  const shadowBlur = 10 + height01 * 10;
+  const pop = smooth01((p - 0.72) / 0.28);
+  const enterScale = 1 + 0.05 * pop * (1 - (p > 0.95 ? (p - 0.95) / 0.05 : 0));
 
   /** ===== Actions ===== */
   const doBlink = () =>
@@ -390,13 +435,11 @@ function Character(props: {
       );
     });
 
-  // respond to global action with per-character delay + amplitude jitter
   useEffect(() => {
-    const j = hash01(action.nonce, variant); // 0..1
-    const extraDelay = 0; // 0..70ms
-    const delay = 1;
+    const j = hash01(action.nonce, variant);
+    const amp = spec.actionAmp * (0.92 + j * 0.16);
 
-    const amp = spec.actionAmp * (0.92 + j * 0.16); // ~0.92..1.08
+    const delay = Math.round(spec.actionDelayBaseMs + j * 24);
 
     const t = window.setTimeout(() => {
       switch (action.type) {
@@ -428,18 +471,20 @@ function Character(props: {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [action.nonce]);
 
-  /** ===== combine transforms ===== */
+  useEffect(() => {
+    return () => clearTimers();
+  }, []);
+
   const global = globalTilt * 0.65;
   const bodyTransform = `
     translateX(${enterX}px)
     translateY(${enterY}px)
     scale(${enterScale})
     rotate(${global + tilt}deg)
-    translateY(${bow * 10}px)
+    translateY(${bow * 10 * scale}px)
     scaleY(${1 - bow * 0.06})
   `;
 
-  /** ===== Pieces ===== */
   const eyeStyle: React.CSSProperties = {
     width: spec.eyeSize,
     height: blink ? Math.max(4, Math.round(spec.eyeSize * 0.25)) : spec.eyeSize,
@@ -474,8 +519,8 @@ function Character(props: {
             top: spec.mouthTop,
             left: "50%",
             transform: "translateX(-50%)",
-            width: 10,
-            height: 14,
+            width: Math.max(8, Math.round(10 * scale)),
+            height: Math.max(10, Math.round(14 * scale)),
             borderRadius: 999,
             background: mouthColor,
             transition: "all 180ms ease",
@@ -483,6 +528,7 @@ function Character(props: {
         />
       );
     }
+
     if (expression === "smile") {
       return (
         <div
@@ -491,13 +537,16 @@ function Character(props: {
             top: spec.mouthTop,
             left: "50%",
             transform: "translateX(-50%)",
-            width: 22,
-            height: 12,
+            width: Math.max(16, Math.round(22 * scale)),
+            height: Math.max(8, Math.round(12 * scale)),
             borderBottomLeftRadius: 999,
             borderBottomRightRadius: 999,
-            borderTopLeftRadius: 10,
-            borderTopRightRadius: 10,
-            border: `3px solid ${mouthColor}`,
+            borderTopLeftRadius: Math.max(8, Math.round(10 * scale)),
+            borderTopRightRadius: Math.max(8, Math.round(10 * scale)),
+            border: `${Math.max(
+              2,
+              Math.round(3 * scale)
+            )}px solid ${mouthColor}`,
             borderTop: "0px solid transparent",
             background: "transparent",
             transition: "all 180ms ease",
@@ -505,6 +554,7 @@ function Character(props: {
         />
       );
     }
+
     return (
       <div
         style={{
@@ -512,8 +562,8 @@ function Character(props: {
           top: spec.mouthTop,
           left: "50%",
           transform: "translateX(-50%)",
-          width: 18,
-          height: 6,
+          width: Math.max(14, Math.round(18 * scale)),
+          height: Math.max(4, Math.round(6 * scale)),
           borderRadius: 999,
           background: mouthColor,
           transition: "all 180ms ease",
@@ -534,16 +584,15 @@ function Character(props: {
   };
 
   const transition = "transform 420ms cubic-bezier(0.22, 1.4, 0.36, 1)";
+  const shadowBlur = Math.max(10, Math.round(18 * scale));
 
-  /** ===== Body by shape ===== */
   if (spec.shape === "semiTop") {
-    // circular top, flat bottom (show top half of a full circle)
     const wrap: CSSProperties = {
       width: spec.w,
       height: spec.h,
       position: "relative",
       overflow: "hidden",
-      borderRadius: 12,
+      borderRadius: Math.max(10, Math.round(12 * scale)),
       transform: bodyTransform,
       transformOrigin: "50% 85%",
       transition,
@@ -558,7 +607,9 @@ function Character(props: {
       height: spec.h * 2,
       borderRadius: 999,
       background: spec.bg,
-      boxShadow: "0 10px 25px rgba(0,0,0,0.10)",
+      boxShadow: `0 ${Math.round(
+        10 * scale
+      )}px ${shadowBlur}px rgba(0,0,0,0.10)`,
     };
 
     return (
@@ -593,7 +644,7 @@ function Character(props: {
     background: spec.bg,
     borderRadius: spec.radius,
     position: "relative",
-    boxShadow: "0 10px 25px rgba(0,0,0,0.10)",
+    boxShadow: `0 ${Math.round(10 * scale)}px ${shadowBlur}px rgba(0,0,0,0.10)`,
     transform: bodyTransform,
     transformOrigin: "50% 85%",
     transition,
@@ -637,12 +688,29 @@ const CharactersScene = forwardRef<
     stageH: number;
   }
 >(({ mouse, action, globalTilt, bootT, stageW, stageH }, ref) => {
-  const { relLeft, groupW, relBottom, groupH } = useMemo(
-    () => computeLayout(),
-    []
+  const responsiveScale = useMemo(
+    () => getResponsiveScale(stageW, stageH),
+    [stageW, stageH]
   );
+
+  const specs = useMemo(
+    () => getScaledSpecs(responsiveScale),
+    [responsiveScale]
+  );
+
+  const layout = useMemo(
+    () => getScaledLayout(responsiveScale),
+    [responsiveScale]
+  );
+
+  const { relLeft, groupW, relBottom, groupH } = useMemo(
+    () => computeLayout(layout, specs),
+    [layout, specs]
+  );
+
   const baseLeft = Math.max(0, (stageW - groupW) / 2);
   const baseBottom = Math.max(0, (stageH - groupH) / 2);
+
   return (
     <div
       ref={ref}
@@ -655,9 +723,10 @@ const CharactersScene = forwardRef<
         overflow: "hidden",
       }}
     >
-      {/* orange semi: front-most */}
       <Character
         variant="orange"
+        spec={specs.orange}
+        scale={responsiveScale}
         mouse={mouse}
         action={action}
         globalTilt={globalTilt}
@@ -672,6 +741,8 @@ const CharactersScene = forwardRef<
 
       <Character
         variant="blue"
+        spec={specs.blue}
+        scale={responsiveScale}
         mouse={mouse}
         action={action}
         globalTilt={globalTilt}
@@ -686,6 +757,8 @@ const CharactersScene = forwardRef<
 
       <Character
         variant="black"
+        spec={specs.black}
+        scale={responsiveScale}
         mouse={mouse}
         action={action}
         globalTilt={globalTilt}
@@ -700,6 +773,8 @@ const CharactersScene = forwardRef<
 
       <Character
         variant="yellow"
+        spec={specs.yellow}
+        scale={responsiveScale}
         mouse={mouse}
         action={action}
         globalTilt={globalTilt}
@@ -714,6 +789,7 @@ const CharactersScene = forwardRef<
     </div>
   );
 });
+
 CharactersScene.displayName = "CharactersScene";
 
 /** ===================== Page ===================== */
@@ -726,10 +802,7 @@ export default function BlueCrewDemo() {
     nonce: 0,
   });
 
-  // global body tilt follows mouse
   const [globalTilt, setGlobalTilt] = useState(0);
-
-  // global time for coordinated entries
   const [bootT, setBootT] = useState(0);
   const bootStartRef = useRef<number>(0);
 
@@ -757,11 +830,10 @@ export default function BlueCrewDemo() {
       const r = el.getBoundingClientRect();
       const cx = r.left + r.width / 2;
 
-      const dx = (e.clientX - cx) / (r.width / 2); // -1..1
+      const dx = (e.clientX - cx) / (r.width / 2);
       const maxDeg = 6;
       const target = clamp(dx, -1, 1) * maxDeg;
 
-      // damping
       setGlobalTilt((prev) => prev * 0.85 + target * 0.15);
     };
 
@@ -790,37 +862,45 @@ export default function BlueCrewDemo() {
   const fire = (type: ActionType) => setAction({ type, nonce: Date.now() });
 
   return (
-    <>
-      <div
-        style={{ position: "relative", height: "100vh"}}
-      >
-        <WebGLMouseTrail />
-        <Row gutter={24} style={{ margin: 0, padding: 0 }}>
-          <Col span={18} style={{ margin: 0, padding: 0 }}>
-            <CharactersScene
-              ref={stageRef}
-              mouse={mouse}
-              action={action}
-              globalTilt={globalTilt}
-              bootT={bootT}
-              stageW={stageSize.w}
-              stageH={stageSize.h}
-            />
-          </Col>
+    <div style={{ position: "relative", height: "100vh" }}>
+      <WebGLMouseTrail />
 
-          <Col
-            span={6}
-            style={{
-              display: "flex",
-              flexDirection: "column",
-              margin: 0,
-              padding: 0,
-            }}
-          >
-            <LoginPanel onFire={fire} />
-          </Col>
-        </Row>
-      </div>
-    </>
+      <Row gutter={24} style={{ margin: 0, padding: 0 }}>
+        <Col
+          xs={24}
+          sm={24}
+          md={14}
+          lg={16}
+          xl={18}
+          style={{ margin: 0, padding: 0 }}
+        >
+          <CharactersScene
+            ref={stageRef}
+            mouse={mouse}
+            action={action}
+            globalTilt={globalTilt}
+            bootT={bootT}
+            stageW={stageSize.w}
+            stageH={stageSize.h}
+          />
+        </Col>
+
+        <Col
+          xs={24}
+          sm={24}
+          md={10}
+          lg={8}
+          xl={6}
+          style={{
+            display: "flex",
+            flexDirection: "column",
+            margin: 0,
+            padding: 0,
+          }}
+        >
+          <LoginPanel onFire={fire} />
+        </Col>
+      </Row>
+    </div>
   );
 }
