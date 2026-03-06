@@ -1,110 +1,124 @@
 package org.apache.seatunnel.admin.quartz;
 
 import lombok.extern.slf4j.Slf4j;
+import org.apache.seatunnel.admin.service.SeatunnelJobExecutorService;
 import org.apache.seatunnel.admin.service.SeatunnelJobScheduleService;
+import org.apache.seatunnel.communal.enums.JobSubmitStage;
+import org.apache.seatunnel.communal.enums.RunMode;
+import org.apache.seatunnel.communal.exception.JobSubmitException;
 import org.quartz.Job;
 import org.quartz.JobExecutionContext;
 import org.quartz.JobExecutionException;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
+import java.net.ConnectException;
+import java.sql.SQLTransientConnectionException;
 import java.util.Date;
 
-/**
- * Quartz 任务执行类
- * 负责执行定时调度的任务
- */
 @Slf4j
 @Component
 public class QuartzJob implements Job {
 
+    private static final String KEY_JOB_DEFINITION_ID = "jobDefinitionId";
+    private static final String KEY_JOB_SCHEDULE_ID = "jobScheduleId";
 
-    @Autowired
-    private SeatunnelJobScheduleService seatunnelJobScheduleService;
+    private final SeatunnelJobScheduleService scheduleService;
+    private final SeatunnelJobExecutorService executorService;
+
+    public QuartzJob(SeatunnelJobScheduleService scheduleService,
+                     SeatunnelJobExecutorService executorService) {
+        this.scheduleService = scheduleService;
+        this.executorService = executorService;
+    }
 
     @Override
     public void execute(JobExecutionContext context) throws JobExecutionException {
-        Long taskDefinitionId = context.getMergedJobDataMap().getLong("jobDefinitionId");
-        Long taskScheduleId = context.getMergedJobDataMap().getLong("jobScheduleId");
-        // 用户debug
+        Long jobDefineId = context.getMergedJobDataMap().getLong(KEY_JOB_DEFINITION_ID);
+        Long scheduleId = context.getMergedJobDataMap().getLong(KEY_JOB_SCHEDULE_ID);
+
         logExecutionContext(context);
 
-
-        log.info("开始执行定时任务: taskDefinitionId={}, taskScheduleId={}, fireTime={}",
-                taskDefinitionId, taskScheduleId, context.getFireTime());
-
         try {
-            updateLastScheduleTime(taskScheduleId);
-            updateNextScheduleTime(context, taskScheduleId);
+            Long instanceId = executorService.jobExecute(jobDefineId, RunMode.SCHEDULED);
+
+            log.info("Quartz fire: jobDefineId={}, instanceId={}, scheduleId={}, fireTime={}",
+                    jobDefineId, instanceId, scheduleId, context.getFireTime());
+
+            updateLastScheduleTimeSafely(scheduleId);
+            updateNextScheduleTimeSafely(context, scheduleId);
 
         } catch (Exception e) {
-            log.error("定时任务执行异常: taskDefinitionId={}, taskScheduleId={}",
-                    taskDefinitionId, taskScheduleId, e);
-            if (shouldRefire(e)) {
-                log.info("任务将重新执行: taskDefinitionId={}", taskDefinitionId);
-                JobExecutionException jobException = new JobExecutionException(e);
-                jobException.setRefireImmediately(true);
-                throw jobException;
-            } else {
-                throw new JobExecutionException("任务执行异常", e, false);
-            }
+            boolean refire = shouldRefire(e);
+
+            log.error("Quartz job failed: jobDefineId={}, scheduleId={}, refire={}",
+                    jobDefineId, scheduleId, refire, e);
+
+            JobExecutionException jee = new JobExecutionException(e);
+            jee.setRefireImmediately(refire);
+            throw jee;
         }
     }
 
-    /**
-     * 更新最后执行时间
-     */
-    private void updateLastScheduleTime(Long taskScheduleId) {
+    private void updateLastScheduleTimeSafely(Long scheduleId) {
         try {
-            seatunnelJobScheduleService.updateLastScheduleTime(taskScheduleId);
-            log.debug("更新最后执行时间成功: taskScheduleId={}", taskScheduleId);
+            scheduleService.updateLastScheduleTime(scheduleId);
+            log.debug("Updated lastScheduleTime: scheduleId={}", scheduleId);
         } catch (Exception e) {
-            log.warn("更新最后执行时间失败: taskScheduleId={}", taskScheduleId, e);
+            log.warn("Update lastScheduleTime failed: scheduleId={}", scheduleId, e);
         }
     }
 
-    /**
-     * 更新下次执行时间
-     */
-    private void updateNextScheduleTime(JobExecutionContext context, Long taskScheduleId) {
+    private void updateNextScheduleTimeSafely(JobExecutionContext context, Long scheduleId) {
         try {
-            Date nextFireTime = context.getNextFireTime();
-            if (nextFireTime != null) {
-                seatunnelJobScheduleService.updateNextScheduleTime(taskScheduleId, nextFireTime);
-                log.debug("更新下次执行时间成功: taskScheduleId={}, nextFireTime={}",
-                        taskScheduleId, nextFireTime);
+            Date next = context.getNextFireTime();
+            if (next != null) {
+                scheduleService.updateNextScheduleTime(scheduleId, next);
+                log.debug("Updated nextScheduleTime: scheduleId={}, nextFireTime={}", scheduleId, next);
             }
         } catch (Exception e) {
-            log.warn("更新下次执行时间失败: taskScheduleId={}", taskScheduleId, e);
-            // 这里不抛出异常，因为主要业务是任务执行，时间更新是辅助功能
+            log.warn("Update nextScheduleTime failed: scheduleId={}", scheduleId, e);
         }
     }
 
-
-    /**
-     * 判断是否应该重新执行任务
-     */
-    private boolean shouldRefire(Exception e) {
-        if (e instanceof java.net.ConnectException ||
-                e instanceof java.sql.SQLTransientConnectionException ||
-                e instanceof org.springframework.dao.TransientDataAccessResourceException) {
-            return true;
+    private boolean shouldRefire(Throwable e) {
+        if (containsSubmitPostStage(e)) {
+            return false;
         }
 
-        // 默认不重试
+        return hasCause(e, ConnectException.class)
+                || hasCause(e, SQLTransientConnectionException.class)
+                || hasCause(e, org.springframework.dao.TransientDataAccessResourceException.class)
+                || hasCause(e, org.springframework.web.client.ResourceAccessException.class); // RestTemplate I/O
+    }
+
+    private boolean containsSubmitPostStage(Throwable e) {
+        Throwable cur = e;
+        while (cur != null) {
+            if (cur instanceof JobSubmitException) {
+                JobSubmitException jse =
+                        (JobSubmitException) cur;
+                return jse.getStage() == JobSubmitStage.POST_SUBMIT;
+            }
+            cur = cur.getCause();
+        }
         return false;
     }
 
-    /**
-     * 获取任务执行上下文信息（用于日志和监控）
-     */
-    private void logExecutionContext(JobExecutionContext context) {
-        if (log.isDebugEnabled()) {
-            log.debug("任务执行上下文: fireTime={}, nextFireTime={}, scheduledFireTime={}, jobRunTime={}ms",
-                    context.getFireTime(),
-                    context.getNextFireTime(),
-                    context.getScheduledFireTime(),
-                    context.getJobRunTime());
+    private boolean hasCause(Throwable e, Class<? extends Throwable> type) {
+        Throwable cur = e;
+        while (cur != null) {
+            if (type.isInstance(cur)) return true;
+            cur = cur.getCause();
         }
+        return false;
+    }
+
+    private void logExecutionContext(JobExecutionContext context) {
+        if (!log.isDebugEnabled()) return;
+        log.debug("Quartz ctx: fireTime={}, nextFireTime={}, scheduledFireTime={}, jobRunTime={}ms",
+                context.getFireTime(),
+                context.getNextFireTime(),
+                context.getScheduledFireTime(),
+                context.getJobRunTime());
     }
 }

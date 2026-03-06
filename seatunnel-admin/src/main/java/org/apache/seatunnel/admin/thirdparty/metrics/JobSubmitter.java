@@ -1,10 +1,11 @@
 package org.apache.seatunnel.admin.thirdparty.metrics;
 
-import jakarta.annotation.Resource;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.seatunnel.admin.service.SeatunnelJobInstanceService;
 import org.apache.seatunnel.admin.thirdparty.client.SeatunnelRestClient;
 import org.apache.seatunnel.communal.bean.po.SeatunnelJobInstancePO;
+import org.apache.seatunnel.communal.enums.JobSubmitStage;
+import org.apache.seatunnel.communal.exception.JobSubmitException;
 import org.springframework.stereotype.Component;
 
 import java.nio.charset.StandardCharsets;
@@ -14,26 +15,28 @@ import java.util.Map;
 @Slf4j
 public class JobSubmitter {
 
-    @Resource
-    private JobConfigFileService configFileService;
+    private final JobConfigFileService configFileService;
+    private final SeatunnelRestClient restClient;
+    private final JobMetricsMonitor metricsMonitor;
+    private final JobResultWatcher resultWatcher;
+    private final JobResultHandler resultHandler;
+    private final SeatunnelJobInstanceService instanceService;
 
-    @Resource
-    private SeatunnelRestClient seatunnelRestClient;
-
-    @Resource
-    private JobMetricsMonitor metricsMonitor;
-
-    @Resource
-    private JobResultWatcher resultWatcher;
-
-    @Resource
-    private JobResultHandler resultHandler;
-
-    @Resource
-    private SeatunnelJobInstanceService instanceService;
+    public JobSubmitter(JobConfigFileService configFileService,
+                        SeatunnelRestClient restClient,
+                        JobMetricsMonitor metricsMonitor,
+                        JobResultWatcher resultWatcher,
+                        JobResultHandler resultHandler,
+                        SeatunnelJobInstanceService instanceService) {
+        this.configFileService = configFileService;
+        this.restClient = restClient;
+        this.metricsMonitor = metricsMonitor;
+        this.resultWatcher = resultWatcher;
+        this.resultHandler = resultHandler;
+        this.instanceService = instanceService;
+    }
 
     public void submit(Long instanceId, String hoconConfig) {
-
         SeatunnelJobInstancePO instancePO = instanceService.getById(instanceId);
         String logPath = instancePO.getLogPath();
 
@@ -41,49 +44,82 @@ public class JobSubmitter {
         jobLogger.info("=== Job Submit Start (REST API) ===");
         jobLogger.info("Job instanceId: " + instanceId);
 
-        boolean success = false;
+        String configFile = null;
+        String engineId = null;
 
         try {
             jobLogger.info("Writing config file...");
-            String configFile = configFileService.writeConfig(instanceId, hoconConfig);
+            configFile = configFileService.writeConfig(instanceId, hoconConfig);
             jobLogger.info("Config file written to: " + configFile);
 
             jobLogger.info("Submitting job via REST API...");
             String filename = "job-" + instanceId + ".conf";
-            Map resp = seatunnelRestClient.submitJobUpload(
-                    hoconConfig.getBytes(StandardCharsets.UTF_8),
+            Map resp = restClient.submitJobUpload(
+                    (hoconConfig == null ? "" : hoconConfig).getBytes(StandardCharsets.UTF_8),
                     filename
             );
 
-            Object jobIdObj = resp.get("jobId");
-            if (jobIdObj == null) {
-                throw new IllegalStateException("REST submit response missing jobId, resp=" + resp);
-            }
-
-            String engineId = String.valueOf(jobIdObj);
+            engineId = extractJobId(resp);
             jobLogger.info("Job submitted, engineId(jobId): " + engineId);
 
             resultHandler.updateEngineId(instanceId, engineId);
 
-            JobRuntimeContext context = new JobRuntimeContext(instanceId, engineId, configFile);
+            JobRuntimeContext ctx = new JobRuntimeContext(instanceId, engineId, configFile);
 
-            metricsMonitor.register(context);
-            jobLogger.info("Metrics monitor registered");
+            try {
+                metricsMonitor.register(ctx);
+                jobLogger.info("Metrics monitor registered");
+            } catch (Exception e) {
+                jobLogger.warn("Metrics monitor register failed: " + e.getMessage());
+                log.warn("Metrics monitor register failed, instanceId={}, engineId={}", instanceId, engineId, e);
+                throw new JobSubmitException(JobSubmitStage.POST_SUBMIT, "Metrics monitor register failed", e);
+            }
 
-            resultWatcher.registerByRest(context);
-            jobLogger.info("REST result watcher registered");
+            try {
+                resultWatcher.registerByRest(ctx);
+                jobLogger.info("REST result watcher registered");
+            } catch (Exception e) {
+                jobLogger.warn("Result watcher register failed: " + e.getMessage());
+                log.warn("Result watcher register failed, instanceId={}, engineId={}", instanceId, engineId, e);
+                throw new JobSubmitException(JobSubmitStage.POST_SUBMIT, "Result watcher register failed", e);
+            }
 
             jobLogger.info("=== Job Submit Complete ===");
-            success = true;
-        } catch (Exception e) {
-            jobLogger.error("Job submit failed", e);
-            resultHandler.handleFailure(instanceId, e);
-            throw new RuntimeException("Submit job failed", e);
-        } finally {
-            if (!success) {
-                log.error("Job submission ended unsuccessfully: {}", instanceId);
+
+        } catch (JobSubmitException postStage) {
+            if (postStage.getStage() == JobSubmitStage.POST_SUBMIT) {
+                jobLogger.warn("=== Job Submit Done (but post-submit failed) ===");
+                throw postStage;
             }
+            handleCoreFailure(jobLogger, instanceId, postStage);
+
+        } catch (Exception e) {
+            handleCoreFailure(jobLogger, instanceId, e);
+
+        } finally {
             jobLogger.close();
         }
+    }
+
+    private void handleCoreFailure(JobFileLogger jobLogger, Long instanceId, Exception e) {
+        jobLogger.error("Job submit failed (core stage)", e);
+
+        try {
+            resultHandler.handleFailure(instanceId, e);
+        } catch (Exception handlerEx) {
+            log.error("handleFailure threw exception, instanceId={}", instanceId, handlerEx);
+        }
+
+        throw (e instanceof JobSubmitException)
+                ? (JobSubmitException) e
+                : new JobSubmitException(JobSubmitStage.SUBMIT, "Submit job failed", e);
+    }
+
+    private String extractJobId(Map resp) {
+        Object jobIdObj = resp == null ? null : resp.get("jobId");
+        if (jobIdObj == null) {
+            throw new IllegalStateException("REST submit response missing jobId, resp=" + resp);
+        }
+        return String.valueOf(jobIdObj);
     }
 }

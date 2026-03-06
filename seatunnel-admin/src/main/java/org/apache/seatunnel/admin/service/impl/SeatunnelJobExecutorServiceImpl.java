@@ -19,30 +19,37 @@ import org.springframework.stereotype.Service;
 @Slf4j
 public class SeatunnelJobExecutorServiceImpl implements SeatunnelJobExecutorService {
 
-    @Resource
-    private SeatunnelJobInstanceService instanceService;
+    private final SeatunnelJobInstanceService instanceService;
+    private final JobSubmitter jobSubmitter;
 
-    @Resource
-    private JobSubmitter jobSubmitter;
+    public SeatunnelJobExecutorServiceImpl(SeatunnelJobInstanceService instanceService,
+                                           JobSubmitter jobSubmitter) {
+        this.instanceService = instanceService;
+        this.jobSubmitter = jobSubmitter;
+    }
+
 
     @Override
     public Long jobExecute(Long jobDefineId, RunMode runMode) {
 
-        SeatunnelJobInstanceVO instance =
-                instanceService.create(jobDefineId, runMode);
+        SeatunnelJobInstanceVO instance = instanceService.create(jobDefineId, runMode);
 
-        jobSubmitter.submit(
-                instance.getId(),
-                instance.getJobConfig()
-        );
+        Long instanceId = instance.getId();
+        String jobConfig = instance.getJobConfig();
 
-        return instance.getId();
+        log.info("Job execute requested: jobDefineId={}, runMode={}, instanceId={}",
+                jobDefineId, runMode, instanceId);
+
+        jobSubmitter.submit(instanceId, jobConfig);
+
+        return instanceId;
+
     }
 
     @Override
     public Long jobPause(Long jobInstanceId) {
+        // TODO: 你后面要做 pause/stop，需要对接 restClient stopJob/savepoint 等
         SeatunnelJobInstanceVO jobInstance = instanceService.selectById(jobInstanceId);
-
         return jobInstanceId;
     }
 
