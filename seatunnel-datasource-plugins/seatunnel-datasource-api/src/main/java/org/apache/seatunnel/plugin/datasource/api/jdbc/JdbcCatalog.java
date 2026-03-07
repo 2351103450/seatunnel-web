@@ -44,4 +44,14 @@ public interface JdbcCatalog {
      * @return total count of rows matching the given conditions
      */
     Integer count(Map<String, Object> requestBody) throws Exception;
+
+    /**
+     * Build SELECT all columns sql for the specified table path.
+     */
+    String buildSelectAllColumnsSql(String tablePath, List<DataSourceTableColumn> columns);
+
+    /**
+     * Resolve variables inside sql, such as ${var:today_start}.
+     */
+    String resolveSqlVariables(String sql);
 }

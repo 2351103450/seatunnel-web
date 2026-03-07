@@ -164,4 +164,24 @@ export const dataSourceCatalogApi = {
         return HttpUtils.post(`${apiPrefixCatalog}/getTop20Data/${datasourceId}`, requestBody);
     },
 
+    buildSqlTemplate: (
+        datasourceId: string,
+        requestBody: any
+    ): Promise<{ code: number; data: string; message?: string }> => {
+        return HttpUtils.post(
+            `${apiPrefixCatalog}/sql-template/${datasourceId}`,
+            requestBody
+        );
+    },
+
+    resolveSql: (
+        datasourceId: string,
+        requestBody: any
+    ): Promise<{ code: number; data: string; message?: string }> => {
+        return HttpUtils.post(
+            `${apiPrefixCatalog}/resolve-sql/${datasourceId}`,
+            requestBody
+        );
+    },
+
 };

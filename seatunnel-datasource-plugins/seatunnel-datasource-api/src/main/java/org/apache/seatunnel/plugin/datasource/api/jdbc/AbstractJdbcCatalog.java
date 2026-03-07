@@ -6,19 +6,32 @@ import org.apache.seatunnel.communal.BaseConnectionParam;
 import org.apache.seatunnel.communal.FrontedTableColumn;
 import org.apache.seatunnel.communal.QueryResult;
 import org.apache.seatunnel.plugin.datasource.api.modal.DataSourceTableColumn;
+import org.apache.seatunnel.plugin.datasource.api.utils.SqlTimeVariableParser;
 
 import java.sql.*;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
+import java.util.Arrays;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 
 @Slf4j
 public abstract class AbstractJdbcCatalog implements JdbcCatalog {
 
-    private static final String COUNT_DATA_TEMPLATE =
-            "SELECT COUNT(*) FROM `%s`";
+    private static final Pattern SQL_VARIABLE_PATTERN =
+            Pattern.compile("\\$\\{var:([^}]+)}");
+
+    private static final DateTimeFormatter DATETIME_FORMATTER =
+            DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
+
+    protected String buildCountQuery(String tableName) {
+        return "SELECT COUNT(*) FROM " + quoteTablePath(tableName);
+    }
 
     private static final String COUNT_SPECIFIED_TEMPLATE =
             "SELECT COUNT(*) FROM ( %s ) temp_count_table";
@@ -30,6 +43,14 @@ public abstract class AbstractJdbcCatalog implements JdbcCatalog {
     public AbstractJdbcCatalog(BaseConnectionParam param, JdbcConnectionProvider connectionManager) {
         this.param = param;
         this.connectionManager = connectionManager;
+    }
+
+    protected QueryRequest preprocessRequest(Map<String, Object> requestBody) {
+        QueryRequest request = QueryRequest.from(requestBody, param);
+        if (StringUtils.isNotBlank(request.getQuery())) {
+            request.setQuery(resolveSqlVariables(request.getQuery()));
+        }
+        return request;
     }
 
     @FunctionalInterface
@@ -51,7 +72,7 @@ public abstract class AbstractJdbcCatalog implements JdbcCatalog {
     @Override
     public List<DataSourceTableColumn> listColumns(Map<String, Object> requestBody) throws Exception {
         List<DataSourceTableColumn> columns = new ArrayList<>();
-        QueryRequest request = QueryRequest.from(requestBody, param);
+        QueryRequest request = preprocessRequest(requestBody);
         String sql = request.getTaskExecuteType()
                 .strategy()
                 .buildSelectColumnsSql(this, request);
@@ -61,7 +82,7 @@ public abstract class AbstractJdbcCatalog implements JdbcCatalog {
 
     @Override
     public QueryResult getTop20Data(Map<String, Object> requestBody) throws Exception{
-        QueryRequest request = QueryRequest.from(requestBody, param);
+        QueryRequest request = preprocessRequest(requestBody);
         String sql = request.getTaskExecuteType()
                 .strategy()
                 .buildTopSql(this, request);
@@ -70,11 +91,79 @@ public abstract class AbstractJdbcCatalog implements JdbcCatalog {
 
     @Override
     public Integer count(Map<String, Object> requestBody) throws Exception{
-        QueryRequest request = QueryRequest.from(requestBody, param);
+        QueryRequest request = preprocessRequest(requestBody);
         String sql = request.getTaskExecuteType()
                 .strategy()
                 .buildCountSql(this, request);
         return extractCount(executeSql(sql));
+    }
+
+    /**
+     * Quote identifier for current database.
+     * Default implementation does not add quotes.
+     */
+    protected String quoteIdentifier(String identifier) {
+        return identifier;
+    }
+
+    /**
+     * Quote table path like schema.table or db.schema.table.
+     */
+    protected String quoteTablePath(String tablePath) {
+        if (StringUtils.isBlank(tablePath)) {
+            throw new IllegalArgumentException("tablePath must not be blank");
+        }
+        return Arrays.stream(tablePath.split("\\."))
+                .map(String::trim)
+                .filter(StringUtils::isNotBlank)
+                .map(this::quoteIdentifier)
+                .collect(Collectors.joining("."));
+    }
+
+    @Override
+    public String buildSelectAllColumnsSql(String tablePath, List<DataSourceTableColumn> columns) {
+        if (StringUtils.isBlank(tablePath)) {
+            throw new IllegalArgumentException("tablePath must not be blank");
+        }
+        if (columns == null || columns.isEmpty()) {
+            throw new IllegalArgumentException("columns must not be empty");
+        }
+
+        String columnSql = columns.stream()
+                .map(DataSourceTableColumn::getColumnName)
+                .filter(StringUtils::isNotBlank)
+                .map(this::quoteIdentifier)
+                .collect(Collectors.joining(", "));
+
+        return "SELECT " + columnSql + "\nFROM " + quoteTablePath(tablePath);
+    }
+
+    /**
+     * Format datetime literal for current database.
+     * Default implementation uses plain string literal.
+     */
+    protected String formatDateTimeLiteral(LocalDateTime dateTime) {
+        return "'" + DATETIME_FORMATTER.format(dateTime) + "'";
+    }
+
+    @Override
+    public String resolveSqlVariables(String sql) {
+        if (StringUtils.isBlank(sql)) {
+            return sql;
+        }
+
+        Matcher matcher = SQL_VARIABLE_PATTERN.matcher(sql);
+        StringBuffer sb = new StringBuffer();
+
+        while (matcher.find()) {
+            String variableName = matcher.group(1);
+            LocalDateTime dateTime = SqlTimeVariableParser.parse(variableName);
+            String replacement = formatDateTimeLiteral(dateTime);
+            matcher.appendReplacement(sb, Matcher.quoteReplacement(replacement));
+        }
+
+        matcher.appendTail(sb);
+        return sb.toString();
     }
 
     /**
@@ -153,6 +242,8 @@ public abstract class AbstractJdbcCatalog implements JdbcCatalog {
         throw new UnsupportedOperationException();
     }
 
+
+
     protected String parseQueryColumnSql(String query) {
         List<DataSourceTableColumn> columns = new ArrayList<>();
         try (Connection connection = getConnection()) {
@@ -181,19 +272,6 @@ public abstract class AbstractJdbcCatalog implements JdbcCatalog {
 
     protected String getSpecifiedColumnSql(TablePath tablePath, List<DataSourceTableColumn> columns) {
         throw new UnsupportedOperationException();
-    }
-
-    /**
-     * Constructs a SQL query to count all records in the specified table.
-     * This method generates a sql like "SELECT COUNT(*)" statement for the given table name.
-     *
-     * @param tableName the name of the table to count rows from
-     * @return a SQL COUNT query string
-     */
-    protected String buildCountQuery(String tableName) {
-        return String.format(
-                COUNT_DATA_TEMPLATE, tableName
-        );
     }
 
     /**
@@ -326,10 +404,6 @@ public abstract class AbstractJdbcCatalog implements JdbcCatalog {
                     row.put(columnName, value);
                 }
                 data.add(row);
-            }
-
-            if (data.size() == 0) {
-                throw new RuntimeException("table is not exist");
             }
             return new QueryResult(columns, data);
         } catch (SQLException sqlException) {

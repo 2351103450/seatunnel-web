@@ -220,4 +220,76 @@ public class DataSourceCatalogController {
             @RequestBody Map<String, Object> requestBody) {
         return Result.buildSuc(dataSourceCatalogService.count(datasourceId, requestBody));
     }
+
+    /**
+     * Build SQL template for the specified table.
+     *
+     * @param datasourceId data source ID
+     * @param requestBody request parameters, must include table_path
+     * @return generated sql template
+     */
+    @PostMapping("/sql-template/{id}")
+    @Operation(
+            summary = "Build SQL template",
+            description = "Generate SELECT sql template with all columns for the specified table"
+    )
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "Successfully generated SQL template"),
+            @ApiResponse(responseCode = "400", description = "Invalid request parameters"),
+            @ApiResponse(responseCode = "404", description = "Data source or table not found")
+    })
+    public Result<String> buildSqlTemplate(
+            @Parameter(description = "Data source ID", required = true, example = "1")
+            @PathVariable("id") Long datasourceId,
+
+            @io.swagger.v3.oas.annotations.parameters.RequestBody(
+                    description = "SQL template request parameters",
+                    required = true,
+                    content = @Content(
+                            mediaType = "application/json",
+                            examples = @ExampleObject(
+                                    name = "Sample Request",
+                                    value = "{\"table_path\": \"users\"}"
+                            )
+                    )
+            )
+            @RequestBody Map<String, Object> requestBody) {
+        return Result.buildSuc(dataSourceCatalogService.buildSqlTemplate(datasourceId, requestBody));
+    }
+
+    /**
+     * Resolve SQL variables for the specified datasource.
+     *
+     * @param datasourceId data source ID
+     * @param requestBody request parameters, must include query
+     * @return resolved sql
+     */
+    @PostMapping("/resolve-sql/{id}")
+    @Operation(
+            summary = "Resolve SQL variables",
+            description = "Resolve SQL variables like ${var:today_start} according to datasource type"
+    )
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "Successfully resolved SQL"),
+            @ApiResponse(responseCode = "400", description = "Invalid request parameters"),
+            @ApiResponse(responseCode = "404", description = "Data source not found")
+    })
+    public Result<String> resolveSql(
+            @Parameter(description = "Data source ID", required = true, example = "1")
+            @PathVariable("id") Long datasourceId,
+
+            @io.swagger.v3.oas.annotations.parameters.RequestBody(
+                    description = "Resolve SQL request parameters",
+                    required = true,
+                    content = @Content(
+                            mediaType = "application/json",
+                            examples = @ExampleObject(
+                                    name = "Sample Request",
+                                    value = "{\"query\": \"SELECT * FROM users WHERE create_time >= ${var:today_start}\"}"
+                            )
+                    )
+            )
+            @RequestBody Map<String, Object> requestBody) {
+        return Result.buildSuc(dataSourceCatalogService.resolveSql(datasourceId, requestBody));
+    }
 }

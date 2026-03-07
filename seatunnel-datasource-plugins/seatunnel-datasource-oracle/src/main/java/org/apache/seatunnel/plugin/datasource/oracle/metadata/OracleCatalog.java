@@ -9,6 +9,8 @@ import org.apache.seatunnel.plugin.datasource.api.modal.DataSourceTableColumn;
 
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -26,6 +28,18 @@ public class OracleCatalog extends AbstractJdbcCatalog {
 
     public OracleCatalog(BaseConnectionParam param, JdbcConnectionProvider connectionManager) {
         super(param, connectionManager);
+    }
+
+    @Override
+    protected String quoteIdentifier(String identifier) {
+        return "\"" + identifier + "\"";
+    }
+
+    @Override
+    protected String formatDateTimeLiteral(LocalDateTime dateTime) {
+        return "TO_TIMESTAMP('" +
+                dateTime.format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")) +
+                "', 'YYYY-MM-DD HH24:MI:SS')";
     }
 
     @Override

@@ -1,33 +1,58 @@
-// components/SourceConfigTab/SingleTableSource.tsx
 import { FC } from "react";
 import { Form, Select } from "antd";
 import { TableOutlined } from "@ant-design/icons";
 
+interface OptionItem {
+  label: string;
+  value: string;
+  [key: string]: any;
+}
+
 interface SingleTableSourceProps {
-  form: any;
-  sourceTableOption: any[];
-  onTableChange: (value: string) => void;
+  sourceTableOption: OptionItem[];
+  tableLoading?: boolean;
+  columnLoading?: boolean;
+  onTableChange: (value: string) => Promise<void> | void;
 }
 
 const SingleTableSource: FC<SingleTableSourceProps> = ({
-  form,
   sourceTableOption,
+  tableLoading = false,
+  columnLoading = false,
   onTableChange,
 }) => {
+  const loading = tableLoading || columnLoading;
+
   return (
     <Form.Item
       label="表名"
       name="table_path"
-      rules={[{ required: true }]}
+      rules={[{ required: true, message: "请选择表名" }]}
+      extra={columnLoading ? "正在同步表字段，请稍候..." : undefined}
     >
       <Select
         prefix={<TableOutlined style={{ color: "orange" }} />}
         size="small"
-        placeholder="请选择表名"
         allowClear
+        showSearch
+        loading={loading}
+        disabled={tableLoading}
+        placeholder={
+          tableLoading
+            ? "正在加载表列表..."
+            : columnLoading
+            ? "正在加载字段..."
+            : "请选择表名"
+        }
         onChange={onTableChange}
         options={sourceTableOption || []}
-        showSearch
+        optionFilterProp="label"
+        filterOption={(input, option) =>
+          String(option?.label ?? "")
+            .toLowerCase()
+            .includes(input.toLowerCase())
+        }
+        notFoundContent={tableLoading ? "表列表加载中..." : "暂无表"}
       />
     </Form.Item>
   );

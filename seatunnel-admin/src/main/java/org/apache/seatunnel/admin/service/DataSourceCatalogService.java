@@ -65,4 +65,14 @@ public interface DataSourceCatalogService {
      * @return total count of rows matching the given conditions
      */
     Integer count(Long datasourceId, Map<String, Object> requestBody);
+
+    /**
+     * Build select sql template from datasource and table path.
+     */
+    String buildSqlTemplate(Long datasourceId, Map<String, Object> requestBody);
+
+    /**
+     * Resolve sql variables like ${var:today_start}.
+     */
+    String resolveSql(Long datasourceId, Map<String, Object> requestBody);
 }

@@ -42,6 +42,11 @@ public class MySQLCatalog extends AbstractJdbcCatalog {
     }
 
     @Override
+    protected String quoteIdentifier(String identifier) {
+        return "`" + identifier + "`";
+    }
+
+    @Override
     protected DataSourceTableColumn buildColumn(Map<String, Object> item) {
         String columnName = item.get("COLUMN_NAME").toString();
         String columnType = item.get("COLUMN_TYPE").toString();

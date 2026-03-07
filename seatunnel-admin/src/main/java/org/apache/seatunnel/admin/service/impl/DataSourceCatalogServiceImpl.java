@@ -11,6 +11,7 @@ import org.apache.seatunnel.communal.QueryResult;
 import org.apache.seatunnel.communal.bean.vo.ColumnOptionVO;
 import org.apache.seatunnel.communal.bean.vo.DataSourceVO;
 import org.apache.seatunnel.communal.bean.vo.OptionVO;
+import org.apache.seatunnel.plugin.datasource.api.jdbc.JdbcCatalog;
 import org.apache.seatunnel.plugin.datasource.api.modal.DataSourceTableColumn;
 import org.apache.seatunnel.plugin.datasource.api.utils.DataSourceUtils;
 import org.springframework.stereotype.Service;
@@ -220,5 +221,69 @@ public class DataSourceCatalogServiceImpl implements DataSourceCatalogService {
             log.error("Failed to query preview data, datasourceId={}", datasourceId, e);
             throw new RuntimeException("Failed to query preview data");
         }
+    }
+
+    @SneakyThrows
+    @Override
+    public String buildSqlTemplate(Long datasourceId, Map<String, Object> requestBody) {
+        if (datasourceId == null) {
+            throw new IllegalArgumentException("Datasource ID must not be empty");
+        }
+        if (MapUtils.isEmpty(requestBody)) {
+            throw new IllegalArgumentException("Request body must not be empty");
+        }
+
+        Object tablePathObj = requestBody.get("table_path");
+        if (tablePathObj == null || !org.springframework.util.StringUtils.hasText(String.valueOf(tablePathObj))) {
+            throw new IllegalArgumentException("table_path must not be empty");
+        }
+
+        String tablePath = String.valueOf(tablePathObj);
+
+        DataSourceVO dataSourceVO = getAndCheckDataSource(datasourceId);
+        BaseConnectionParam connectionParam = buildConnectionParam(dataSourceVO);
+        JdbcCatalog jdbcCatalog = getJdbcCatalog(dataSourceVO, connectionParam);
+
+        Map<String, Object> columnRequest = Map.of(
+                "taskExecuteType", "SINGLE_TABLE",
+                "table_path", tablePath,
+                "query", ""
+        );
+
+        List<DataSourceTableColumn> columns = jdbcCatalog.listColumns(columnRequest);
+        if (columns == null || columns.isEmpty()) {
+            throw new RuntimeException("No columns found for table: " + tablePath);
+        }
+
+        return jdbcCatalog.buildSelectAllColumnsSql(tablePath, columns);
+    }
+
+    @Override
+    public String resolveSql(Long datasourceId, Map<String, Object> requestBody) {
+        if (datasourceId == null) {
+            throw new IllegalArgumentException("Datasource ID must not be empty");
+        }
+        if (MapUtils.isEmpty(requestBody)) {
+            throw new IllegalArgumentException("Request body must not be empty");
+        }
+
+        Object queryObj = requestBody.get("query");
+        if (queryObj == null || !org.springframework.util.StringUtils.hasText(String.valueOf(queryObj))) {
+            throw new IllegalArgumentException("query must not be empty");
+        }
+
+        String query = String.valueOf(queryObj);
+
+        DataSourceVO dataSourceVO = getAndCheckDataSource(datasourceId);
+        BaseConnectionParam connectionParam = buildConnectionParam(dataSourceVO);
+        JdbcCatalog jdbcCatalog = getJdbcCatalog(dataSourceVO, connectionParam);
+
+        return jdbcCatalog.resolveSqlVariables(query);
+    }
+
+    private JdbcCatalog getJdbcCatalog(DataSourceVO dataSourceVO, BaseConnectionParam connectionParam) {
+        return DataSourceUtils
+                .getDatasourceProcessor(dataSourceVO.getDbType())
+                .getMetadataService(connectionParam);
     }
 }
