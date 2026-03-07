@@ -1,6 +1,7 @@
 package org.apache.seatunnel.plugin.datasource.api.jdbc;
 
 import org.apache.commons.lang3.StringUtils;
+import org.apache.seatunnel.plugin.datasource.api.utils.SqlValidator;
 
 /**
  * Implementation of QueryStrategy that builds SQL queries based on a custom input query.
@@ -21,9 +22,7 @@ public class CustomQueryStrategy implements QueryStrategy {
      */
     @Override
     public String buildTopSql(AbstractJdbcCatalog catalog, QueryRequest request) {
-        if (StringUtils.isBlank(request.getQuery())) {
-            throw new IllegalArgumentException("query is null");
-        }
+        SqlValidator.validateSelectQuery(request.getQuery());
         // Apply database-specific limit using the catalog
         return catalog.applyLimit(request.getQuery(), request.getLimit());
     }
@@ -37,9 +36,7 @@ public class CustomQueryStrategy implements QueryStrategy {
      */
     @Override
     public String buildCountSql(AbstractJdbcCatalog catalog, QueryRequest request) {
-        if (StringUtils.isBlank(request.getQuery())) {
-            throw new IllegalArgumentException("query is null");
-        }
+        SqlValidator.validateSelectQuery(request.getQuery());
         // Wrap the original query in a COUNT(*) statement
         return catalog.wrapCountQuery(request.getQuery());
     }
@@ -53,9 +50,7 @@ public class CustomQueryStrategy implements QueryStrategy {
      */
     @Override
     public String buildSelectColumnsSql(AbstractJdbcCatalog catalog, QueryRequest request) {
-        if (StringUtils.isBlank(request.getQuery())) {
-            throw new IllegalArgumentException("query is null");
-        }
+        SqlValidator.validateSelectQuery(request.getQuery());
         // Parse and return the column selection part of the query
         return catalog.parseQueryColumnSql(request.getQuery());
     }

@@ -21,7 +21,7 @@ public abstract class AbstractJdbcCatalog implements JdbcCatalog {
             "SELECT COUNT(*) FROM `%s`";
 
     private static final String COUNT_SPECIFIED_TEMPLATE =
-            "SELECT COUNT(*) FROM ( `%s` ) temp_count_table";
+            "SELECT COUNT(*) FROM ( %s ) temp_count_table";
 
     private final BaseConnectionParam param;
 
@@ -49,7 +49,7 @@ public abstract class AbstractJdbcCatalog implements JdbcCatalog {
 
 
     @Override
-    public List<DataSourceTableColumn> listColumns(Map<String, Object> requestBody) throws SQLException {
+    public List<DataSourceTableColumn> listColumns(Map<String, Object> requestBody) throws Exception {
         List<DataSourceTableColumn> columns = new ArrayList<>();
         QueryRequest request = QueryRequest.from(requestBody, param);
         String sql = request.getTaskExecuteType()
@@ -60,7 +60,7 @@ public abstract class AbstractJdbcCatalog implements JdbcCatalog {
     }
 
     @Override
-    public QueryResult getTop20Data(Map<String, Object> requestBody) {
+    public QueryResult getTop20Data(Map<String, Object> requestBody) throws Exception{
         QueryRequest request = QueryRequest.from(requestBody, param);
         String sql = request.getTaskExecuteType()
                 .strategy()
@@ -69,7 +69,7 @@ public abstract class AbstractJdbcCatalog implements JdbcCatalog {
     }
 
     @Override
-    public Integer count(Map<String, Object> requestBody) {
+    public Integer count(Map<String, Object> requestBody) throws Exception{
         QueryRequest request = QueryRequest.from(requestBody, param);
         String sql = request.getTaskExecuteType()
                 .strategy()
@@ -281,7 +281,7 @@ public abstract class AbstractJdbcCatalog implements JdbcCatalog {
      * @param sql the SQL query string to be executed
      * @return a ResultSet containing the data produced by the SQL query
      */
-    private QueryResult executeSql(String sql) {
+    private QueryResult executeSql(String sql) throws Exception {
         try (Connection connection = getConnection()) {
             try (PreparedStatement ps = connection.prepareStatement(sql)) {
                 // Will there exist concurrent drop for one table?
@@ -289,8 +289,6 @@ public abstract class AbstractJdbcCatalog implements JdbcCatalog {
             } catch (SQLException e) {
                 throw new RuntimeException(String.format("Failed executeSql error %s", sql), e);
             }
-        } catch (SQLException | RuntimeException sqlException) {
-            throw new RuntimeException();
         }
     }
 
@@ -330,7 +328,7 @@ public abstract class AbstractJdbcCatalog implements JdbcCatalog {
                 data.add(row);
             }
 
-            if(data.size() == 0) {
+            if (data.size() == 0) {
                 throw new RuntimeException("table is not exist");
             }
             return new QueryResult(columns, data);

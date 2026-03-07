@@ -172,7 +172,7 @@ public class DataSourceCatalogServiceImpl implements DataSourceCatalogService {
 
         } catch (Exception e) {
             log.error("Failed to query preview data, datasourceId={}", datasourceId, e);
-            throw new RuntimeException("Failed to query preview data");
+            throw new RuntimeException(e.getMessage());
         }
     }
 

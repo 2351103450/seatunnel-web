@@ -27,7 +27,7 @@ public interface JdbcCatalog {
      *                     implementation-specific
      * @return column metadata list
      */
-    List<DataSourceTableColumn> listColumns(Map<String, Object> requestBody) throws SQLException;
+    List<DataSourceTableColumn> listColumns(Map<String, Object> requestBody) throws Exception;
 
     /**
      * Fetch top 20 rows from the specified table or query.
@@ -35,7 +35,7 @@ public interface JdbcCatalog {
      * @param requestBody query conditions (table, filters, etc.)
      * @return query result with data and metadata
      */
-    QueryResult getTop20Data(Map<String, Object> requestBody);
+    QueryResult getTop20Data(Map<String, Object> requestBody) throws Exception;
 
     /**
      * Count total number of rows from the specified table or query.
@@ -43,5 +43,5 @@ public interface JdbcCatalog {
      * @param requestBody requestBody query conditions including table name and optional filters
      * @return total count of rows matching the given conditions
      */
-    Integer count(Map<String, Object> requestBody);
+    Integer count(Map<String, Object> requestBody) throws Exception;
 }
