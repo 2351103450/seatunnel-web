@@ -4,7 +4,6 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.ExampleObject;
-import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -44,15 +43,16 @@ public class SeatunnelBatchJobInstanceController {
             @io.swagger.v3.oas.annotations.parameters.RequestBody(
                     description = "Pagination and filter parameters",
                     content = @Content(examples = @ExampleObject("""
-                {
-                    "pageNum": 1,
-                    "pageSize": 10,
-                    "jobDefinitionId": 1001,
-                    "status": "RUNNING",
-                    "startTime": "2024-01-01 00:00:00",
-                    "endTime": "2024-01-31 23:59:59"
-                }
-                """))
+                                        {
+                                             "pageNum": 1,
+                                             "pageSize": 10,
+                                             "jobDefinitionId": 1001,
+                                             "keyword": "mysql",
+                                             "jobStatus": "RUNNING",
+                                             "queryStartTime": "2024-01-01 00:00:00",
+                                             "queryEndTime": "2024-01-31 23:59:59"
+                                         }
+                            """))
             )
             @RequestBody SeatunnelJobInstanceDTO dto) {
         return seatunnelJobInstanceService.paging(dto);

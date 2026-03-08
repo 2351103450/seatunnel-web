@@ -32,8 +32,6 @@ import org.apache.seatunnel.communal.utils.CodeGenerateUtils;
 import org.apache.seatunnel.communal.utils.ConvertUtil;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Lazy;
-import org.springframework.context.annotation.Scope;
-import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -138,7 +136,9 @@ public class SeatunnelJobInstanceServiceImpl
 
     @Override
     public PaginationResult<SeatunnelJobInstanceVO> paging(SeatunnelJobInstanceDTO dto) {
-        Page<SeatunnelJobInstanceVO> page = new Page<>(dto.getPageNo(), dto.getPageSize());
+        long pageNo = dto.getPageNo() == null || dto.getPageNo() < 1 ? 1 : dto.getPageNo();
+        long pageSize = dto.getPageSize() == null || dto.getPageSize() < 1 ? 10 : dto.getPageSize();
+        Page<SeatunnelJobInstanceVO> page = new Page<>(pageNo, pageSize);
         IPage<SeatunnelJobInstanceVO> result = baseMapper.pageWithDefinition(page, dto);
         return PaginationResult.buildSuc(result.getRecords(), result);
     }
@@ -336,6 +336,7 @@ public class SeatunnelJobInstanceServiceImpl
             }
         }
     }
+
     private void reconcileSingleInstance(SeatunnelJobInstancePO instance) {
         if (instance == null) {
             return;

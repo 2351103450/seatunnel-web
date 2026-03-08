@@ -1,10 +1,12 @@
 package org.apache.seatunnel.communal.bean.dto;
 
+import com.fasterxml.jackson.annotation.JsonFormat;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.*;
 import org.apache.seatunnel.communal.bean.dto.pagination.PaginationBaseDTO;
 import org.apache.seatunnel.communal.enums.JobMode;
 import org.apache.seatunnel.communal.enums.RunMode;
+import org.springframework.format.annotation.DateTimeFormat;
 
 import java.util.Date;
 
@@ -31,6 +33,38 @@ public class SeatunnelJobInstanceDTO extends PaginationBaseDTO {
     )
     private Long jobDefinitionId;
 
+    @Schema(description = "Job name keyword for fuzzy search", example = "mysql-sync")
+    private String keyword;
+
+    @Schema(
+            description = "Job execution status filter",
+            example = "RUNNING",
+            allowableValues = {"SUBMITTED", "PENDING", "RUNNING", "FINISHED", "FAILED", "CANCELLED", "SUSPENDED"}
+    )
+    private String jobStatus;
+
+    @Schema(
+            description = "Query start time range (task startTime >= queryStartTime)",
+            example = "2024-01-01 00:00:00",
+            type = "string",
+            format = "date-time",
+            nullable = true
+    )
+    @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss", timezone = "GMT+8")
+    @DateTimeFormat(pattern = "yyyy-MM-dd HH:mm:ss")
+    private Date queryStartTime;
+
+    @Schema(
+            description = "Query end time range (task startTime <= queryEndTime)",
+            example = "2024-01-31 23:59:59",
+            type = "string",
+            format = "date-time",
+            nullable = true
+    )
+    @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss", timezone = "GMT+8")
+    @DateTimeFormat(pattern = "yyyy-MM-dd HH:mm:ss")
+    private Date queryEndTime;
+
     @Schema(
             description = "Path to the execution log file",
             example = "/var/log/seatunnel/jobs/2024/01/15/instance_10001.log",
@@ -38,25 +72,7 @@ public class SeatunnelJobInstanceDTO extends PaginationBaseDTO {
     )
     private String logPath;
 
-    @Schema(
-            description = "Job configuration used for this execution",
-            example = """
-            {
-                "source": {
-                    "type": "MySQL",
-                    "host": "localhost",
-                    "port": 3306,
-                    "database": "source_db",
-                    "table": "users"
-                },
-                "sink": {
-                    "type": "Hive",
-                    "database": "target_db",
-                    "table": "users_snapshot"
-                }
-            }
-            """
-    )
+    @Schema(description = "Job configuration used for this execution")
     private String jobConfig;
 
     @Schema(
@@ -98,22 +114,9 @@ public class SeatunnelJobInstanceDTO extends PaginationBaseDTO {
     private String errorMessage;
 
     @Schema(
-            description = "Job execution status",
-            example = "FINISHED",
-            allowableValues = {"SUBMITTED", "RUNNING", "FINISHED", "FAILED", "CANCELLED", "SUSPENDED"}
-    )
-    private String jobStatus;
-
-    @Schema(
             description = "Engine-specific job ID (Flink JobID, Spark application ID, etc.)",
             example = "application_1705318800000_1234",
             nullable = true
     )
     private String jobEngineId;
-
-    // Pagination fields inherited from PaginationBaseDTO:
-    // - pageNum: Page number (default: 1)
-    // - pageSize: Page size (default: 10)
-    // - orderBy: Sort field
-    // - orderDirection: Sort direction (ASC/DESC)
 }

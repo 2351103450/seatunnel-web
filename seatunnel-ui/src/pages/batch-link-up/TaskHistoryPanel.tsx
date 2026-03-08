@@ -18,6 +18,7 @@ import {
   Typography,
 } from "antd";
 import React, { useCallback, useEffect, useMemo, useState } from "react";
+import dayjs from "dayjs";
 import { seatunnelJobInstanceApi } from "./api";
 import { HistoryItem } from "./type";
 
@@ -43,6 +44,42 @@ const TaskHistoryPanel: React.FC<TaskHistoryPanelProps> = ({
   const [historyItems, setHistoryItems] = useState<HistoryItem[]>([]);
   const [loading, setLoading] = useState(false);
   const [keyword, setKeyword] = useState("");
+  const [debouncedKeyword, setDebouncedKeyword] = useState("");
+  const [timeRangeType, setTimeRangeType] = useState("最近一天");
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedKeyword(keyword.trim());
+    }, 400);
+    return () => clearTimeout(timer);
+  }, [keyword]);
+
+  const getTimeRangeParams = () => {
+    const now = dayjs();
+
+    switch (timeRangeType) {
+      case "最近一天":
+        return {
+          queryStartTime: now.subtract(1, "day").format("YYYY-MM-DD HH:mm:ss"),
+          queryEndTime: now.format("YYYY-MM-DD HH:mm:ss"),
+        };
+      case "最近三天":
+        return {
+          queryStartTime: now.subtract(3, "day").format("YYYY-MM-DD HH:mm:ss"),
+          queryEndTime: now.format("YYYY-MM-DD HH:mm:ss"),
+        };
+      case "最近一周":
+        return {
+          queryStartTime: now.subtract(7, "day").format("YYYY-MM-DD HH:mm:ss"),
+          queryEndTime: now.format("YYYY-MM-DD HH:mm:ss"),
+        };
+      default:
+        return {
+          queryStartTime: undefined,
+          queryEndTime: undefined,
+        };
+    }
+  };
 
   const fetchHistory = useCallback(async () => {
     if (!selectedItem?.id) {
@@ -50,10 +87,19 @@ const TaskHistoryPanel: React.FC<TaskHistoryPanelProps> = ({
       return;
     }
 
+    const { queryStartTime, queryEndTime } = getTimeRangeParams();
+
     setLoading(true);
     try {
       const data = await seatunnelJobInstanceApi.page({
+        pageNum: 1,
+        pageSize: 20,
         jobDefinitionId: selectedItem.id,
+        keyword: debouncedKeyword || undefined,
+        jobStatus:
+          statusFilter && statusFilter !== "all" ? statusFilter : undefined,
+        queryStartTime,
+        queryEndTime,
       });
 
       if (data?.code === 0) {
@@ -71,7 +117,7 @@ const TaskHistoryPanel: React.FC<TaskHistoryPanelProps> = ({
     } finally {
       setLoading(false);
     }
-  }, [selectedItem?.id, intl]);
+  }, [selectedItem?.id, debouncedKeyword, statusFilter, timeRangeType, intl]);
 
   useEffect(() => {
     fetchHistory();
@@ -94,28 +140,6 @@ const TaskHistoryPanel: React.FC<TaskHistoryPanelProps> = ({
       } as Record<string, number>
     );
   }, [historyItems]);
-
-  const filteredItems = useMemo(() => {
-    let items = historyItems;
-
-    if (statusFilter && statusFilter !== "all") {
-      items = items.filter((item) => item.jobStatus === statusFilter);
-    }
-
-    const text = keyword.trim().toLowerCase();
-    if (text) {
-      items = items.filter((item) => {
-        const name = item.jobName?.toLowerCase?.() || "";
-        const time = String(item.startTime || "").toLowerCase();
-        const status = String(item.jobStatus || "").toLowerCase();
-        return (
-          name.includes(text) || time.includes(text) || status.includes(text)
-        );
-      });
-    }
-
-    return items;
-  }, [historyItems, statusFilter, keyword]);
 
   const getStatusMeta = (status: HistoryItem["jobStatus"]) => {
     switch (status) {
@@ -218,8 +242,7 @@ const TaskHistoryPanel: React.FC<TaskHistoryPanelProps> = ({
             marginBottom: 8,
           }}
         >
-          <div></div>
-
+          <div />
           <ReloadOutlined
             onClick={fetchHistory}
             style={{
@@ -248,6 +271,8 @@ const TaskHistoryPanel: React.FC<TaskHistoryPanelProps> = ({
 
           <Segmented<any>
             options={["最近一天", "最近三天", "最近一周", "自定义"]}
+            value={timeRangeType}
+            onChange={setTimeRangeType}
             block
           />
 
@@ -263,7 +288,9 @@ const TaskHistoryPanel: React.FC<TaskHistoryPanelProps> = ({
               return (
                 <div
                   key={item.key}
-                  onClick={() => onStatusFilterChange(item.key)}
+                  onClick={() =>
+                    onStatusFilterChange(active ? "all" : item.key)
+                  }
                   style={{
                     display: "inline-flex",
                     alignItems: "center",
@@ -304,7 +331,6 @@ const TaskHistoryPanel: React.FC<TaskHistoryPanelProps> = ({
         </Space>
       </div>
 
-      {/* 列表区域 */}
       <div
         style={{
           flex: 1,
@@ -315,7 +341,7 @@ const TaskHistoryPanel: React.FC<TaskHistoryPanelProps> = ({
       >
         <List
           loading={loading}
-          dataSource={filteredItems}
+          dataSource={historyItems}
           locale={{
             emptyText: (
               <Empty
@@ -328,7 +354,6 @@ const TaskHistoryPanel: React.FC<TaskHistoryPanelProps> = ({
             ),
           }}
           renderItem={(item) => {
-            console.log(item);
             const meta = getStatusMeta(item.jobStatus);
             const active = instanceItem?.id === item.id;
 
@@ -336,6 +361,7 @@ const TaskHistoryPanel: React.FC<TaskHistoryPanelProps> = ({
               <List.Item
                 onClick={() => {
                   setInstanceItem(item);
+                  // onItemSelect?.(item.id);
                 }}
                 style={{
                   marginBottom: 8,
