@@ -68,7 +68,7 @@ public class SeatunnelJobMetricsServiceImpl
      * Fetch real-time metrics map from engine by jobEngineId.
      */
     @Override
-    public Map<Integer, SeatunnelJobMetricsPO> getJobMetricsFromEngineMap(@NonNull String jobEngineId) {
+    public Map<Integer, SeatunnelJobMetricsPO> getJobMetricsFromEngineMap(@NonNull Long jobEngineId) {
         Map<String, Object> jobInfo = engineRestClient.jobInfo(jobEngineId);
         if (jobInfo == null) {
             return new ConcurrentHashMap<>();

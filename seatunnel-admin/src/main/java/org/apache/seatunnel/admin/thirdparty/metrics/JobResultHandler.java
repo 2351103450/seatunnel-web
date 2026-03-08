@@ -82,7 +82,7 @@ public class JobResultHandler {
      * @param instanceId job instance identifier
      * @param engineId   engine-generated job ID
      */
-    public void updateEngineId(Long instanceId, String engineId) {
+    public void updateEngineId(Long instanceId, Long engineId) {
         SeatunnelJobInstancePO po = new SeatunnelJobInstancePO();
         po.setId(instanceId);
         po.setJobEngineId(engineId);

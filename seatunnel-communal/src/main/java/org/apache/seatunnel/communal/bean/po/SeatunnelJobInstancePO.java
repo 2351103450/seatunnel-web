@@ -50,6 +50,6 @@ public class SeatunnelJobInstancePO {
 
     private String jobStatus;
 
-    private String jobEngineId;
+    private long jobEngineId;
 
 }

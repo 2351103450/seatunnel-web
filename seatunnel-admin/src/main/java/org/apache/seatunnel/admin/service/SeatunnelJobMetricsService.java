@@ -38,7 +38,7 @@ public interface SeatunnelJobMetricsService extends IService<SeatunnelJobMetrics
      * @return map of metrics indexed by metric identifier
      */
     Map<Integer, SeatunnelJobMetricsPO> getJobMetricsFromEngineMap(
-            @NonNull String jobEngineId
+            @NonNull Long jobEngineId
     );
 
     /**

@@ -45,7 +45,7 @@ public class JobSubmitter {
         jobLogger.info("Job instanceId: " + instanceId);
 
         String configFile = null;
-        String engineId = null;
+        Long engineId = null;
 
         try {
             jobLogger.info("Writing config file...");
@@ -115,11 +115,11 @@ public class JobSubmitter {
                 : new JobSubmitException(JobSubmitStage.SUBMIT, "Submit job failed", e);
     }
 
-    private String extractJobId(Map resp) {
+    private Long extractJobId(Map resp) {
         Object jobIdObj = resp == null ? null : resp.get("jobId");
         if (jobIdObj == null) {
             throw new IllegalStateException("REST submit response missing jobId, resp=" + resp);
         }
-        return String.valueOf(jobIdObj);
+        return Long.valueOf(jobIdObj.toString());
     }
 }

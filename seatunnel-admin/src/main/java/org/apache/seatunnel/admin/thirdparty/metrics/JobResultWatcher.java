@@ -37,7 +37,7 @@ public class JobResultWatcher {
         executor.submit(() -> {
             long start = System.currentTimeMillis();
             Long instanceId = context.getInstanceId();
-            String engineId = context.getEngineId();
+            Long engineId = context.getEngineId();
 
             try {
                 while (true) {
@@ -45,7 +45,7 @@ public class JobResultWatcher {
                         throw new IllegalStateException("Polling job-info timeout, engineId=" + engineId);
                     }
 
-                    Map jobInfo = seatunnelRestClient.jobInfo(Long.parseLong(engineId));
+                    Map jobInfo = seatunnelRestClient.jobInfo(engineId);
                     String statusStr = (jobInfo == null) ? null : String.valueOf(jobInfo.get("jobStatus"));
 
                     if (statusStr == null || "null".equals(statusStr)) {

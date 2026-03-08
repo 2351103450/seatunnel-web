@@ -12,8 +12,7 @@ public class SeatunnelEngineRestClient {
     @Resource
     private SeatunnelRestClient seatunnelRestClient;
 
-    public Map<String, Object> jobInfo(String jobEngineId) {
-        long id = Long.parseLong(jobEngineId);
-        return seatunnelRestClient.jobInfo(id);
+    public Map<String, Object> jobInfo(Long jobEngineId) {
+        return seatunnelRestClient.jobInfo(jobEngineId);
     }
 }

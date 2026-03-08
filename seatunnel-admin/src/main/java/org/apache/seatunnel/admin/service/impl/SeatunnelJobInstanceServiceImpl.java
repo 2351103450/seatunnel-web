@@ -14,6 +14,7 @@ import org.apache.seatunnel.admin.dao.SeatunnelJobInstanceMapper;
 import org.apache.seatunnel.admin.dao.SeatunnelJobMetricsMapper;
 import org.apache.seatunnel.admin.service.SeatunnelBatchJobDefinitionService;
 import org.apache.seatunnel.admin.service.SeatunnelJobInstanceService;
+import org.apache.seatunnel.admin.thirdparty.client.SeatunnelRestClient;
 import org.apache.seatunnel.admin.utils.DagUtil;
 import org.apache.seatunnel.communal.bean.dto.BaseSeatunnelJobDefinitionDTO;
 import org.apache.seatunnel.communal.bean.dto.SeatunnelBatchJobDefinitionDTO;
@@ -23,14 +24,17 @@ import org.apache.seatunnel.communal.bean.po.SeatunnelJobInstancePO;
 import org.apache.seatunnel.communal.bean.po.SeatunnelJobMetricsPO;
 import org.apache.seatunnel.communal.bean.vo.SeatunnelBatchJobDefinitionVO;
 import org.apache.seatunnel.communal.bean.vo.SeatunnelJobInstanceVO;
+import org.apache.seatunnel.communal.enums.JobMode;
+import org.apache.seatunnel.communal.enums.JobStatus;
 import org.apache.seatunnel.communal.enums.RunMode;
 import org.apache.seatunnel.communal.utils.CodeGenerateUtils;
 import org.apache.seatunnel.communal.utils.ConvertUtil;
-import org.apache.seatunnel.communal.enums.JobStatus;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.context.annotation.Scope;
+import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.io.File;
 import java.io.IOException;
@@ -39,6 +43,9 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Date;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
 
 @Service
 @Slf4j
@@ -57,137 +64,110 @@ public class SeatunnelJobInstanceServiceImpl
     @Resource
     private HoconConfigBuilder configBuilder;
 
+    @Resource
+    private SeatunnelRestClient seatunnelRestClient;
+
     @Value("${seatunnel.job.log-dir:logs}")
     private String baseLogDir;
 
-
     @Override
     public SeatunnelJobInstanceVO create(Long jobDefineId, RunMode runMode) {
+        log.info("Creating job instance, jobDefineId={}, runMode={}", jobDefineId, runMode);
 
-        log.info("Creating job instance, jobDefineId={}, runMode={}",
-                jobDefineId, runMode);
-
-        SeatunnelBatchJobDefinitionVO definitionVO =
-                definitionService.selectById(jobDefineId);
-
+        SeatunnelBatchJobDefinitionVO definitionVO = definitionService.selectById(jobDefineId);
         if (definitionVO == null) {
-            throw new IllegalArgumentException(
-                    "Job definition not found: " + jobDefineId);
+            throw new IllegalArgumentException("Job definition not found: " + jobDefineId);
         }
 
-        SeatunnelJobInstancePO instance =
-                buildJobInstance(definitionVO, runMode);
+        SeatunnelJobInstancePO instance = buildJobInstance(definitionVO, runMode);
 
         boolean saved = save(instance);
         if (!saved) {
             throw new IllegalStateException("Failed to save job instance");
         }
 
-        log.info("Job instance created successfully, instanceId={}",
-                instance.getId());
-
-        return ConvertUtil.sourceToTarget(
-                instance,
-                SeatunnelJobInstanceVO.class
-        );
+        log.info("Job instance created successfully, instanceId={}", instance.getId());
+        return ConvertUtil.sourceToTarget(instance, SeatunnelJobInstanceVO.class);
     }
 
     @Override
-    public PaginationResult<SeatunnelJobInstanceVO> paging(
-            SeatunnelJobInstanceDTO dto) {
+    @Transactional(rollbackFor = Exception.class)
+    public SeatunnelJobInstanceVO createAndSubmit(Long jobDefineId, RunMode runMode) {
+        SeatunnelBatchJobDefinitionVO definitionVO = definitionService.selectById(jobDefineId);
+        if (definitionVO == null) {
+            throw new IllegalArgumentException("Job definition not found: " + jobDefineId);
+        }
 
-        Page<SeatunnelJobInstanceVO> page =
-                new Page<>(dto.getPageNo(), dto.getPageSize());
+        SeatunnelJobInstancePO instance = buildJobInstance(definitionVO, runMode);
 
-        IPage<SeatunnelJobInstanceVO> result =
-                baseMapper.pageWithDefinition(page, dto);
+        boolean saved = save(instance);
+        if (!saved) {
+            throw new IllegalStateException("Failed to save job instance");
+        }
 
-        return PaginationResult.buildSuc(
-                result.getRecords(),
-                result
-        );
-    }
-
-
-    /**
-     * Generate a unique job instance ID.
-     * <p>
-     * Delegates ID generation to CodeGenerateUtils.
-     * Wraps checked exception into RuntimeException.
-     *
-     * @return Unique instance ID
-     */
-    private Long generateInstanceId() {
         try {
-            return CodeGenerateUtils.getInstance().genCode();
-        } catch (CodeGenerateUtils.CodeGenerateException e) {
-            throw new RuntimeException(
-                    "Failed to generate job instance ID", e);
+            Map<?, ?> result = seatunnelRestClient.submitJobUploadText(
+                    instance.getJobConfig(),
+                    "job-" + instance.getId() + ".conf"
+            );
+
+            String engineJobId = parseEngineJobId(result);
+
+            JobStatus submitStatus = parseJobStatus(result);
+            if (submitStatus == null) {
+                submitStatus = JobStatus.INITIALIZING;
+            }
+
+            updateStatusAndEngineId(instance.getId(), submitStatus, engineJobId);
+
+            log.info("Job submitted successfully, instanceId={}, engineJobId={}, status={}",
+                    instance.getId(), engineJobId, submitStatus);
+
+            return selectById(instance.getId());
+        } catch (Exception e) {
+            log.error("Submit job failed, instanceId={}", instance.getId(), e);
+            updateStatus(instance.getId(), JobStatus.FAILED, e.getMessage());
+            throw e;
         }
     }
 
-    /**
-     * Build the absolute log file path for a job instance.
-     * <p>
-     * Log format:
-     * {user.dir}/{baseLogDir}/job-{instanceId}.log
-     *
-     * @param id Job instance ID
-     * @return Log file absolute path
-     */
-    private String buildLogPath(Long id) {
-        return System.getProperty("user.dir") + File.separator + Paths.get(baseLogDir,
-                "job-" + id + ".log").toString();
+    @Override
+    public PaginationResult<SeatunnelJobInstanceVO> paging(SeatunnelJobInstanceDTO dto) {
+        Page<SeatunnelJobInstanceVO> page = new Page<>(dto.getPageNo(), dto.getPageSize());
+        IPage<SeatunnelJobInstanceVO> result = baseMapper.pageWithDefinition(page, dto);
+        return PaginationResult.buildSuc(result.getRecords(), result);
     }
 
+    @Override
+    public String buildHoconConfig(BaseSeatunnelJobDefinitionDTO dto) {
+        return buildConfig(dto.getJobDefinitionInfo(), dto);
+    }
 
     @Override
-    public String buildHoconConfig(
-            BaseSeatunnelJobDefinitionDTO dto) {
-
-        return buildConfig(
+    public String buildHoconConfigByWholeSync(BaseSeatunnelJobDefinitionDTO dto) {
+        String dagJson = WholeSyncDagAssembler.assemble(
                 dto.getJobDefinitionInfo(),
-                dto
+                dto.getJobType()
         );
-    }
-
-    @Override
-    public String buildHoconConfigByWholeSync(
-            BaseSeatunnelJobDefinitionDTO dto) {
-
-        String dagJson =
-                WholeSyncDagAssembler.assemble(
-                        dto.getJobDefinitionInfo(),
-                        dto.getJobType());
-
         return buildConfig(dagJson, dto);
     }
 
     @Override
-    public String buildHoconConfigWithStream(
-            BaseSeatunnelJobDefinitionDTO dto) {
-
-        String dagJson =
-                StreamDagAssembler.assemble(
-                        dto.getJobDefinitionInfo(),
-                        dto.getJobType());
-
+    public String buildHoconConfigWithStream(BaseSeatunnelJobDefinitionDTO dto) {
+        String dagJson = StreamDagAssembler.assemble(
+                dto.getJobDefinitionInfo(),
+                dto.getJobType()
+        );
         return buildConfig(dagJson, dto);
     }
 
     @Override
     public SeatunnelJobInstanceVO selectById(Long id) {
-
         SeatunnelJobInstancePO po = getById(id);
-
         if (po == null) {
             throw new RuntimeException("Job instance not found");
         }
-
-        return ConvertUtil.sourceToTarget(
-                po,
-                SeatunnelJobInstanceVO.class
-        );
+        return ConvertUtil.sourceToTarget(po, SeatunnelJobInstanceVO.class);
     }
 
     @Override
@@ -195,13 +175,11 @@ public class SeatunnelJobInstanceServiceImpl
         SeatunnelJobInstanceVO instance = selectById(instanceId);
 
         String logPath = instance.getLogPath();
-
         if (logPath == null || logPath.isEmpty()) {
             return "No log available";
         }
 
         Path path = Paths.get(logPath);
-
         if (!Files.exists(path)) {
             return "Log file not found";
         }
@@ -216,23 +194,28 @@ public class SeatunnelJobInstanceServiceImpl
 
     @Override
     public boolean existsRunningInstance(Long definitionId) {
-
         if (definitionId == null) {
             return false;
         }
 
         long count = lambdaQuery()
                 .eq(SeatunnelJobInstancePO::getJobDefinitionId, definitionId)
-                .eq(SeatunnelJobInstancePO::getJobStatus, JobStatus.RUNNING.toString())
+                .in(SeatunnelJobInstancePO::getJobStatus,
+                        JobStatus.INITIALIZING.name(),
+                        JobStatus.CREATED.name(),
+                        JobStatus.PENDING.name(),
+                        JobStatus.SCHEDULED.name(),
+                        JobStatus.RUNNING.name(),
+                        JobStatus.FAILING.name(),
+                        JobStatus.DOING_SAVEPOINT.name(),
+                        JobStatus.CANCELING.name())
                 .count();
 
         return count > 0;
     }
 
-
     @Override
     public void deleteInstancesByDefinitionId(Long definitionId) {
-
         if (definitionId == null) {
             return;
         }
@@ -242,10 +225,8 @@ public class SeatunnelJobInstanceServiceImpl
                 .remove();
     }
 
-
     @Override
     public void deleteMetricsByDefinitionId(Long definitionId) {
-
         if (definitionId == null) {
             return;
         }
@@ -258,7 +239,6 @@ public class SeatunnelJobInstanceServiceImpl
 
     @Override
     public void removeAllByDefinitionId(Long definitionId) {
-
         if (definitionId == null) {
             return;
         }
@@ -270,18 +250,184 @@ public class SeatunnelJobInstanceServiceImpl
                 .remove();
     }
 
-    /**
-     * Build a new job instance entity based on job definition and run mode.
-     * <p>
-     * This method:
-     * 1. Generates a unique instance ID
-     * 2. Builds HOCON job configuration from definition
-     * 3. Initializes instance metadata (status, log path, start time, etc.)
-     *
-     * @param definitionVO Job definition view object
-     * @param runMode      Execution mode (BATCH / STREAM, etc.)
-     * @return Initialized SeatunnelJobInstancePO
-     */
+    @Override
+    public void updateStatus(Long instanceId, JobStatus status) {
+        updateStatus(instanceId, status, null);
+    }
+
+    @Override
+    public void updateStatus(Long instanceId, JobStatus status, String errorMessage) {
+        if (instanceId == null || status == null) {
+            return;
+        }
+
+        boolean endState = status.isEndState();
+
+        lambdaUpdate()
+                .eq(SeatunnelJobInstancePO::getId, instanceId)
+                .set(SeatunnelJobInstancePO::getJobStatus, status.name())
+                .set(errorMessage != null && !errorMessage.isBlank(),
+                        SeatunnelJobInstancePO::getErrorMessage,
+                        truncate(errorMessage, 2000))
+                .set(endState, SeatunnelJobInstancePO::getEndTime, new Date())
+                .update();
+    }
+
+    @Override
+    public void updateStatusAndEngineId(Long instanceId, JobStatus status, String engineJobId) {
+        if (instanceId == null || status == null) {
+            return;
+        }
+
+        boolean endState = status.isEndState();
+
+        lambdaUpdate()
+                .eq(SeatunnelJobInstancePO::getId, instanceId)
+                .set(SeatunnelJobInstancePO::getJobStatus, status.name())
+                .set(engineJobId != null && !engineJobId.isBlank(),
+                        SeatunnelJobInstancePO::getJobEngineId,
+                        engineJobId)
+                .set(endState, SeatunnelJobInstancePO::getEndTime, new Date())
+                .update();
+    }
+
+    @Override
+    public void reconcileInstanceStatus(Long instanceId) {
+        if (instanceId == null) {
+            return;
+        }
+
+        SeatunnelJobInstancePO instance = getById(instanceId);
+        if (instance == null) {
+            return;
+        }
+
+        reconcileSingleInstance(instance);
+    }
+
+    @Override
+    public void reconcileUnfinishedInstanceStatuses() {
+        List<SeatunnelJobInstancePO> instances = lambdaQuery()
+                .in(SeatunnelJobInstancePO::getJobStatus,
+                        JobStatus.INITIALIZING.name(),
+                        JobStatus.CREATED.name(),
+                        JobStatus.PENDING.name(),
+                        JobStatus.SCHEDULED.name(),
+                        JobStatus.RUNNING.name(),
+                        JobStatus.FAILING.name(),
+                        JobStatus.DOING_SAVEPOINT.name(),
+                        JobStatus.CANCELING.name())
+                .list();
+
+        if (instances == null || instances.isEmpty()) {
+            return;
+        }
+
+        for (SeatunnelJobInstancePO instance : instances) {
+            try {
+                reconcileSingleInstance(instance);
+            } catch (Exception e) {
+                log.error("Reconcile instance status failed, instanceId={}", instance.getId(), e);
+            }
+        }
+    }
+
+    @Scheduled(fixedDelayString = "${seatunnel.job.status-reconcile-interval-ms:30000}")
+    public void scheduledReconcile() {
+        try {
+            reconcileUnfinishedInstanceStatuses();
+        } catch (Exception e) {
+            log.error("Scheduled reconcile job instance status failed", e);
+        }
+    }
+
+    private void reconcileSingleInstance(SeatunnelJobInstancePO instance) {
+        if (instance == null) {
+            return;
+        }
+
+        if (instance.getJobStatus() != null) {
+            try {
+                JobStatus current = JobStatus.fromString(instance.getJobStatus());
+                if (current.isEndState()) {
+                    return;
+                }
+            } catch (Exception ignored) {
+                // ignore invalid local state and continue reconcile
+            }
+        }
+
+        Long engineJobId = instance.getJobEngineId();
+
+        JobStatus actualStatus = queryActualJobStatus(engineJobId);
+        updateStatus(instance.getId(), actualStatus);
+    }
+
+    private JobStatus queryActualJobStatus(Long engineJobId) {
+        try {
+            Map<?, ?> jobInfo = seatunnelRestClient.jobInfo(engineJobId);
+            JobStatus status = parseJobStatus(jobInfo);
+            if (status != null) {
+                return status;
+            }
+        } catch (Exception e) {
+            log.warn("Query job-info failed, engineJobId={}", engineJobId, e);
+        }
+
+        JobStatus status = queryFromFinishedJobs(engineJobId);
+        if (status != null) {
+            return status;
+        }
+
+        return JobStatus.UNKNOWABLE;
+    }
+
+    private JobStatus queryFromFinishedJobs(Long engineJobId) {
+        for (JobStatus candidate : new JobStatus[]{
+                JobStatus.FINISHED,
+                JobStatus.FAILED,
+                JobStatus.CANCELED,
+                JobStatus.UNKNOWABLE
+        }) {
+            try {
+                List<?> jobs = seatunnelRestClient.finishedJobs(candidate.name());
+                if (containsEngineJobId(jobs, engineJobId)) {
+                    return candidate;
+                }
+            } catch (Exception e) {
+                log.warn("Query finished-jobs failed, state={}, engineJobId={}",
+                        candidate.name(), engineJobId, e);
+            }
+        }
+        return null;
+    }
+
+    private boolean containsEngineJobId(List<?> jobs, Long engineJobId) {
+        if (jobs == null || jobs.isEmpty()) {
+            return false;
+        }
+
+        for (Object job : jobs) {
+            if (!(job instanceof Map)) {
+                continue;
+            }
+
+            Map<?, ?> map = (Map<?, ?>) job;
+
+            Object id = firstNonNull(
+                    map.get("jobId"),
+                    map.get("job_id"),
+                    map.get("id"),
+                    map.get("jobEngineId")
+            );
+
+            if (id != null && Objects.equals(String.valueOf(id), engineJobId)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
     private SeatunnelJobInstancePO buildJobInstance(
             SeatunnelBatchJobDefinitionVO definitionVO,
             RunMode runMode) {
@@ -292,7 +438,8 @@ public class SeatunnelJobInstanceServiceImpl
                 ConvertUtil.sourceToTarget(
                         definitionVO,
                         SeatunnelBatchJobDefinitionDTO.class
-                ));
+                )
+        );
 
         return SeatunnelJobInstancePO.builder()
                 .id(id)
@@ -300,26 +447,88 @@ public class SeatunnelJobInstanceServiceImpl
                 .startTime(new Date())
                 .jobConfig(jobConfig)
                 .logPath(buildLogPath(id))
-                .jobStatus(JobStatus.RUNNING.toString())
+                .jobStatus(JobStatus.RUNNING.name())
                 .runMode(runMode)
+                .jobType(JobMode.BATCH)
                 .build();
     }
 
-    /**
-     * Build HOCON configuration string from DAG JSON and job definition DTO.
-     * <p>
-     * This method:
-     * 1. Parses and validates DAG structure
-     * 2. Delegates final configuration building to HoconConfigBuilder
-     *
-     * @param dagJson DAG JSON definition
-     * @param dto     Job definition DTO
-     * @return Generated HOCON configuration string
-     */
-    private String buildConfig(String dagJson,
-                               BaseSeatunnelJobDefinitionDTO dto) {
+    private Long generateInstanceId() {
+        try {
+            return CodeGenerateUtils.getInstance().genCode();
+        } catch (CodeGenerateUtils.CodeGenerateException e) {
+            throw new RuntimeException("Failed to generate job instance ID", e);
+        }
+    }
 
+    private String buildLogPath(Long id) {
+        return System.getProperty("user.dir")
+                + File.separator
+                + Paths.get(baseLogDir, "job-" + id + ".log");
+    }
+
+    private String buildConfig(String dagJson, BaseSeatunnelJobDefinitionDTO dto) {
         DagGraph dagGraph = DagUtil.parseAndCheck(dagJson);
         return configBuilder.build(dagGraph, dto);
+    }
+
+    private String parseEngineJobId(Map<?, ?> result) {
+        if (result == null || result.isEmpty()) {
+            return null;
+        }
+
+        Object value = firstNonNull(
+                result.get("jobId"),
+                result.get("job_id"),
+                result.get("id"),
+                result.get("jobEngineId")
+        );
+
+        return value == null ? null : String.valueOf(value);
+    }
+
+    private JobStatus parseJobStatus(Map<?, ?> result) {
+        if (result == null || result.isEmpty()) {
+            return null;
+        }
+
+        Object value = firstNonNull(
+                result.get("jobStatus"),
+                result.get("status"),
+                result.get("state")
+        );
+
+        if (value == null) {
+            return null;
+        }
+
+        try {
+            return JobStatus.fromString(String.valueOf(value));
+        } catch (Exception e) {
+            log.warn("Unknown job status value: {}", value);
+            return null;
+        }
+    }
+
+    private Object firstNonNull(Object... values) {
+        if (values == null) {
+            return null;
+        }
+        for (Object value : values) {
+            if (value != null) {
+                return value;
+            }
+        }
+        return null;
+    }
+
+    private String truncate(String text, int maxLength) {
+        if (text == null) {
+            return null;
+        }
+        if (text.length() <= maxLength) {
+            return text;
+        }
+        return text.substring(0, maxLength);
     }
 }

@@ -14,8 +14,8 @@ const TaskViewModal = forwardRef(({}: CreateModalProps, ref) => {
   const intl = useIntl();
 
   const [visible, setVisible] = useState<boolean>(false);
-  const [selectedItem, setSelectedItem] = useState<any>(null); // ✅ 原来是 number|null，但实际传的是 record 对象
-  const [instanceItem, setInstanceItem] = useState<any>({});
+  const [jobItem, setJobItem] = useState<any>(null);
+  const [instanceItem, setInstanceItem] = useState<any>(null);
   const [statusFilter, setStatusFilter] = useState<string>("all");
 
   const callback = useRef<() => void>(() => {
@@ -24,13 +24,15 @@ const TaskViewModal = forwardRef(({}: CreateModalProps, ref) => {
 
   const onClose = () => {
     setVisible(false);
-    setInstanceItem({});
-    setSelectedItem(null);
+    setInstanceItem(null);
+    setJobItem(null);
+    setStatusFilter("all");
   };
 
   const onOpen = (status: boolean, record: any, cbk: () => void) => {
     setVisible(status);
-    setSelectedItem(record);
+    setJobItem(record);
+    setInstanceItem(null);
     callback.current = cbk;
   };
 
@@ -67,9 +69,9 @@ const TaskViewModal = forwardRef(({}: CreateModalProps, ref) => {
         >
           <Splitter.Panel defaultSize="20%" min="20%" max="70%">
             <TaskHistoryPanel
-              selectedItem={selectedItem}
+              selectedItem={jobItem}
               statusFilter={statusFilter}
-              onItemSelect={setSelectedItem}
+              onItemSelect={() => {}}
               onStatusFilterChange={setStatusFilter}
               setInstanceItem={setInstanceItem}
               instanceItem={instanceItem}

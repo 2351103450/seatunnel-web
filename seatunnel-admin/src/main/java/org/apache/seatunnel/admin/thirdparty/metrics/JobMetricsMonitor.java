@@ -32,7 +32,7 @@ public class JobMetricsMonitor {
      * Key: job instance ID
      * Value: engine ID
      */
-    private final Map<Long, String> monitoringJobs = new ConcurrentHashMap<>();
+    private final Map<Long, Long> monitoringJobs = new ConcurrentHashMap<>();
 
     /**
      * Dedicated file logger per job instance.
@@ -53,7 +53,7 @@ public class JobMetricsMonitor {
      */
     public void register(JobRuntimeContext context) {
         Long instanceId = context.getInstanceId();
-        String engineId = context.getEngineId();
+        Long engineId = context.getEngineId();
 
         monitoringJobs.put(instanceId, engineId);
 
@@ -101,7 +101,7 @@ public class JobMetricsMonitor {
      * Persist final metrics to database.
      */
     public void finalizeAndPersist(Long instanceId) {
-        String engineId = monitoringJobs.get(instanceId);
+        Long engineId = monitoringJobs.get(instanceId);
 
         if (engineId != null) {
             try {
@@ -188,7 +188,7 @@ public class JobMetricsMonitor {
      * Build WebSocket payload.
      */
     private Map<String, Object> buildPayload(Long instanceId,
-                                             String engineId,
+                                             Long engineId,
                                              Map<Integer, SeatunnelJobMetricsPO> metrics) {
 
         Map<String, Object> message = new HashMap<>();
@@ -204,7 +204,7 @@ public class JobMetricsMonitor {
     /**
      * Construct WebSocket channel name.
      */
-    private String buildChannel(Long instanceId, String engineId) {
+    private String buildChannel(Long instanceId, Long engineId) {
         return "job-" + instanceId + "-" + engineId;
     }
 
