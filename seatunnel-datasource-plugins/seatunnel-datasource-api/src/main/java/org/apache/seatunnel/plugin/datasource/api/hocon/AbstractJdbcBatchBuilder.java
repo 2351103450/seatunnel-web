@@ -4,6 +4,7 @@ import com.typesafe.config.Config;
 import com.typesafe.config.ConfigFactory;
 import com.typesafe.config.ConfigValue;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.seatunnel.communal.enums.HoconBuildStage;
 import org.apache.seatunnel.plugin.datasource.api.jdbc.AbstractJdbcHoconBuilder;
 import org.apache.seatunnel.plugin.datasource.api.jdbc.JdbcConnectionProvider;
 import org.apache.seatunnel.plugin.datasource.api.utils.SqlTimeVariableParser;
@@ -29,7 +30,7 @@ public abstract class AbstractJdbcBatchBuilder extends AbstractJdbcHoconBuilder
     }
 
     @Override
-    public Config buildSourceHocon(String connectionParam, Config config, JdbcConnectionProvider jdbcConnectionProvider) {
+    public Config buildSourceHocon(String connectionParam, Config config, JdbcConnectionProvider jdbcConnectionProvider, HoconBuildStage stage) {
 
         Config conn = ConfigFactory.parseString(connectionParam);
         Map<String, Object> map = new HashMap<>(16);
@@ -51,13 +52,24 @@ public abstract class AbstractJdbcBatchBuilder extends AbstractJdbcHoconBuilder
         if (config.hasPath(KEY_QUERY)) {
             String query = config.getString(KEY_QUERY);
             if (StringUtils.isNotBlank(query)) {
-                map.put(KEY_QUERY, resolveSqlVariables(query));
+                map.put(KEY_QUERY, handleQueryByStage(query, stage));
+                map.put(KEY_GENERATE_SINK_SQL, false);
             }
         }
 
         parseParamsArray(config, map);
 
         return ConfigFactory.parseMap(map);
+    }
+
+    protected String handleQueryByStage(String query, HoconBuildStage stage) {
+        if (StringUtils.isBlank(query)) {
+            return query;
+        }
+        if (stage == HoconBuildStage.INSTANCE) {
+            return resolveSqlVariables(query);
+        }
+        return query;
     }
 
     private void buildTableList(Config config, Config conn, Map<String, Object> map) {

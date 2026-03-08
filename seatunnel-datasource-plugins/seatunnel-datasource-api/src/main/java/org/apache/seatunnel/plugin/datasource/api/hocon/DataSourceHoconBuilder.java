@@ -1,6 +1,7 @@
 package org.apache.seatunnel.plugin.datasource.api.hocon;
 
 import com.typesafe.config.Config;
+import org.apache.seatunnel.communal.enums.HoconBuildStage;
 import org.apache.seatunnel.plugin.datasource.api.jdbc.JdbcConnectionProvider;
 
 /**
@@ -28,7 +29,7 @@ public interface DataSourceHoconBuilder {
      * @param config          the node-level configuration provided by the job
      * @return a Config object representing the final Source HOCON configuration
      */
-    Config buildSourceHocon(String connectionParam, Config config, JdbcConnectionProvider jdbcConnectionProvider);
+    Config buildSourceHocon(String connectionParam, Config config, JdbcConnectionProvider jdbcConnectionProvider, HoconBuildStage stage);
 
     /**
      * Build the HOCON configuration for a Sink plugin.

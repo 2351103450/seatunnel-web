@@ -8,6 +8,7 @@ import org.apache.seatunnel.communal.DbType;
 import org.apache.seatunnel.communal.bean.vo.DataSourceVO;
 import org.apache.seatunnel.communal.config.ConfigValidator;
 import org.apache.seatunnel.communal.config.ReadonlyConfig;
+import org.apache.seatunnel.communal.enums.HoconBuildStage;
 import org.apache.seatunnel.plugin.datasource.api.jdbc.DataSourceProcessor;
 import org.apache.seatunnel.plugin.datasource.api.utils.DataSourceUtils;
 import org.springframework.stereotype.Component;
@@ -73,7 +74,7 @@ public class JdbcSourceBuilder implements SourceNodeConfigBuilder {
         String pluginName = data.getString("pluginName");
         // Build source configuration
         Config cfg = processor.getQueryBuilder(pluginName)
-                .buildSourceHocon(ds.getConnectionParams(), data, processor.getConnectionManager());
+                .buildSourceHocon(ds.getConnectionParams(), data, processor.getConnectionManager(), HoconBuildStage.DEFINITION);
 
         // Validate configuration using processor-defined rules
         ConfigValidator.of(ReadonlyConfig.fromConfig(cfg))

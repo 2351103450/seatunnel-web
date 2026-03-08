@@ -6,6 +6,7 @@ import com.typesafe.config.Config;
 import com.typesafe.config.ConfigFactory;
 import com.typesafe.config.ConfigValue;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.seatunnel.communal.enums.HoconBuildStage;
 import org.apache.seatunnel.communal.enums.SyncMode;
 import org.apache.seatunnel.plugin.datasource.api.hocon.DataSourceHoconBuilder;
 import org.apache.seatunnel.plugin.datasource.api.jdbc.JdbcConnectionProvider;
@@ -25,7 +26,7 @@ public class MySqlCdcBuilder implements DataSourceHoconBuilder {
     @Override
     public Config buildSourceHocon(String connectionParam,
                                    Config config,
-                                   JdbcConnectionProvider provider) {
+                                   JdbcConnectionProvider provider, HoconBuildStage stage) {
 
         MySQLConnectionParam param =
                 JSON.parseObject(connectionParam, MySQLConnectionParam.class);
