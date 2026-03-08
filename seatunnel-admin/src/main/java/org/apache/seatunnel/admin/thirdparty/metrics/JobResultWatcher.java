@@ -49,7 +49,6 @@ public class JobResultWatcher {
                     String statusStr = (jobInfo == null) ? null : String.valueOf(jobInfo.get("jobStatus"));
 
                     if (statusStr == null || "null".equals(statusStr)) {
-                        // 文档说：查不到 job 可能只返回 {"jobId":""}
                         log.warn("job-info returned no status, engineId={}, resp={}", engineId, jobInfo);
                         Thread.sleep(pollIntervalMs);
                         continue;
@@ -62,18 +61,14 @@ public class JobResultWatcher {
                         continue;
                     }
 
-                    // 结束态
                     if (status == JobStatus.FINISHED) {
                         resultHandler.handleSuccess(instanceId);
                     } else {
-                        // 你现有 handleFailure(instanceId, JobResult) 需要 JobResult，这里做个最小封装
                         JobResult jr = new JobResult(JobStatus.FAILED);
                         jr.setStatus(status);
                         jr.setError(String.valueOf(jobInfo.get("errorMsg")));
                         resultHandler.handleFailure(instanceId, jr);
                     }
-
-                    // 最终 metrics 入库 + 清理
                     metricsMonitor.finalizeAndPersist(instanceId);
                     return;
                 }
@@ -92,7 +87,6 @@ public class JobResultWatcher {
         try {
             return JobStatus.valueOf(s);
         } catch (Exception e) {
-            // 兼容可能出现的不同拼写（比如 CANCELED vs CANCELLED）
             if ("CANCELLED".equalsIgnoreCase(s)) return JobStatus.CANCELED;
             return JobStatus.UNKNOWABLE;
         }
