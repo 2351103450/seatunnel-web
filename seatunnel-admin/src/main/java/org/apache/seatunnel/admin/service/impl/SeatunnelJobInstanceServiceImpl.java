@@ -4,6 +4,7 @@ import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
+import jakarta.annotation.PostConstruct;
 import jakarta.annotation.Resource;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.seatunnel.admin.builder.HoconConfigBuilder;
@@ -49,7 +50,6 @@ import java.util.Objects;
 
 @Service
 @Slf4j
-@Scope("prototype")
 public class SeatunnelJobInstanceServiceImpl
         extends ServiceImpl<SeatunnelJobInstanceMapper, SeatunnelJobInstancePO>
         implements SeatunnelJobInstanceService {
@@ -69,6 +69,11 @@ public class SeatunnelJobInstanceServiceImpl
 
     @Value("${seatunnel.job.log-dir:logs}")
     private String baseLogDir;
+
+    @PostConstruct
+    public void init() {
+        log.info("SeatunnelJobInstanceServiceImpl initialized: {}", System.identityHashCode(this));
+    }
 
     @Override
     public SeatunnelJobInstanceVO create(Long jobDefineId, RunMode runMode) {
@@ -331,16 +336,6 @@ public class SeatunnelJobInstanceServiceImpl
             }
         }
     }
-
-    @Scheduled(fixedDelayString = "${seatunnel.job.status-reconcile-interval-ms:30000}")
-    public void scheduledReconcile() {
-        try {
-            reconcileUnfinishedInstanceStatuses();
-        } catch (Exception e) {
-            log.error("Scheduled reconcile job instance status failed", e);
-        }
-    }
-
     private void reconcileSingleInstance(SeatunnelJobInstancePO instance) {
         if (instance == null) {
             return;
