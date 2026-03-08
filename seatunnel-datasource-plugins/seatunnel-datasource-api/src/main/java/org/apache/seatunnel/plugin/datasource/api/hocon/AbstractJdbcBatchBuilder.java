@@ -6,15 +6,22 @@ import com.typesafe.config.ConfigValue;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.seatunnel.plugin.datasource.api.jdbc.AbstractJdbcHoconBuilder;
 import org.apache.seatunnel.plugin.datasource.api.jdbc.JdbcConnectionProvider;
+import org.apache.seatunnel.plugin.datasource.api.utils.SqlTimeVariableParser;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
+import java.util.*;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 public abstract class AbstractJdbcBatchBuilder extends AbstractJdbcHoconBuilder
         implements DataSourceHoconBuilder {
+
+    private static final Pattern SQL_VARIABLE_PATTERN =
+            Pattern.compile("\\$\\{var:([^}]+)}");
+
+    private static final DateTimeFormatter DATETIME_FORMATTER =
+            DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
 
     @Override
     protected String defaultDriver() {
@@ -44,7 +51,7 @@ public abstract class AbstractJdbcBatchBuilder extends AbstractJdbcHoconBuilder
         if (config.hasPath(KEY_QUERY)) {
             String query = config.getString(KEY_QUERY);
             if (StringUtils.isNotBlank(query)) {
-                map.put(KEY_QUERY, query);
+                map.put(KEY_QUERY, resolveSqlVariables(query));
             }
         }
 
@@ -77,7 +84,6 @@ public abstract class AbstractJdbcBatchBuilder extends AbstractJdbcHoconBuilder
         }
     }
 
-
     @Override
     public Config buildSinkHocon(String connectionParam, Config config) {
 
@@ -96,7 +102,7 @@ public abstract class AbstractJdbcBatchBuilder extends AbstractJdbcHoconBuilder
         if (config.hasPath(KEY_QUERY)) {
             String query = config.getString(KEY_QUERY);
             if (StringUtils.isNotBlank(query)) {
-                map.put(KEY_QUERY, query);
+                map.put(KEY_QUERY, resolveSqlVariables(query));
                 map.put(KEY_GENERATE_SINK_SQL, false);
             }
         }
@@ -109,17 +115,36 @@ public abstract class AbstractJdbcBatchBuilder extends AbstractJdbcHoconBuilder
         }
 
         appendSinkAdvancedOptions(config, map);
-
         parseParamsArray(config, map);
-
 
         return ConfigFactory.parseMap(map);
     }
 
+    protected String resolveSqlVariables(String sql) {
+        if (StringUtils.isBlank(sql)) {
+            return sql;
+        }
 
+        Matcher matcher = SQL_VARIABLE_PATTERN.matcher(sql);
+        StringBuffer sb = new StringBuffer();
+
+        while (matcher.find()) {
+            String variableName = matcher.group(1);
+            LocalDateTime dateTime = SqlTimeVariableParser.parse(variableName);
+            String replacement = formatDateTimeLiteral(dateTime);
+            matcher.appendReplacement(sb, Matcher.quoteReplacement(replacement));
+        }
+
+        matcher.appendTail(sb);
+        return sb.toString();
+    }
+
+
+    protected String formatDateTimeLiteral(LocalDateTime dateTime) {
+        return "'" + DATETIME_FORMATTER.format(dateTime) + "'";
+    }
 
     private void appendSinkAdvancedOptions(Config config, Map<String, Object> map) {
-
         if (config.hasPath("dataSaveMode")) {
             String mode = config.getString("dataSaveMode");
             if (StringUtils.isNotBlank(mode)) {
@@ -154,7 +179,6 @@ public abstract class AbstractJdbcBatchBuilder extends AbstractJdbcHoconBuilder
 
         if (config.hasPath("extraParams")) {
             Config extraConfig = config.getConfig("extraParams");
-
             for (Map.Entry<String, ConfigValue> entry : extraConfig.entrySet()) {
                 map.put(entry.getKey(), entry.getValue().unwrapped());
             }
@@ -163,4 +187,3 @@ public abstract class AbstractJdbcBatchBuilder extends AbstractJdbcHoconBuilder
 
     public abstract String pluginName();
 }
-
