@@ -8,6 +8,7 @@ import {
 } from "@ant-design/icons";
 import { useIntl } from "@umijs/max";
 import {
+  DatePicker,
   Empty,
   Input,
   List,
@@ -17,8 +18,8 @@ import {
   Tag,
   Typography,
 } from "antd";
-import React, { useCallback, useEffect, useMemo, useState } from "react";
 import dayjs from "dayjs";
+import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { seatunnelJobInstanceApi } from "./api";
 import { HistoryItem } from "./type";
 
@@ -47,6 +48,10 @@ const TaskHistoryPanel: React.FC<TaskHistoryPanelProps> = ({
   const [debouncedKeyword, setDebouncedKeyword] = useState("");
   const [timeRangeType, setTimeRangeType] = useState("最近一天");
 
+  const [customTimeRange, setCustomTimeRange] = useState<
+    [dayjs.Dayjs | null, dayjs.Dayjs | null] | null
+  >(null);
+
   useEffect(() => {
     const timer = setTimeout(() => {
       setDebouncedKeyword(keyword.trim());
@@ -72,6 +77,15 @@ const TaskHistoryPanel: React.FC<TaskHistoryPanelProps> = ({
         return {
           queryStartTime: now.subtract(7, "day").format("YYYY-MM-DD HH:mm:ss"),
           queryEndTime: now.format("YYYY-MM-DD HH:mm:ss"),
+        };
+      case "自定义":
+        return {
+          queryStartTime: customTimeRange?.[0]
+            ?.startOf("day")
+            .format("YYYY-MM-DD HH:mm:ss"),
+          queryEndTime: customTimeRange?.[1]
+            ?.endOf("day")
+            .format("YYYY-MM-DD HH:mm:ss"),
         };
       default:
         return {
@@ -117,7 +131,14 @@ const TaskHistoryPanel: React.FC<TaskHistoryPanelProps> = ({
     } finally {
       setLoading(false);
     }
-  }, [selectedItem?.id, debouncedKeyword, statusFilter, timeRangeType, intl]);
+  }, [
+    selectedItem?.id,
+    debouncedKeyword,
+    statusFilter,
+    timeRangeType,
+    customTimeRange,
+    intl,
+  ]);
 
   useEffect(() => {
     fetchHistory();
@@ -275,6 +296,21 @@ const TaskHistoryPanel: React.FC<TaskHistoryPanelProps> = ({
             onChange={setTimeRangeType}
             block
           />
+
+          {timeRangeType === "自定义" && (
+            <DatePicker.RangePicker
+              showTime
+              style={{ width: "100%" }}
+              value={customTimeRange as any}
+              onChange={(values) => {
+                setCustomTimeRange(
+                  values ? [values[0] ?? null, values[1] ?? null] : null
+                );
+              }}
+              placeholder={["开始时间", "结束时间"]}
+              format="YYYY-MM-DD HH:mm:ss"
+            />
+          )}
 
           <div
             style={{
