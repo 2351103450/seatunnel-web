@@ -17,6 +17,7 @@ import org.apache.seatunnel.admin.service.SeatunnelBatchJobDefinitionService;
 import org.apache.seatunnel.admin.service.SeatunnelJobInstanceService;
 import org.apache.seatunnel.admin.thirdparty.client.SeatunnelRestClient;
 import org.apache.seatunnel.admin.utils.DagUtil;
+import org.apache.seatunnel.admin.utils.HoconSensitiveMaskUtil;
 import org.apache.seatunnel.communal.bean.dto.BaseSeatunnelJobDefinitionDTO;
 import org.apache.seatunnel.communal.bean.dto.SeatunnelBatchJobDefinitionDTO;
 import org.apache.seatunnel.communal.bean.dto.SeatunnelJobInstanceDTO;
@@ -138,8 +139,16 @@ public class SeatunnelJobInstanceServiceImpl
     public PaginationResult<SeatunnelJobInstanceVO> paging(SeatunnelJobInstanceDTO dto) {
         long pageNo = dto.getPageNo() == null || dto.getPageNo() < 1 ? 1 : dto.getPageNo();
         long pageSize = dto.getPageSize() == null || dto.getPageSize() < 1 ? 10 : dto.getPageSize();
+
         Page<SeatunnelJobInstanceVO> page = new Page<>(pageNo, pageSize);
         IPage<SeatunnelJobInstanceVO> result = baseMapper.pageWithDefinition(page, dto);
+
+        if (result.getRecords() != null) {
+            result.getRecords().forEach(item -> {
+                item.setJobConfig(HoconSensitiveMaskUtil.maskSensitiveInfo(item.getJobConfig()));
+            });
+        }
+
         return PaginationResult.buildSuc(result.getRecords(), result);
     }
 

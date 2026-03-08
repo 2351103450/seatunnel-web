@@ -74,7 +74,7 @@ public class JdbcSourceBuilder implements SourceNodeConfigBuilder {
         String pluginName = data.getString("pluginName");
         // Build source configuration
         Config cfg = processor.getQueryBuilder(pluginName)
-                .buildSourceHocon(ds.getConnectionParams(), data, processor.getConnectionManager(), HoconBuildStage.DEFINITION);
+                .buildSourceHocon(ds.getConnectionParams(), data, processor.getConnectionManager(), HoconBuildStage.INSTANCE);
 
         // Validate configuration using processor-defined rules
         ConfigValidator.of(ReadonlyConfig.fromConfig(cfg))
