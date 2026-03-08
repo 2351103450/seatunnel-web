@@ -23,8 +23,6 @@
 ![Batch Sync Screenshot](docs/images/img_8.png)
 ![Batch Sync Screenshot](docs/images/img_9.png)
 ![Batch Sync Screenshot](docs/images/img_10.png)
-![Batch Sync Screenshot](docs/images/log.png)
-![Batch Sync Screenshot](docs/images/metrics.png)
 ![Batch Sync Screenshot](docs/images/img_14.png)
 ![Batch Sync Screenshot](docs/images/img_15.png)
 ![Batch Sync Screenshot](docs/images/img_16.png)
