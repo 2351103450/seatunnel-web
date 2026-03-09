@@ -55,11 +55,16 @@ public class DefaultJobDefinitionResolver implements JobDefinitionResolver {
 
                     String sourceId = data.path("sourceId").asText(null);
                     String tablePath = data.path("table_path").asText(null);
+                    String query = data.path("query").asText(null);
 
                     if (StringUtils.isNotBlank(sourceId)) {
 
                         sourceTableMap
                                 .computeIfAbsent(sourceId, k -> new ArrayList<>());
+
+                        if (StringUtils.isNotBlank(query)) {
+                            sourceTableMap.get(sourceId).add(query);
+                        }
 
                         if (StringUtils.isNotBlank(tablePath)) {
                             sourceTableMap.get(sourceId).add(tablePath);
@@ -104,6 +109,7 @@ public class DefaultJobDefinitionResolver implements JobDefinitionResolver {
             throw new IllegalArgumentException("Failed to parse jobDefinitionInfo", e);
         }
     }
+
     @Override
     public NodeTypes resolveWholeSync(String jobInfo) {
 
