@@ -26,6 +26,7 @@ export function useFlowPublish(nodes: any[], edges: any[], baseForm: any) {
         }
         const flowData = prepareFlowData();
         const leftSideParam = baseForm?.getFieldsValue();
+        console.log(flowData);
 
         const httpParams = {
             jobDefinitionInfo: JSON.stringify(flowData),

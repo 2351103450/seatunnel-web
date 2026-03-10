@@ -4,11 +4,11 @@ import { memo, useEffect, useRef, useState } from "react";
 
 import QualityDetail from "@/pages/batch-link-up/DataViewSQL";
 import { dataSourceApi, dataSourceCatalogApi } from "@/pages/data-source/type";
+import { useIntl } from "@umijs/max";
 import { Form, message, Tabs } from "antd";
 import "./index.less";
 import OutputFieldsTab from "./OutputFieldsTab";
 import SourceConfigTab from "./SourceConfigTab";
-import { useIntl } from "@umijs/max";
 
 interface AppProps {
   selectedNode: {
@@ -38,69 +38,79 @@ const App: FC<AppProps> = ({ selectedNode, onNodeDataChange }) => {
     });
   };
 
+  // useEffect(() => {
+  //   if (sourceColumns && sourceColumns?.length > 0) {
+  //     onNodeDataChange(selectedNode?.id, {
+  //       ...selectedNode?.data,
+  //       sourceColumns,
+  //     });
+  //   }
+  //   // eslint-disable-next-line react-hooks/exhaustive-deps
+  // }, [sourceColumns]);
+
+  const prevNodeIdRef = useRef<string>();
+
   useEffect(() => {
-    if (sourceColumns && sourceColumns?.length > 0) {
-      onNodeDataChange(selectedNode?.id, {
-        ...selectedNode?.data,
-        sourceColumns,
+    if (!selectedNode) return;
+
+    const isNodeChanged = prevNodeIdRef.current !== selectedNode.id;
+    prevNodeIdRef.current = selectedNode.id;
+
+    if (!isNodeChanged) {
+      return;
+    }
+
+    const sourceId = selectedNode?.data?.sourceId;
+
+    if (sourceId === undefined || sourceId === "") {
+      dataSourceApi.option(selectedNode?.data?.dbType).then((data) => {
+        if (data?.code === 0) {
+          setSourceOption(data?.data);
+
+          if (data?.data?.length > 0) {
+            const firstOption = data.data[0];
+            const firstSourceId = firstOption.value;
+
+            sourceForm.setFieldsValue({
+              sourceId: firstSourceId,
+              taskExecuteType: "SINGLE_TABLE",
+            });
+
+            onNodeDataChange(selectedNode?.id, {
+              ...selectedNode?.data,
+              sourceId: firstSourceId,
+              taskExecuteType: "SINGLE_TABLE",
+            });
+
+            getSourceTableList(firstOption.value);
+          }
+        } else {
+          message.error(data?.message);
+        }
+      });
+    } else {
+      dataSourceApi.option(selectedNode?.data?.dbType).then((data) => {
+        if (data?.code === 0) {
+          setSourceOption(data?.data);
+          if (selectedNode?.data?.sourceId) {
+            getSourceTableList(selectedNode.data.sourceId);
+          }
+        } else {
+          message.error(data?.message);
+        }
+      });
+
+      setSourceColumns(selectedNode?.data?.sourceColumns || []);
+      setParams(selectedNode?.data?.params || []);
+
+      sourceForm.setFieldsValue({
+        sourceId: selectedNode?.data?.sourceId,
+        taskExecuteType: selectedNode?.data?.taskExecuteType,
+        query: selectedNode?.data?.query,
+        table_path: selectedNode?.data?.table_path,
       });
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [sourceColumns]);
-
-  useEffect(() => {
-    if (selectedNode) {
-      const sourceId = selectedNode?.data?.sourceId;
-
-      if (sourceId === undefined || sourceId === "") {
-        dataSourceApi.option(selectedNode?.data?.dbType).then((data) => {
-          if (data?.code === 0) {
-            setSourceOption(data?.data);
-
-            if (data?.data?.length > 0) {
-              const firstOption = data.data[0];
-              const firstSourceId = firstOption.value;
-
-              sourceForm.setFieldValue("sourceId", firstSourceId);
-              sourceForm.setFieldValue("taskExecuteType", "SINGLE_TABLE");
-
-              onNodeDataChange(selectedNode?.id, {
-                ...selectedNode?.data,
-                sourceId: firstSourceId,
-                taskExecuteType: "SINGLE_TABLE",
-              });
-
-              getSourceTableList(firstOption.value);
-            }
-          } else {
-            message.error(data?.message);
-          }
-        });
-      } else {
-        dataSourceApi.option(selectedNode?.data?.dbType).then((data) => {
-          if (data?.code === 0) {
-            setSourceOption(data?.data);
-            if (selectedNode?.data?.sourceId) {
-              getSourceTableList(selectedNode.data.sourceId);
-            }
-          } else {
-            message.error(data?.message);
-          }
-        });
-
-        setSourceColumns(selectedNode?.data?.sourceFields || []);
-        setParams(selectedNode?.data?.params || []);
-
-        sourceForm.setFieldsValue({
-          sourceId: selectedNode?.data?.sourceId || undefined,
-          taskExecuteType: selectedNode?.data?.taskExecuteType || undefined,
-          query: selectedNode?.data?.query || undefined,
-          table_path: selectedNode?.data?.table_path || undefined,
-        });
-      }
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [selectedNode]);
+  }, [selectedNode?.id]);
 
   const items = [
     {

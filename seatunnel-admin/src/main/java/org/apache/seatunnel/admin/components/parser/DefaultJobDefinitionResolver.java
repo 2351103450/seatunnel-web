@@ -56,30 +56,25 @@ public class DefaultJobDefinitionResolver implements JobDefinitionResolver {
                     String sourceId = data.path("sourceId").asText(null);
                     String tablePath = data.path("table_path").asText(null);
                     String query = data.path("query").asText(null);
-
+                    String taskExecuteType = data.path("taskExecuteType").asText(null);
                     if (StringUtils.isNotBlank(sourceId)) {
-
                         sourceTableMap
                                 .computeIfAbsent(sourceId, k -> new ArrayList<>());
 
-                        if (StringUtils.isNotBlank(query)) {
+                        if (StringUtils.isNotBlank(query) && "TABLE_CUSTOM".equals(taskExecuteType)) {
                             sourceTableMap.get(sourceId).add(query);
-                        }
-
-                        if (StringUtils.isNotBlank(tablePath)) {
-                            sourceTableMap.get(sourceId).add(tablePath);
+                        } else {
+                            if (StringUtils.isNotBlank(tablePath) && "SINGLE_TABLE".equals(taskExecuteType) ){
+                                sourceTableMap.get(sourceId).add(tablePath);
+                            }
                         }
                     }
 
                 } else if ("sink".equalsIgnoreCase(nodeType)) {
-
                     sinkTypes.add(type);
-
                     String sinkId = data.path("sinkId").asText(null);
                     String table = data.path("table").asText(null);
-
                     if (StringUtils.isNotBlank(sinkId)) {
-
                         sinkTableMap
                                 .computeIfAbsent(sinkId, k -> new ArrayList<>());
 

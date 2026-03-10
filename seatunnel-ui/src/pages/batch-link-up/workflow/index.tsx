@@ -653,10 +653,14 @@ function FlowComponent({ form, params, goBack }) {
   }, []);
 
   const handleNodeDataChange = (nodeId: string, newData: any) => {
-
+    console.log(newData);
     setNodes((nds) =>
       nds.map((node) => {
         if (node.id === nodeId) {
+          console.log({
+              ...node.data,
+              ...newData,
+            });
           return {
             ...node,
             data: {

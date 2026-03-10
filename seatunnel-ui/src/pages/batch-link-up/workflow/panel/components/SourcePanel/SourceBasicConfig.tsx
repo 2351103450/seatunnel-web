@@ -39,12 +39,73 @@ const SourceBasicConfig: FC<SourceBasicConfigProps> = ({
   const columnRequestIdRef = useRef(0);
 
   const taskExecuteType = Form.useWatch("taskExecuteType", sourceForm);
+  const lastNodeDataRef = useRef("");
+
+  /**
+   * 统一清洗节点数据：
+   * SINGLE_TABLE 只保留 table_path，清空 query
+   * TABLE_CUSTOM 只保留 query，清空 table_path
+   */
+  const sanitizeNodeData = useCallback((data: Record<string, any>) => {
+    const nextData = { ...data };
+    const type = nextData.taskExecuteType;
+
+    if (type === "SINGLE_TABLE") {
+      nextData.query = undefined;
+    } else if (type === "TABLE_CUSTOM") {
+      nextData.table_path = undefined;
+    }
+
+    return nextData;
+  }, []);
+
+  /**
+   * 统一同步节点数据
+   * 只从这里触发 onNodeDataChange，避免重复调用
+   */
+  const updateNodeData = useCallback(
+    (patch: Record<string, any> = {}) => {
+      console.log("-----------")
+      if (!onNodeDataChange || !selectedNode) return;
+
+      const formValues = sourceForm.getFieldsValue(true);
+      const nextData = sanitizeNodeData({
+        ...formValues,
+        ...patch,
+      });
+
+      const nextDataStr = JSON.stringify(nextData);
+      if (lastNodeDataRef.current === nextDataStr) {
+        return;
+      }
+
+      lastNodeDataRef.current = nextDataStr;
+      onNodeDataChange(selectedNode.id, nextData);
+    },
+    [onNodeDataChange, sanitizeNodeData, selectedNode, sourceForm]
+  );
 
   const getRequestParams = useCallback(() => {
+    const currentTaskExecuteType = sourceForm?.getFieldValue("taskExecuteType");
+    const table_path = sourceForm?.getFieldValue("table_path") || "";
+    const query = sourceForm?.getFieldValue("query") || "";
+
+    if (currentTaskExecuteType === "SINGLE_TABLE") {
+      return {
+        taskExecuteType: currentTaskExecuteType,
+        table_path,
+      };
+    }
+
+    if (currentTaskExecuteType === "TABLE_CUSTOM") {
+      return {
+        taskExecuteType: currentTaskExecuteType,
+        query,
+      };
+    }
+
     return {
-      taskExecuteType: sourceForm?.getFieldValue("taskExecuteType"),
-      table_path: sourceForm?.getFieldValue("table_path") || "",
-      query: sourceForm?.getFieldValue("query") || "",
+      taskExecuteType: currentTaskExecuteType,
     };
   }, [sourceForm]);
 
@@ -54,22 +115,44 @@ const SourceBasicConfig: FC<SourceBasicConfigProps> = ({
       setRecordCount(0);
 
       if (value === "SINGLE_TABLE") {
-        sourceForm.resetFields(["query"]);
-      } else if (value === "TABLE_CUSTOM") {
-        sourceForm.resetFields(["table_path"]);
+        const patch = {
+          taskExecuteType: value,
+          query: undefined,
+          sourceColumns: [],
+        };
+
+        sourceForm.setFieldsValue(patch);
+        updateNodeData(patch);
+        return;
+      }
+
+      if (value === "TABLE_CUSTOM") {
+        const patch = {
+          taskExecuteType: value,
+          table_path: undefined,
+          sourceColumns: [],
+        };
+
+        sourceForm.setFieldsValue(patch);
+        updateNodeData(patch);
       }
     },
-    [sourceForm, setSourceColumns]
+    [setSourceColumns, sourceForm, updateNodeData]
   );
 
   const handleSourceChange = useCallback(
     async (value: string) => {
-      sourceForm.setFieldsValue({
+      const patch = {
+        sourceId: value,
         table_path: undefined,
         query: undefined,
-      });
+        sourceColumns: [],
+      };
+
+      sourceForm.setFieldsValue(patch);
       setSourceColumns([]);
       setRecordCount(0);
+      updateNodeData(patch);
 
       try {
         setTableLoading(true);
@@ -78,7 +161,7 @@ const SourceBasicConfig: FC<SourceBasicConfigProps> = ({
         setTableLoading(false);
       }
     },
-    [getSourceTableList, setSourceColumns, sourceForm]
+    [getSourceTableList, setSourceColumns, sourceForm, updateNodeData]
   );
 
   const loadColumns = useCallback(
@@ -87,7 +170,7 @@ const SourceBasicConfig: FC<SourceBasicConfigProps> = ({
 
       if (!sourceId || !tablePath) {
         setSourceColumns([]);
-        return;
+        return [];
       }
 
       const currentRequestId = ++columnRequestIdRef.current;
@@ -98,31 +181,34 @@ const SourceBasicConfig: FC<SourceBasicConfigProps> = ({
         const data = await dataSourceCatalogApi.listColumn(sourceId, {
           taskExecuteType: "SINGLE_TABLE",
           table_path: tablePath,
-          query: "",
         });
 
         if (currentRequestId !== columnRequestIdRef.current) {
-          return;
+          return null;
         }
 
         if (data?.code === 0) {
-          setSourceColumns(data?.data || []);
-        } else {
-          setSourceColumns([]);
-          message.error(data?.message || "获取字段失败");
+          const columns = data?.data || [];
+          setSourceColumns(columns);
+          return columns;
         }
-      } catch (error) {
+
+        setSourceColumns([]);
+        message.error(data?.message || "获取字段失败");
+        return [];
+      } catch {
         if (currentRequestId === columnRequestIdRef.current) {
           setSourceColumns([]);
           message.error("获取字段失败");
         }
+        return [];
       } finally {
         if (currentRequestId === columnRequestIdRef.current) {
           setColumnLoading(false);
         }
       }
     },
-    [setSourceColumns, sourceForm]
+    [sourceForm, setSourceColumns]
   );
 
   const getTop20Data = useCallback(async () => {
@@ -190,21 +276,49 @@ const SourceBasicConfig: FC<SourceBasicConfigProps> = ({
             tableLoading={tableLoading}
             columnLoading={columnLoading}
             onTableChange={async (value: string) => {
-              await loadColumns(value);
+              const basePatch = {
+                table_path: value,
+                query: undefined,
+                sourceColumns: [],
+              };
+
+              sourceForm.setFieldsValue(basePatch);
+              setSourceColumns([]);
+
+              const columns = await loadColumns(value);
+
+              if (columns === null) {
+                return;
+              }
+
+              updateNodeData({
+                ...basePatch,
+                sourceColumns: columns || [],
+              });
             }}
           />
         );
+
       case "TABLE_CUSTOM":
         return (
           <CustomQuerySource
             form={sourceForm}
             sourceId={sourceForm?.getFieldValue("sourceId")}
             sourceTableOption={sourceTableOption}
-            onQueryChange={() => {
+            onQueryChange={(value: string) => {
               setSourceColumns([]);
+
+              const patch = {
+                query: value,
+                table_path: undefined,
+                sourceColumns: [],
+              };
+
+              updateNodeData(patch);
             }}
           />
         );
+
       default:
         return null;
     }
@@ -218,14 +332,6 @@ const SourceBasicConfig: FC<SourceBasicConfigProps> = ({
       style={{ maxWidth: 600 }}
       initialValues={{
         taskExecuteType: "SINGLE_TABLE",
-      }}
-      onValuesChange={(changedValues, allValues) => {
-        if (onNodeDataChange && selectedNode) {
-          onNodeDataChange(selectedNode.id, {
-            ...selectedNode.data,
-            ...allValues,
-          });
-        }
       }}
     >
       <Form.Item

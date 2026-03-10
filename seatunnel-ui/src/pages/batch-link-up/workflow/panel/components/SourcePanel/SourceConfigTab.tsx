@@ -3,10 +3,10 @@ import { FC } from "react";
 
 import Header from "@/components/Header";
 import { InfoCircleOutlined } from "@ant-design/icons";
+import { useIntl } from "@umijs/max";
 import { Divider } from "antd";
 import ExtraParamsConfig from "./ExtraParamsConfig";
 import SourceBasicConfig from "./SourceBasicConfig";
-import { useIntl } from "@umijs/max";
 
 interface SourceConfigTabProps {
   selectedNode: {
@@ -40,12 +40,14 @@ const SourceConfigTab: FC<SourceConfigTabProps> = ({
 
   const handleParamsChange = (newParams: any[]) => {
     setParams(newParams);
+
     if (selectedNode && onNodeDataChange) {
-      const values = {}; // 这里需要获取form的值
+      const values = sourceForm.getFieldsValue(true);
+
       onNodeDataChange(selectedNode.id, {
         ...selectedNode.data,
-        params: newParams,
         ...values,
+        params: newParams,
       });
     }
   };
