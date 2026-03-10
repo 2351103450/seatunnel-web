@@ -1,12 +1,32 @@
-![Batch Sync Screenshot](docs/images/img_19.png)
-# Seatunnel Web
+## SeaTunnel Web
 
-**Seatunnel Web** 不只是一个 Web 控制台 — 它是一个 **AI-Augmented 系统工程项目**。系统的每一部分，从架构和领域建模到 UI、交互、API 和实现，都是通过 **结构化 AI 提示**
-构建的。在这里，提供给 AI 的信息不是模糊的“上下文”，而是 **明确的条件与结构化关系**，让 AI 能够进行精确推理和系统级决策。
+**SeaTunnel Web** 是一个面向 **Apache SeaTunnel** 的现代化 Web 管理平台，用于简化数据集成任务的创建、配置和运行管理。
 
-通过 **18 种提示工程方法**，**800+** 套提示词模板，以及覆盖 **Apache SeaTunnel、Apache DolphinScheduler、Dify、Ant Design 和 Spring Boot** 的知识库
+该平台通过 **DAG 可视化编排** 的方式构建数据流水线，支持连接器配置、任务管理以及运行监控，使数据工程师可以更加高效地管理 **批处理与流处理的数据集成任务**，而无需手动编写复杂的配置文件。
 
-> **说明：** Seatunnel Web 的 **所有代码**均使用 **DeepSeek** 生成，这是一个免费的大型模型平台。
+SeaTunnel Web 的目标是提升 Apache SeaTunnel 的易用性和开发效率，为数据管道开发与任务运维提供统一的平台。
+
+### 核心功能
+
+- **可视化 Pipeline 构建**  
+  通过 DAG 图形界面设计数据集成流程。
+
+- **连接器配置管理**  
+  支持配置 SeaTunnel 的 Source、Transform 和 Sink 连接器。
+
+- **任务管理**  
+  在统一的 Web 界面中创建、编辑和运行 SeaTunnel 作业。
+
+- **批流一体支持**  
+  同时支持批处理和流处理的数据集成任务。
+
+- **任务运行监控**  
+  实时查看任务运行状态和历史执行记录。
+
+- **自动生成配置**  
+  通过可视化流程自动生成 SeaTunnel 作业配置。
+
+SeaTunnel Web 致力于让 Apache SeaTunnel 在生产环境中更加易用、可维护，并提升数据工程团队的开发效率。
 
 ## 部分截图
 
