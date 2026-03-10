@@ -158,6 +158,10 @@ CREATE TABLE IF NOT EXISTS `t_seatunnel_user` (
     PRIMARY KEY (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COMMENT='User table';
 
+INSERT INTO seatunnel_web.t_seatunnel_user
+(id, user_name, user_password, user_type, email, phone, create_time, update_time, state)
+VALUES(1, 'admin', 'e10adc3949ba59abbe56e057f20f883e', 0, '295227940@qq.com', '15002344940', NULL, NULL, 1);
+
 CREATE TABLE IF NOT EXISTS `t_seatunnel_session` (
    `id` varchar(64) NOT NULL COMMENT 'Session ID',
    `user_id` int DEFAULT NULL COMMENT 'Associated userPO ID',
