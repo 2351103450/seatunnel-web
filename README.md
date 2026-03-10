@@ -1,3 +1,5 @@
+![Batch Sync Screenshot](docs/images/img_19.png)
+
 # Seatunnel Web
 
 > **Note:**  The first release version will be available after Apache Seatunnel 2.3.13.

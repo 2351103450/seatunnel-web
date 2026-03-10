@@ -1,3 +1,4 @@
+![Batch Sync Screenshot](docs/images/img_19.png)
 # Seatunnel Web
 
 **Seatunnel Web** 不只是一个 Web 控制台 — 它是一个 **AI-Augmented 系统工程项目**。系统的每一部分，从架构和领域建模到 UI、交互、API 和实现，都是通过 **结构化 AI 提示**
