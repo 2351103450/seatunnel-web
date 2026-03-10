@@ -1,3 +1,4 @@
+![Batch Sync Screenshot](docs/images/img_19.png)
 ## SeaTunnel Web
 
 **SeaTunnel Web** 是一个面向 **Apache SeaTunnel** 的现代化 Web 管理平台，用于简化数据集成任务的创建、配置和运行管理。

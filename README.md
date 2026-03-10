@@ -1,3 +1,4 @@
+![Batch Sync Screenshot](docs/images/img_19.png)
 ## SeaTunnel Web
 
 **SeaTunnel Web** is a modern web-based management platform for **Apache SeaTunnel**, designed to simplify the creation, configuration, and operation of data integration pipelines.
