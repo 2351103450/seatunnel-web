@@ -1,16 +1,41 @@
-# Seatunnel Web
+# SeaTunnel Web
 
-> **Note:**  The first release version will be available after Apache Seatunnel 2.3.13.
+SeaTunnel Web is a modern web platform for building, managing, and monitoring Apache SeaTunnel data integration pipelines.
 
-**Seatunnel Web** is more than a web console — it is an **AI-Augmented system engineering project**. Every part of the
-system, from architecture and domain modeling to UI, interactions, APIs, and implementation, was crafted through **
-structured AI prompting**, where information is provided to AI not as vague “context” but as **clearly defined
-conditions and structured relationships**, enabling precise reasoning and system-level decisions.
+---
 
-Leveraging **18 prompt-engineering methodologies** and a curated knowledge base spanning **Apache SeaTunnel, Apache
-DolphinScheduler, Dify, Ant Design, and Spring Boot**
+# English Introduction
 
-> **Note:** All the code in Seatunnel Web was generated using **DeepSeek**, a free large-model platform.
+## SeaTunnel Web
+
+**SeaTunnel Web** is a modern web-based management platform for **Apache SeaTunnel**, designed to simplify the creation, configuration, and operation of data integration pipelines.
+
+It provides a visual interface to build data pipelines using **DAG orchestration**, manage connectors, configure jobs, and monitor task execution. SeaTunnel Web helps data engineers efficiently manage both **batch and streaming data integration workflows** without manually writing complex configuration files.
+
+The platform focuses on improving the usability and productivity of Apache SeaTunnel by offering a centralized environment for pipeline development and job management.
+
+### Key Features
+
+- **Visual Pipeline Builder**  
+  Design data pipelines using a DAG-based interface.
+
+- **Connector Configuration**  
+  Easily configure SeaTunnel source, transform, and sink connectors.
+
+- **Job Management**  
+  Create, edit, run, and manage SeaTunnel jobs from a unified web interface.
+
+- **Batch & Streaming Support**  
+  Manage both batch and streaming data integration tasks.
+
+- **Execution Monitoring**  
+  Monitor job execution status and task history in real time.
+
+- **Configuration Simplification**  
+  Generate SeaTunnel job configurations automatically from visual pipelines.
+
+SeaTunnel Web aims to make Apache SeaTunnel more accessible, maintainable, and easier to operate in production environments.
+
 
 ## Partial screenshot
 
