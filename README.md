@@ -1,11 +1,3 @@
-# SeaTunnel Web
-
-SeaTunnel Web is a modern web platform for building, managing, and monitoring Apache SeaTunnel data integration pipelines.
-
----
-
-# English Introduction
-
 ## SeaTunnel Web
 
 **SeaTunnel Web** is a modern web-based management platform for **Apache SeaTunnel**, designed to simplify the creation, configuration, and operation of data integration pipelines.
