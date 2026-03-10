@@ -31,6 +31,7 @@ SeaTunnel Web 致力于让 Apache SeaTunnel 在生产环境中更加易用、可
 
 ## 部分截图
 
+![Batch Sync Screenshot](docs/images/img_14.png)
 ![Batch Sync Screenshot](docs/images/img_13.png)
 ![Batch Sync Screenshot](docs/images/img_12.png)
 ![Batch Sync Screenshot](docs/images/img_11.png)
@@ -45,7 +46,6 @@ SeaTunnel Web 致力于让 Apache SeaTunnel 在生产环境中更加易用、可
 ![Batch Sync Screenshot](docs/images/img_8.png)
 ![Batch Sync Screenshot](docs/images/img_9.png)
 ![Batch Sync Screenshot](docs/images/img_10.png)
-![Batch Sync Screenshot](docs/images/img_14.png)
 ![Batch Sync Screenshot](docs/images/img_15.png)
 ![Batch Sync Screenshot](docs/images/img_16.png)
 ![Batch Sync Screenshot](docs/images/img_17.png)

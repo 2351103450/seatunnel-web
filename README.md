@@ -32,6 +32,7 @@ SeaTunnel Web aims to make Apache SeaTunnel more accessible, maintainable, and e
 
 ## Partial screenshot
 
+![Batch Sync Screenshot](docs/images/img_14.png)
 ![Batch Sync Screenshot](docs/images/img_13.png)
 ![Batch Sync Screenshot](docs/images/img_12.png)
 ![Batch Sync Screenshot](docs/images/img_11.png)
@@ -46,7 +47,6 @@ SeaTunnel Web aims to make Apache SeaTunnel more accessible, maintainable, and e
 ![Batch Sync Screenshot](docs/images/img_8.png)
 ![Batch Sync Screenshot](docs/images/img_9.png)
 ![Batch Sync Screenshot](docs/images/img_10.png)
-![Batch Sync Screenshot](docs/images/img_14.png)
 ![Batch Sync Screenshot](docs/images/img_15.png)
 ![Batch Sync Screenshot](docs/images/img_16.png)
 ![Batch Sync Screenshot](docs/images/img_17.png)
