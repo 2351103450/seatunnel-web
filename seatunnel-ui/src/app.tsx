@@ -15,6 +15,7 @@ import { history, Link } from "@umijs/max";
 import defaultSettings from "../config/defaultSettings";
 import { errorConfig } from "./requestErrorConfig";
 import HttpUtils from "./utils/HttpUtils";
+import { Knowledge } from "./components/RightContent";
 
 const isDev = process.env.NODE_ENV === "development";
 const loginPath = '/login';
@@ -66,6 +67,7 @@ export const layout: RunTimeLayoutConfig = ({
 }) => {
   return {
     actionsRender: () => [
+      <Knowledge key="knowledge" />,
       <Question key="doc" />,
       <SelectLang key="SelectLang" />,
     ],

@@ -1,7 +1,8 @@
-import { QuestionCircleOutlined } from '@ant-design/icons';
-import { SelectLang as UmiSelectLang } from '@umijs/max';
+import { QuestionCircleOutlined, ReadOutlined } from "@ant-design/icons";
+import { SelectLang as UmiSelectLang } from "@umijs/max";
+import { history } from "umi";
 
-export type SiderTheme = 'light' | 'dark';
+export type SiderTheme = "light" | "dark";
 
 export const SelectLang: React.FC = () => {
   return (
@@ -20,14 +21,31 @@ export const Question: React.FC = () => {
       target="_blank"
       rel="noreferrer"
       style={{
-        display: 'inline-flex',
-        padding: '4px',
-        fontSize: '18px',
-        color: 'inherit',
+        display: "inline-flex",
+        padding: "4px",
+        fontSize: "18px",
+        color: "inherit",
       }}
     >
       <QuestionCircleOutlined />
-
     </a>
+  );
+};
+
+export const Knowledge: React.FC = () => {
+  return (
+    <div
+      style={{
+        display: "inline-flex",
+        padding: "4px",
+        fontSize: "18px",
+        color: "inherit",
+      }}
+      onClick={() => {
+        history.push("/knowledge-management");
+      }}
+    >
+      <ReadOutlined />
+    </div>
   );
 };

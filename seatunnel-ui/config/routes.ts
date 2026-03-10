@@ -55,6 +55,7 @@ export default [
     name: 'knowledge-management',
     path: '/knowledge-management',
     component: './knowledge-management',
+    hideInMenu: true,
   },
   {
     icon: ' ',

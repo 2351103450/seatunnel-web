@@ -70,8 +70,8 @@ const INFO_BG = "#f0f6ff";
 const INFO_BORDER = "#d6e4ff";
 
 const menuList: { key: MenuKey; label: string }[] = [
-  { key: "connector", label: "Connector参数知识库" },
-  { key: "time", label: "时间参数知识库" },
+  { key: "connector", label: "Connector解释" },
+  { key: "time", label: "时间解释" },
 ];
 
 const initialData: Record<MenuKey, ParamItem[]> = {
@@ -146,8 +146,8 @@ const initialData: Record<MenuKey, ParamItem[]> = {
 };
 
 const pageTitleMap: Record<MenuKey, string> = {
-  connector: "Connector参数知识库",
-  time: "时间参数知识库",
+  connector: "Connector解释",
+  time: "时间解释",
 };
 
 const pageDescMap: Record<MenuKey, string> = {
@@ -631,7 +631,7 @@ const Index: React.FC = () => {
           <div
             style={{
               marginBottom: 24,
-              minHeight: 36,
+              minHeight: 30,
               display: "flex",
               alignItems: "center",
               padding: "4px 8px",
