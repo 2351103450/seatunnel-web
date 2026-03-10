@@ -51,6 +51,12 @@ export default [
     component: './metrics',
   },
   {
+    icon: 'read',
+    name: 'knowledge-management',
+    path: '/knowledge-management',
+    component: './knowledge-management',
+  },
+  {
     icon: ' ',
     name: 'Login',
     path: '/login',
