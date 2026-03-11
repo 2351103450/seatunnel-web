@@ -53,6 +53,11 @@ const BasicConfig = () => {
           id: "pages.job.config.multiSync",
           defaultMessage: "Multi Sync",
         })}
+        rules={[
+          {
+            required: true,
+          },
+        ]}
         name="wholeSync"
         valuePropName="checked"
       >
