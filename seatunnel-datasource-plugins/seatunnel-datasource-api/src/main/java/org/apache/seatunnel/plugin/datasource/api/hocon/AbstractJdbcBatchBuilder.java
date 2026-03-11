@@ -58,6 +58,7 @@ public abstract class AbstractJdbcBatchBuilder extends AbstractJdbcHoconBuilder
         }
 
         parseParamsArray(config, map);
+        fillExtraParams(map, config);
 
         return ConfigFactory.parseMap(map);
     }
@@ -70,6 +71,28 @@ public abstract class AbstractJdbcBatchBuilder extends AbstractJdbcHoconBuilder
             return resolveSqlVariables(query);
         }
         return query;
+    }
+
+    /**
+     * Append extra custom parameters into the configuration map.
+     *
+     * All key-value pairs under "extraParams" will be flattened
+     * and directly added into the final config.
+     *
+     * @param map    Target configuration map
+     * @param config Job configuration
+     */
+    private void fillExtraParams(Map<String, Object> map, Config config) {
+
+        if (!config.hasPath("extraParams")) {
+            return;
+        }
+
+        Config extraConfig = config.getConfig("extraParams");
+
+        for (Map.Entry<String, ConfigValue> entry : extraConfig.entrySet()) {
+            map.put(entry.getKey(), entry.getValue().unwrapped());
+        }
     }
 
     private void buildTableList(Config config, Config conn, Map<String, Object> map) {

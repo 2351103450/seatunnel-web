@@ -122,9 +122,34 @@ public final class WholeSyncDagAssembler {
             }
             fillCustomFields(data, nodeData, root);
 
+            appendExtraParams(data, nodeData, nodeType());
             node.set("data", data);
+
             return node;
         }
+    }
+
+    private static void appendExtraParams(
+            ObjectNode data,
+            JsonNode parentNode,
+            String nodeType
+    ) {
+        JsonNode extraParams = parentNode.get("extraParams");
+
+        if (extraParams == null || !extraParams.isArray()) {
+            return;
+        }
+
+        ObjectNode paramsObject = MAPPER.createObjectNode();
+
+        for (JsonNode param : extraParams) {
+            String key = requireText(param, "key");
+            String value = requireText(param, "value");
+
+            paramsObject.put(key, value);
+        }
+
+        data.set("extraParams", paramsObject);
     }
 
     /* ====================== source builder ====================== */

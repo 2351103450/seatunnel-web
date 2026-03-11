@@ -28,7 +28,7 @@ export const useTaskDraft = () => {
         extraParams: formValues.sourceExtraParams,
         startupMode: formValues.startupMode,
         stopMode: formValues.stopMode,
-        schemaChange:formValues.schemaChange,
+        schemaChange: formValues.schemaChange,
       },
       target: {
         dbType: targetType.dbType,
@@ -40,7 +40,7 @@ export const useTaskDraft = () => {
         batchSize: formValues.batchSize,
         exactlyOnce: formValues.exactlyOnce,
         schemaSaveMode: formValues.schemaSaveMode,
-        enableUpsert: formValues.enableUpsert
+        enableUpsert: formValues.enableUpsert,
       },
       tableMatch: {
         mode: matchMode as any,
