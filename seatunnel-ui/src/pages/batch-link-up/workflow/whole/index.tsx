@@ -22,6 +22,7 @@ interface TooltipConfig {
   sectionTitle?: React.ReactNode;
   items?: React.ReactNode[];
   footer?: React.ReactNode;
+  width?: number;
 }
 
 const renderTooltip = ({
@@ -30,6 +31,7 @@ const renderTooltip = ({
   sectionTitle,
   items = [],
   footer,
+  width = 250
 }: TooltipConfig) => (
   <div
     style={{
@@ -37,6 +39,7 @@ const renderTooltip = ({
       lineHeight: 1.6,
       color: "rgba(0,0,0,0.7)",
       padding: 6,
+      // width: width
     }}
   >
     <div style={{ marginBottom: 4, fontSize: 14, color: "black" }}>{title}</div>
