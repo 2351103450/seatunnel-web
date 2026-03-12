@@ -439,12 +439,19 @@ public class SeatunnelJobInstanceServiceImpl
 
         Long id = generateInstanceId();
 
-        String jobConfig = buildHoconConfig(
-                ConvertUtil.sourceToTarget(
-                        definitionVO,
-                        SeatunnelBatchJobDefinitionDTO.class
-                )
+        SeatunnelBatchJobDefinitionDTO dto = ConvertUtil.sourceToTarget(
+                definitionVO,
+                SeatunnelBatchJobDefinitionDTO.class
         );
+
+        String jobConfig;
+
+        if (dto.getWholeSync()) {
+            jobConfig = buildHoconConfigByWholeSync(dto);
+        } else {
+            jobConfig = buildHoconConfig(dto);
+        }
+
 
         return SeatunnelJobInstancePO.builder()
                 .id(id)
