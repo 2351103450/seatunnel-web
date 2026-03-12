@@ -11,7 +11,10 @@ import org.apache.seatunnel.plugin.datasource.api.utils.SqlTimeVariableParser;
 
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -39,7 +42,8 @@ public abstract class AbstractJdbcBatchBuilder extends AbstractJdbcHoconBuilder
 
         if (config.hasPath(KEY_WHOLE_SYNC)) {
             buildTableList(config, conn, map);
-
+            map.put("fetch_size", getNumberSafe(config, "fetchSize", 0));
+            map.put("split.size", getNumberSafe(config, "splitSize", 8096));
         } else {
             String database = getStringSafe(conn, KEY_DATABASE, "");
             String schema = getStringSafe(conn, KEY_SCHEMA, null);
@@ -61,7 +65,6 @@ public abstract class AbstractJdbcBatchBuilder extends AbstractJdbcHoconBuilder
         }
 
 
-
         return ConfigFactory.parseMap(map);
     }
 
@@ -74,7 +77,6 @@ public abstract class AbstractJdbcBatchBuilder extends AbstractJdbcHoconBuilder
         }
         return query;
     }
-
 
 
     private void buildTableList(Config config, Config conn, Map<String, Object> map) {
@@ -129,6 +131,13 @@ public abstract class AbstractJdbcBatchBuilder extends AbstractJdbcHoconBuilder
             map.put(KEY_TABLE, "${table_name}");
             map.put(KEY_DATABASE, database);
             map.put(KEY_GENERATE_SINK_SQL, true);
+
+            map.put("batch_size", getNumberSafe(config, "batchSize", 1000));
+            map.put("data_save_mode", getStringSafe(config, "dataSaveMode", "APPEND_DATA"));
+            map.put("schema_save_mode", getStringSafe(config, "schemaSaveMode", "CREATE_SCHEMA_WHEN_NOT_EXIST"));
+            map.put("enable_upsert", getBoolean(config, "enableUpsert", true));
+            map.put("field_ide", getStringSafe(config, "fieldIde", ""));
+
         }
 
         appendSinkAdvancedOptions(config, map);

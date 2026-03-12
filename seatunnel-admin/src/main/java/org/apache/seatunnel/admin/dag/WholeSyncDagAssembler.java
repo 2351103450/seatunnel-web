@@ -8,7 +8,7 @@ import lombok.extern.slf4j.Slf4j;
 
 /**
  * Assemble DAG json from whole-sync job definition.
- *
+ * <p>
  * Input  : whole-sync definition json
  * Output : dag json string
  */
@@ -120,6 +120,7 @@ public final class WholeSyncDagAssembler {
             if (tables != null && tables.isArray()) {
                 data.set("table_list", tables);
             }
+
             fillCustomFields(data, nodeData, root);
 
             appendExtraParams(data, nodeData, nodeType());
@@ -182,6 +183,9 @@ public final class WholeSyncDagAssembler {
                 data.set("table_list", tables);
             }
 
+            data.put("fetchSize", requireText(source, "fetchSize"));
+            data.put("splitSize", requireText(source, "splitSize"));
+
             data.put("keyword",
                     tableMatch.path("keyword").asText(""));
         }
@@ -200,7 +204,7 @@ public final class WholeSyncDagAssembler {
         JsonNode extractNode(JsonNode root) {
             return requireNode(root, FIELD_TARGET);
         }
-
+        
         @Override
         void fillCustomFields(
                 ObjectNode data,
@@ -208,6 +212,13 @@ public final class WholeSyncDagAssembler {
                 JsonNode root
         ) {
             data.put("sinkId", requireText(target, "datasourceId"));
+
+            data.put("dataSaveMode", requireText(target, "dataSaveMode"));
+            data.put("batchSize", requireText(target, "batchSize"));
+            data.put("schemaSaveMode", requireText(target, "schemaSaveMode"));
+            data.put("enableUpsert", requireText(target, "enableUpsert"));
+            data.put("fieldIde", requireText(target, "fieldIde"));
+
         }
     }
 

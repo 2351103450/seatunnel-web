@@ -1,9 +1,9 @@
 import Header from "@/components/Header";
+import { useIntl } from "@umijs/max";
 import { Alert, Space, Table, Tag, Typography } from "antd";
 import type { ColumnsType } from "antd/es/table";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useReactFlow } from "reactflow";
-import { useIntl } from "@umijs/max";
 
 const { Text } = Typography;
 
@@ -12,6 +12,7 @@ interface Props {
   sinkColumns: any[];
   onNodeDataChange: (nodeId: string, newData: any) => void;
   sinkForm: any;
+  autoCreateTable: boolean;
 }
 
 interface FieldInfo {
@@ -51,11 +52,12 @@ const getNodeFields = (node: any): FieldInfo[] => {
 
 const getStatus = (
   sourceField?: string,
-  targetField?: string,
+  targetField?: string
 ): MatrixRow["status"] => {
   if (!sourceField || !targetField) return "unmapped";
 
-  const fieldMatched = normalizeText(sourceField) === normalizeText(targetField);
+  const fieldMatched =
+    normalizeText(sourceField) === normalizeText(targetField);
 
   if (fieldMatched) return "mapped";
   return "nameMismatch";
@@ -98,6 +100,7 @@ const UpstreamFieldMatrixTable = ({
   sinkColumns,
   onNodeDataChange,
   sinkForm,
+  autoCreateTable,
 }: Props) => {
   const intl = useIntl();
   const { getEdges, getNode } = useReactFlow();
@@ -120,12 +123,16 @@ const UpstreamFieldMatrixTable = ({
     const prevNodes = getPrevNodes(selectedNode.id);
     setUpstreamNodes(prevNodes);
 
-    const targetFields: FieldInfo[] = (sinkColumns || []).map((item) => ({
-      fieldName: getFieldName(item),
-    }));
-
     const primaryUpstreamNode = prevNodes[0];
     const sourceFields = getNodeFields(primaryUpstreamNode);
+
+    const targetFields: FieldInfo[] = autoCreateTable
+      ? sourceFields.map((item) => ({
+          fieldName: item?.fieldName,
+        }))
+      : (sinkColumns || []).map((item) => ({
+          fieldName: getFieldName(item),
+        }));
 
     const maxLen = Math.max(targetFields.length, sourceFields.length, 0);
 
@@ -144,13 +151,15 @@ const UpstreamFieldMatrixTable = ({
 
     setRows(nextRows);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [selectedNode?.id, sinkColumns]);
+  }, [selectedNode?.id, sinkColumns, autoCreateTable]);
 
   const summary = useMemo(() => {
     const total = rows.length;
     const mapped = rows.filter((row) => row.status === "mapped").length;
     const unmapped = rows.filter((row) => row.status !== "mapped").length;
-    const nameMismatch = rows.filter((row) => row.status === "nameMismatch").length;
+    const nameMismatch = rows.filter(
+      (row) => row.status === "nameMismatch"
+    ).length;
 
     return {
       total,
@@ -233,7 +242,7 @@ const UpstreamFieldMatrixTable = ({
         render: (status) => renderStatusTag(status, intl),
       },
     ],
-    [intl],
+    [intl]
   );
 
   if (!selectedNode) return null;
@@ -275,7 +284,7 @@ const UpstreamFieldMatrixTable = ({
               id: "pages.job.node.sink.fieldsValidate.summary.total",
               defaultMessage: "共 {count} 个字段",
             },
-            { count: summary.total },
+            { count: summary.total }
           )}
         </Text>
         <Text type="success">
@@ -284,7 +293,7 @@ const UpstreamFieldMatrixTable = ({
               id: "pages.job.node.sink.fieldsValidate.summary.mapped",
               defaultMessage: "已映射 {count}",
             },
-            { count: summary.mapped },
+            { count: summary.mapped }
           )}
         </Text>
         <Text type="danger">
@@ -293,7 +302,7 @@ const UpstreamFieldMatrixTable = ({
               id: "pages.job.node.sink.fieldsValidate.summary.unmapped",
               defaultMessage: "未通过 {count}",
             },
-            { count: summary.unmapped },
+            { count: summary.unmapped }
           )}
         </Text>
         {summary.nameMismatch > 0 && (
@@ -303,7 +312,7 @@ const UpstreamFieldMatrixTable = ({
                 id: "pages.job.node.sink.fieldsValidate.summary.nameMismatch",
                 defaultMessage: "字段名不一致 {count}",
               },
-              { count: summary.nameMismatch },
+              { count: summary.nameMismatch }
             )}
           </Text>
         )}

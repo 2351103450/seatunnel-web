@@ -1,6 +1,7 @@
 import Header from "@/components/Header";
 import { useLocation } from "@umijs/max";
 import { Col, Form, InputNumber, Row, Select, Switch } from "antd";
+import { FC } from "react";
 import SyncTitle from "./SyncTitle";
 import ReferenceTablePanel from "./components/ReferenceTablePanel";
 import TableTransferPanel from "./components/TableTransferPanel";
@@ -9,7 +10,6 @@ import WholeSyncForm from "./components/WholeSyncForm";
 import WholeSyncHeader from "./components/WholeSyncHeader";
 import { useWholeSync } from "./hooks/useWholeSync";
 import "./index.less";
-import { FC } from "react";
 
 interface WholeSyncProps {
   goBack: () => void;
@@ -31,7 +31,7 @@ const renderTooltip = ({
   sectionTitle,
   items = [],
   footer,
-  width = 250
+  width = 250,
 }: TooltipConfig) => (
   <div
     style={{
@@ -168,6 +168,7 @@ const WholeSync: FC<WholeSyncProps> = ({ goBack, baseForm }) => {
                   <Form.Item
                     label="每次拉取行数（Fetch Size）"
                     name="fetchSize"
+                    rules={[{ required: true, message: "请输入每次拉取行数" }]}
                     tooltip={renderTooltip({
                       title: "每次从数据库读取的记录数量",
                       defaultText: "默认值：0（使用 JDBC 默认值）",
@@ -190,6 +191,7 @@ const WholeSync: FC<WholeSyncProps> = ({ goBack, baseForm }) => {
                   <Form.Item
                     label="读取分片大小（Split Size）"
                     name="splitSize"
+                    rules={[{ required: true, message: "请输入读取分片大小" }]}
                     tooltip={renderTooltip({
                       title: "读取表数据时每个分片包含的行数",
                       defaultText: "默认值：8096",
@@ -307,6 +309,7 @@ const WholeSync: FC<WholeSyncProps> = ({ goBack, baseForm }) => {
                         label="启用 Upsert"
                         name="enableUpsert"
                         valuePropName="checked"
+                        rules={[{ required: true, message: "请选择Upsert" }]}
                         tooltip={renderTooltip({
                           title:
                             "开启后，目标端存在相同主键或唯一键时执行更新，否则插入",

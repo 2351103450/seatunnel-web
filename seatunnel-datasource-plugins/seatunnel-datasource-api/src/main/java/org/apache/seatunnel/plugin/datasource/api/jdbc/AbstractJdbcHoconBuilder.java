@@ -73,5 +73,13 @@ public abstract class AbstractJdbcHoconBuilder {
     protected final String getStringSafe(Config config, String path, String defaultValue) {
         return config.hasPath(path) ? config.getString(path) : defaultValue;
     }
+
+    protected final Integer getNumberSafe(Config config, String path, Integer defaultValue) {
+        return config.hasPath(path) ? config.getInt(path) : defaultValue;
+    }
+
+    protected final Boolean getBoolean(Config config, String path, Boolean defaultValue) {
+        return config.hasPath(path) ? config.getBoolean(path) : defaultValue;
+    }
 }
 

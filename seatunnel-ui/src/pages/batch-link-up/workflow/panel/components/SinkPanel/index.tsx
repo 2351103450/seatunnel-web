@@ -203,6 +203,7 @@ const App: FC<AppProps> = ({ selectedNode, onNodeDataChange }) => {
           onNodeDataChange={onNodeDataChange}
           sinkColumns={sinkColumns}
           sinkForm={sinkForm}
+          autoCreateTable={autoCreateTable}
         />
       ),
     },

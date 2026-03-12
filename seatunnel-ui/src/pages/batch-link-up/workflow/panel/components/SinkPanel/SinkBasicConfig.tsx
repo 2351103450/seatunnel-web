@@ -3,9 +3,9 @@ import { dataSourceCatalogApi } from "@/pages/data-source/type";
 import { Button, Col, Form, Popover, Row, Select, message } from "antd";
 import { FC, useState } from "react";
 
+import { useIntl } from "@umijs/max";
 import CustomQuerySource from "./CustomQuerySource";
 import SingleTableSink from "./SingleTableSink";
-import { useIntl } from "@umijs/max";
 
 interface SourceBasicConfigProps {
   selectedNode: {
@@ -55,8 +55,9 @@ const SinkBasicConfig: FC<SourceBasicConfigProps> = ({
       message.warning(
         intl.formatMessage({
           id: "pages.job.config.sink.basic.warn.previewNotSupportAutoCreate",
-          defaultMessage: "Auto-create table mode does not support data preview",
-        }),
+          defaultMessage:
+            "Auto-create table mode does not support data preview",
+        })
       );
       return;
     }
@@ -67,7 +68,7 @@ const SinkBasicConfig: FC<SourceBasicConfigProps> = ({
         intl.formatMessage({
           id: "pages.job.config.sink.basic.warn.selectDatasource",
           defaultMessage: "Please select a datasource",
-        }),
+        })
       );
       return;
     }
@@ -100,7 +101,7 @@ const SinkBasicConfig: FC<SourceBasicConfigProps> = ({
         intl.formatMessage({
           id: "pages.job.config.sink.basic.warn.countNotSupportAutoCreate",
           defaultMessage: "Auto-create table mode does not support data count",
-        }),
+        })
       );
       return;
     }
@@ -111,7 +112,7 @@ const SinkBasicConfig: FC<SourceBasicConfigProps> = ({
         intl.formatMessage({
           id: "pages.job.config.sink.basic.warn.selectDatasource",
           defaultMessage: "Please select a datasource",
-        }),
+        })
       );
       return;
     }
@@ -261,8 +262,8 @@ const SinkBasicConfig: FC<SourceBasicConfigProps> = ({
         <Select
           size="small"
           options={[
-            { label: "SINGLE_TABLE", value: "SINGLE_TABLE" },
-            { label: "TABLE_CUSTOM", value: "TABLE_CUSTOM" },
+            { label: "单表同步", value: "SINGLE_TABLE" },
+            { label: "自定义同步", value: "TABLE_CUSTOM" },
           ]}
           onChange={handleTaskTypeChange}
           placeholder={intl.formatMessage({
