@@ -4,13 +4,13 @@ import { memo, useEffect, useRef, useState } from "react";
 
 import QualityDetail from "@/pages/batch-link-up/DataViewSQL";
 import { dataSourceApi, dataSourceCatalogApi } from "@/pages/data-source/type";
+import { useIntl } from "@umijs/max";
 import { Form, message, Tabs } from "antd";
 import { useReactFlow } from "reactflow";
 import "./index.less";
 import OutputFieldsTab from "./OutputFieldsTab";
 import SinkConfigTab from "./SinkConfigTab";
 import UpstreamFieldValidateTab from "./UpstreamFieldValidateTab";
-import { useIntl } from "@umijs/max";
 
 interface AppProps {
   selectedNode: {
@@ -23,21 +23,21 @@ interface AppProps {
 const App: FC<AppProps> = ({ selectedNode, onNodeDataChange }) => {
   const intl = useIntl();
 
+  const [activeKey, setActiveKey] = useState("1");
+
   const [sinkOption, setSinkOption] = useState<any[]>([]);
   const [sinkColumns, setSinkColumns] = useState<any[]>([]);
   const ref = useRef<any>(null);
   const [sinkForm] = Form.useForm();
   const [sinkTableOption, setSinkTableOption] = useState<any[]>([]);
 
-  const [autoCreateTable, setAutoCreateTable] = useState<boolean>(true);
+  const autoCreateTable = Form.useWatch("generate_sink_sql", sinkForm) ?? true;
 
-  const setAutoCreateTableWithNodeChange = (flag: boolean) => {
-    setAutoCreateTable(flag);
-    onNodeDataChange(selectedNode?.id, {
-      ...selectedNode?.data,
-      generate_sink_sql: flag,
-    });
-  };
+  // useEffect(() => {
+  //   if (autoCreateTable && activeKey === "2") {
+  //     setActiveKey("1");
+  //   }
+  // }, [autoCreateTable, activeKey]);
 
   const { getEdges, getNode } = useReactFlow();
 
@@ -48,6 +48,32 @@ const App: FC<AppProps> = ({ selectedNode, onNodeDataChange }) => {
       } else {
         message.error(data?.message);
       }
+    });
+  };
+
+  const handleAutoCreateTableChange = (flag: boolean) => {
+    sinkForm.setFieldValue("generate_sink_sql", flag);
+
+    const prevNodes = getPrevNodes(selectedNode?.id);
+    const lastNode = prevNodes?.[0];
+
+    let nextSinkColumns = [];
+
+    if (flag) {
+      nextSinkColumns = lastNode?.data?.sourceFields || [];
+    } else {
+      nextSinkColumns = selectedNode?.data?.sinkFields || [];
+    }
+
+    setSinkColumns(nextSinkColumns);
+
+    onNodeDataChange(selectedNode?.id, {
+      ...selectedNode?.data,
+      ...sinkForm.getFieldsValue(),
+      generate_sink_sql: flag,
+      sinkFields: !flag
+        ? selectedNode?.data?.sinkFields
+        : selectedNode?.data?.sinkFields,
     });
   };
 
@@ -108,7 +134,10 @@ const App: FC<AppProps> = ({ selectedNode, onNodeDataChange }) => {
           }
         });
 
-        if (selectedNode?.data?.generate_sink_sql === true && lastNode?.data?.sourceFields) {
+        if (
+          selectedNode?.data?.generate_sink_sql === true &&
+          lastNode?.data?.sourceFields
+        ) {
           setSinkColumns(lastNode?.data?.sourceFields || []);
         } else {
           setSinkColumns(selectedNode?.data?.sinkFields || []);
@@ -122,7 +151,10 @@ const App: FC<AppProps> = ({ selectedNode, onNodeDataChange }) => {
           generate_sink_sql: selectedNode?.data?.generate_sink_sql || undefined,
         });
 
-        setAutoCreateTable(selectedNode?.data?.generate_sink_sql);
+        sinkForm.setFieldValue(
+          "generate_sink_sql",
+          selectedNode?.data?.generate_sink_sql ?? true
+        );
       }
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -153,30 +185,28 @@ const App: FC<AppProps> = ({ selectedNode, onNodeDataChange }) => {
           sinkForm={sinkForm}
           sinkTableOption={sinkTableOption}
           getSinkTableList={getSinkTableList}
-          setAutoCreateTable={setAutoCreateTableWithNodeChange}
+          setAutoCreateTable={handleAutoCreateTableChange}
           autoCreateTable={autoCreateTable}
         />
       ),
     },
-    ...(!autoCreateTable
-      ? [
-          {
-            key: "2",
-            label: intl.formatMessage({
-              id: "pages.job.node.sink.tab.fieldsValidate",
-              defaultMessage: "Fields Validate",
-            }),
-            children: (
-              <UpstreamFieldValidateTab
-                selectedNode={selectedNode}
-                onNodeDataChange={onNodeDataChange}
-                sinkColumns={sinkColumns}
-                sinkForm={sinkForm}
-              />
-            ),
-          },
-        ]
-      : []),
+
+    {
+      key: "2",
+      label: intl.formatMessage({
+        id: "pages.job.node.sink.tab.fieldsValidate",
+        defaultMessage: "Fields Validate",
+      }),
+      children: (
+        <UpstreamFieldValidateTab
+          selectedNode={selectedNode}
+          onNodeDataChange={onNodeDataChange}
+          sinkColumns={sinkColumns}
+          sinkForm={sinkForm}
+        />
+      ),
+    },
+
     {
       key: "3",
       label: intl.formatMessage({
@@ -197,7 +227,12 @@ const App: FC<AppProps> = ({ selectedNode, onNodeDataChange }) => {
   return (
     <>
       <div style={{ padding: "0 16px" }}>
-        <Tabs defaultActiveKey="1" destroyOnHidden items={items} />
+        <Tabs
+          activeKey={activeKey}
+          onChange={setActiveKey}
+          destroyOnHidden
+          items={items}
+        />
       </div>
       <QualityDetail ref={ref} />
     </>

@@ -1,12 +1,12 @@
 // components/SinkConfigTab/index.tsx
-import { FC, useState } from "react";
+import { FC, useEffect, useState } from "react";
 
 import Header from "@/components/Header";
 import { InfoCircleOutlined } from "@ant-design/icons";
+import { useIntl } from "@umijs/max";
 import { Divider } from "antd";
 import ExtraParamsConfig from "./ExtraParamsConfig";
 import SinkBasicConfig from "./SinkBasicConfig";
-import { useIntl } from "@umijs/max";
 
 interface SinkConfigTabProps {
   selectedNode: {
@@ -37,19 +37,25 @@ const SinkConfigTab: FC<SinkConfigTabProps> = ({
   autoCreateTable,
 }) => {
   const intl = useIntl();
-  const [params, setParams] = useState<any[]>(selectedNode?.data?.params || []);
+
+  const [params, setParams] = useState<any[]>([]);
+
+  useEffect(() => {
+    setParams(selectedNode?.data?.params || []);
+  }, [selectedNode?.id, selectedNode?.data?.params]);
 
   const handleParamsChange = (newParams: any[]) => {
-    setParams(newParams);
-    if (selectedNode && onNodeDataChange) {
-      const values = {}; // 这里需要获取form的值
-      onNodeDataChange(selectedNode.id, {
-        ...selectedNode.data,
-        params: newParams,
-        ...values,
-      });
-    }
-  };
+  setParams(newParams);
+
+  if (selectedNode && onNodeDataChange) {
+    const values = sinkForm?.getFieldsValue?.() || {};
+    onNodeDataChange(selectedNode.id, {
+      ...selectedNode.data,
+      ...values,
+      params: newParams,
+    });
+  }
+};
 
   return (
     <div style={{ marginTop: 8 }}>

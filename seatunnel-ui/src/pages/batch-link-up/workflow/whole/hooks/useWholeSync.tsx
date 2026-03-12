@@ -273,49 +273,43 @@ export const useWholeSync = ({ baseForm, form }: UseWholeSyncProps) => {
   };
 
   const buildTaskDraft = (): WholeSyncTaskDraft => {
-    const formValues = form.getFieldsValue();
+  const formValues = form.getFieldsValue();
 
-    console.log(formValues);
-    console.log(sourceType);
-
-    const result: WholeSyncTaskDraft = {
-      source: {
-        dbType: sourceType.dbType,
-        connectorType: sourceType.connectorType,
-        datasourceId: formValues.sourceId,
-        pluginName: sourceType.pluginName,
-        extraParams: formValues.sourceExtraParams,
-        startupMode: formValues.startupMode,
-        stopMode: formValues.stopMode,
-        schemaChange: formValues.schemaChange,
-      },
-      target: {
-        dbType: targetType.dbType,
-        connectorType: targetType.connectorType,
-        datasourceId: formValues.sinkId,
-        pluginName: targetType.pluginName,
-        extraParams: formValues.sinkExtraParams,
-        dataSaveMode: formValues.dataSaveMode,
-        batchSize: formValues.batchSize,
-        exactlyOnce: formValues.exactlyOnce,
-        schemaSaveMode: formValues.schemaSaveMode,
-        enableUpsert: formValues.enableUpsert,
-      },
-      tableMatch: {
-        mode: matchMode as any,
-      },
-    };
-
-    if (matchMode === "1" || matchMode === "4") {
-      result.tableMatch.tables = multiTableList;
-    }
-
-    if (matchMode === "2" || matchMode === "3") {
-      result.tableMatch.keyword = tableKeyword;
-    }
-
-    return result;
+  const result: WholeSyncTaskDraft = {
+    source: {
+      dbType: sourceType.dbType,
+      connectorType: sourceType.connectorType,
+      datasourceId: formValues.sourceId,
+      pluginName: sourceType.pluginName,
+      fetchSize: formValues.fetchSize,
+      splitSize: formValues.splitSize,
+    },
+    target: {
+      dbType: targetType.dbType,
+      connectorType: targetType.connectorType,
+      datasourceId: formValues.sinkId,
+      pluginName: targetType.pluginName,
+      dataSaveMode: formValues.dataSaveMode,
+      batchSize: formValues.batchSize,
+      schemaSaveMode: formValues.schemaSaveMode,
+      enableUpsert: formValues.enableUpsert,
+      fieldIde: formValues.fieldIde,
+    },
+    tableMatch: {
+      mode: matchMode as any,
+    },
   };
+
+  if (matchMode === "1" || matchMode === "4") {
+    result.tableMatch.tables = multiTableList;
+  }
+
+  if (matchMode === "2" || matchMode === "3") {
+    result.tableMatch.keyword = tableKeyword;
+  }
+
+  return result;
+};
 
   return {
     loading,

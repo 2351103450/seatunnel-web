@@ -6,22 +6,19 @@ export interface WholeSyncTaskDraft {
         connectorType: string;
         datasourceId: string;
         pluginName: string;
-        extraParams: any[];
-        startupMode: any;
-        stopMode: any;
-        schemaChange: boolean
+        fetchSize: number;
+        splitSize: number;
     };
     target: {
         dbType: string;
         connectorType: string;
         datasourceId: string;
         pluginName: string;
-        extraParams: any[];
         dataSaveMode: any;
         batchSize: any;
-        exactlyOnce: boolean;
         schemaSaveMode: any;
         enableUpsert: boolean;
+        fieldIde: string;
     };
     tableMatch: {
         mode: "1" | "2" | "3" | "4";

@@ -39,26 +39,28 @@ public abstract class AbstractJdbcBatchBuilder extends AbstractJdbcHoconBuilder
 
         if (config.hasPath(KEY_WHOLE_SYNC)) {
             buildTableList(config, conn, map);
-        }
 
-        String database = getStringSafe(conn, KEY_DATABASE, "");
-        String schema = getStringSafe(conn, KEY_SCHEMA, null);
+        } else {
+            String database = getStringSafe(conn, KEY_DATABASE, "");
+            String schema = getStringSafe(conn, KEY_SCHEMA, null);
 
-        if (config.hasPath(KEY_TABLE_PATH)) {
-            String table = getStringSafe(config, KEY_TABLE_PATH);
-            map.put(KEY_TABLE_PATH, buildTablePath(database, schema, table));
-        }
-
-        if (config.hasPath(KEY_QUERY)) {
-            String query = config.getString(KEY_QUERY);
-            if (StringUtils.isNotBlank(query)) {
-                map.put(KEY_QUERY, handleQueryByStage(query, stage));
-                map.put(KEY_GENERATE_SINK_SQL, false);
+            if (config.hasPath(KEY_TABLE_PATH)) {
+                String table = getStringSafe(config, KEY_TABLE_PATH);
+                map.put(KEY_TABLE_PATH, buildTablePath(database, schema, table));
             }
+
+            if (config.hasPath(KEY_QUERY)) {
+                String query = config.getString(KEY_QUERY);
+                if (StringUtils.isNotBlank(query)) {
+                    map.put(KEY_QUERY, handleQueryByStage(query, stage));
+                    map.put(KEY_GENERATE_SINK_SQL, false);
+                }
+            }
+
+            parseParamsArray(config, map);
         }
 
-        parseParamsArray(config, map);
-        fillExtraParams(map, config);
+
 
         return ConfigFactory.parseMap(map);
     }
@@ -73,27 +75,7 @@ public abstract class AbstractJdbcBatchBuilder extends AbstractJdbcHoconBuilder
         return query;
     }
 
-    /**
-     * Append extra custom parameters into the configuration map.
-     *
-     * All key-value pairs under "extraParams" will be flattened
-     * and directly added into the final config.
-     *
-     * @param map    Target configuration map
-     * @param config Job configuration
-     */
-    private void fillExtraParams(Map<String, Object> map, Config config) {
 
-        if (!config.hasPath("extraParams")) {
-            return;
-        }
-
-        Config extraConfig = config.getConfig("extraParams");
-
-        for (Map.Entry<String, ConfigValue> entry : extraConfig.entrySet()) {
-            map.put(entry.getKey(), entry.getValue().unwrapped());
-        }
-    }
 
     private void buildTableList(Config config, Config conn, Map<String, Object> map) {
         String mode = getStringSafe(config, "mode");
