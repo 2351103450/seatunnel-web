@@ -1,7 +1,7 @@
 package org.apache.seatunnel.admin.thirdparty.metrics;
 
 import lombok.extern.slf4j.Slf4j;
-import org.apache.seatunnel.admin.service.SeatunnelJobInstanceService;
+import org.apache.seatunnel.admin.service.SeaTunnelJobInstanceService;
 import org.apache.seatunnel.admin.thirdparty.client.SeatunnelRestClient;
 import org.apache.seatunnel.communal.bean.po.SeatunnelJobInstancePO;
 import org.apache.seatunnel.communal.enums.JobSubmitStage;
@@ -20,14 +20,14 @@ public class JobSubmitter {
     private final JobMetricsMonitor metricsMonitor;
     private final JobResultWatcher resultWatcher;
     private final JobResultHandler resultHandler;
-    private final SeatunnelJobInstanceService instanceService;
+    private final SeaTunnelJobInstanceService instanceService;
 
     public JobSubmitter(JobConfigFileService configFileService,
                         SeatunnelRestClient restClient,
                         JobMetricsMonitor metricsMonitor,
                         JobResultWatcher resultWatcher,
                         JobResultHandler resultHandler,
-                        SeatunnelJobInstanceService instanceService) {
+                        SeaTunnelJobInstanceService instanceService) {
         this.configFileService = configFileService;
         this.restClient = restClient;
         this.metricsMonitor = metricsMonitor;

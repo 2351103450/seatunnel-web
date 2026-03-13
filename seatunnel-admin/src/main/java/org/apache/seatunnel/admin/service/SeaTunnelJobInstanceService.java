@@ -9,7 +9,7 @@ import org.apache.seatunnel.communal.bean.vo.SeatunnelJobInstanceVO;
 import org.apache.seatunnel.communal.enums.JobStatus;
 import org.apache.seatunnel.communal.enums.RunMode;
 
-public interface SeatunnelJobInstanceService extends IService<SeatunnelJobInstancePO> {
+public interface SeaTunnelJobInstanceService extends IService<SeatunnelJobInstancePO> {
 
     SeatunnelJobInstanceVO create(Long jobDefineId, RunMode runMode);
 

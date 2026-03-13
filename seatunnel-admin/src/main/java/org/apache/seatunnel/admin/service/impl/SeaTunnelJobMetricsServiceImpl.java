@@ -5,10 +5,8 @@ import jakarta.annotation.Resource;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.seatunnel.admin.dao.SeatunnelJobMetricsMapper;
-import org.apache.seatunnel.admin.service.SeatunnelJobMetricsService;
+import org.apache.seatunnel.admin.service.SeaTunnelJobMetricsService;
 import org.apache.seatunnel.admin.thirdparty.client.SeatunnelEngineRestClient;
-import org.apache.seatunnel.communal.bean.entity.Engine;
-import org.apache.seatunnel.communal.bean.entity.EngineType;
 import org.apache.seatunnel.communal.bean.entity.Scale;
 import org.apache.seatunnel.communal.bean.entity.TimeWindow;
 import org.apache.seatunnel.communal.bean.po.SeatunnelJobMetricsPO;
@@ -17,7 +15,6 @@ import org.apache.seatunnel.communal.bean.vo.OverviewChartsVO;
 import org.apache.seatunnel.communal.bean.vo.OverviewSummaryVO;
 import org.apache.seatunnel.communal.enums.TimeRange;
 import org.apache.seatunnel.communal.enums.UnitKind;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
@@ -45,9 +42,9 @@ import java.util.concurrent.ConcurrentHashMap;
  */
 @Service
 @Slf4j
-public class SeatunnelJobMetricsServiceImpl
+public class SeaTunnelJobMetricsServiceImpl
         extends ServiceImpl<SeatunnelJobMetricsMapper, SeatunnelJobMetricsPO>
-        implements SeatunnelJobMetricsService {
+        implements SeaTunnelJobMetricsService {
 
     @Resource
     private SeatunnelEngineRestClient engineRestClient;

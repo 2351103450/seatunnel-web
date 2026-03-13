@@ -9,7 +9,7 @@ import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.annotation.Resource;
 import jakarta.validation.constraints.NotNull;
-import org.apache.seatunnel.admin.service.SeatunnelJobInstanceService;
+import org.apache.seatunnel.admin.service.SeaTunnelJobInstanceService;
 import org.apache.seatunnel.communal.bean.dto.SeatunnelJobInstanceDTO;
 import org.apache.seatunnel.communal.bean.entity.PaginationResult;
 import org.apache.seatunnel.communal.bean.entity.Result;
@@ -25,10 +25,10 @@ import org.springframework.web.bind.annotation.*;
 @RequestMapping("/api/v1/job/batch-instance")
 @Validated
 @Tag(name = "Batch Job Instance", description = "APIs for managing batch job instances and execution logs")
-public class SeatunnelBatchJobInstanceController {
+public class SeaTunnelBatchJobInstanceController {
 
     @Resource
-    private SeatunnelJobInstanceService seatunnelJobInstanceService;
+    private SeaTunnelJobInstanceService seatunnelJobInstanceService;
 
 
     /**

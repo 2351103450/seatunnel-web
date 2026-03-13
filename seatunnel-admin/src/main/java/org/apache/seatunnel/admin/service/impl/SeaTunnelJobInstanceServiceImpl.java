@@ -13,8 +13,8 @@ import org.apache.seatunnel.admin.dag.StreamDagAssembler;
 import org.apache.seatunnel.admin.dag.WholeSyncDagAssembler;
 import org.apache.seatunnel.admin.dao.SeatunnelJobInstanceMapper;
 import org.apache.seatunnel.admin.dao.SeatunnelJobMetricsMapper;
-import org.apache.seatunnel.admin.service.SeatunnelBatchJobDefinitionService;
-import org.apache.seatunnel.admin.service.SeatunnelJobInstanceService;
+import org.apache.seatunnel.admin.service.SeaTunnelBatchJobDefinitionService;
+import org.apache.seatunnel.admin.service.SeaTunnelJobInstanceService;
 import org.apache.seatunnel.admin.thirdparty.client.SeatunnelRestClient;
 import org.apache.seatunnel.admin.utils.DagUtil;
 import org.apache.seatunnel.admin.utils.HoconSensitiveMaskUtil;
@@ -49,13 +49,13 @@ import java.util.Objects;
 
 @Service
 @Slf4j
-public class SeatunnelJobInstanceServiceImpl
+public class SeaTunnelJobInstanceServiceImpl
         extends ServiceImpl<SeatunnelJobInstanceMapper, SeatunnelJobInstancePO>
-        implements SeatunnelJobInstanceService {
+        implements SeaTunnelJobInstanceService {
 
     @Lazy
     @Resource
-    private SeatunnelBatchJobDefinitionService definitionService;
+    private SeaTunnelBatchJobDefinitionService definitionService;
 
     @Resource
     private SeatunnelJobMetricsMapper metricsMapper;

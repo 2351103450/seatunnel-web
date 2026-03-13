@@ -2,10 +2,10 @@ package org.apache.seatunnel.admin.service;
 
 
 import com.baomidou.mybatisplus.extension.service.IService;
-import org.apache.seatunnel.communal.bean.dto.SeatunnelBatchJobDefinitionDTO;
+import org.apache.seatunnel.communal.bean.dto.SeatunnelStreamJobDefinitionDTO;
 import org.apache.seatunnel.communal.bean.entity.PaginationResult;
-import org.apache.seatunnel.communal.bean.po.SeatunnelBatchJobDefinitionPO;
-import org.apache.seatunnel.communal.bean.vo.SeatunnelBatchJobDefinitionVO;
+import org.apache.seatunnel.communal.bean.po.SeatunnelStreamJobDefinitionPO;
+import org.apache.seatunnel.communal.bean.vo.SeatunnelStreamJobDefinitionVO;
 
 /**
  * Service interface for managing SeaTunnel job definitions.
@@ -13,7 +13,7 @@ import org.apache.seatunnel.communal.bean.vo.SeatunnelBatchJobDefinitionVO;
  * Provides CRUD operations, pagination queries, and configuration generation
  * for SeaTunnel job definitions.
  */
-public interface SeatunnelBatchJobDefinitionService extends IService<SeatunnelBatchJobDefinitionPO> {
+public interface SeaTunnelStreamJobDefinitionService extends IService<SeatunnelStreamJobDefinitionPO> {
 
     /**
      * Create a new SeaTunnel job definition.
@@ -21,7 +21,16 @@ public interface SeatunnelBatchJobDefinitionService extends IService<SeatunnelBa
      * @param dto job definition data transfer object
      * @return the ID of the newly created job definition
      */
-    Long saveOrUpdate(SeatunnelBatchJobDefinitionDTO dto);
+    Long create(SeatunnelStreamJobDefinitionDTO dto);
+
+    /**
+     * Update an existing SeaTunnel job definition.
+     *
+     * @param id  the ID of the job definition to update
+     * @param dto updated job definition data
+     * @return the ID of the updated job definition
+     */
+    Long update(Long id, SeatunnelStreamJobDefinitionDTO dto);
 
     /**
      * Query a SeaTunnel job definition by its ID.
@@ -29,7 +38,7 @@ public interface SeatunnelBatchJobDefinitionService extends IService<SeatunnelBa
      * @param id job definition ID
      * @return job definition view object
      */
-    SeatunnelBatchJobDefinitionVO selectById(Long id);
+    SeatunnelStreamJobDefinitionVO selectById(Long id);
 
     /**
      * Query job definitions with pagination support.
@@ -37,7 +46,7 @@ public interface SeatunnelBatchJobDefinitionService extends IService<SeatunnelBa
      * @param dto query conditions and pagination parameters
      * @return paginated result of job definition view objects
      */
-    PaginationResult<SeatunnelBatchJobDefinitionVO> paging(SeatunnelBatchJobDefinitionDTO dto);
+    PaginationResult<SeatunnelStreamJobDefinitionVO> paging(SeatunnelStreamJobDefinitionDTO dto);
 
     /**
      * Delete a SeaTunnel job definition by ID.
@@ -45,7 +54,7 @@ public interface SeatunnelBatchJobDefinitionService extends IService<SeatunnelBa
      * @param id job definition ID
      * @return true if deletion is successful, false otherwise
      */
-    Boolean delete(Long id);
+    Boolean delete(String id);
 
     /**
      * Build a HOCON configuration string for a SeaTunnel job.
@@ -53,5 +62,5 @@ public interface SeatunnelBatchJobDefinitionService extends IService<SeatunnelBa
      * @param dto job definition data
      * @return generated HOCON configuration content
      */
-    String buildHoconConfig(SeatunnelBatchJobDefinitionDTO dto);
+    String buildHoconConfig(SeatunnelStreamJobDefinitionDTO dto);
 }

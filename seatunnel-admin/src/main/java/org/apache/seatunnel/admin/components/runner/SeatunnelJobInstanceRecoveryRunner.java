@@ -2,7 +2,7 @@ package org.apache.seatunnel.admin.components.runner;
 
 import jakarta.annotation.Resource;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.seatunnel.admin.service.SeatunnelJobInstanceService;
+import org.apache.seatunnel.admin.service.SeaTunnelJobInstanceService;
 import org.springframework.boot.ApplicationArguments;
 import org.springframework.boot.ApplicationRunner;
 import org.springframework.stereotype.Component;
@@ -12,7 +12,7 @@ import org.springframework.stereotype.Component;
 public class SeatunnelJobInstanceRecoveryRunner implements ApplicationRunner {
 
     @Resource
-    private SeatunnelJobInstanceService seatunnelJobInstanceService;
+    private SeaTunnelJobInstanceService seatunnelJobInstanceService;
 
     @Override
     public void run(ApplicationArguments args) {

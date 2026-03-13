@@ -9,7 +9,7 @@ import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.annotation.Resource;
-import org.apache.seatunnel.admin.service.SeatunnelJobScheduleService;
+import org.apache.seatunnel.admin.service.SeaTunnelJobScheduleService;
 import org.apache.seatunnel.communal.bean.entity.Result;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
@@ -20,10 +20,10 @@ import java.util.List;
 @RequestMapping("/api/v1/job/schedule")
 @Validated
 @Tag(name = "Job Schedule", description = "APIs for managing job schedules and cron expressions")
-public class SeatunnelJobScheduleController {
+public class SeaTunnelJobScheduleController {
 
     @Resource
-    private SeatunnelJobScheduleService seatunnelJobScheduleService;
+    private SeaTunnelJobScheduleService seatunnelJobScheduleService;
 
     @GetMapping("/last5-execution-times")
     @Operation(

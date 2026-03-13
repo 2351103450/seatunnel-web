@@ -6,9 +6,9 @@ import jakarta.annotation.Resource;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.seatunnel.admin.components.parser.JobDefinitionResolver;
 import org.apache.seatunnel.admin.dao.SeatunnelJobDefinitionMapper;
-import org.apache.seatunnel.admin.service.SeatunnelBatchJobDefinitionService;
-import org.apache.seatunnel.admin.service.SeatunnelJobInstanceService;
-import org.apache.seatunnel.admin.service.SeatunnelJobScheduleService;
+import org.apache.seatunnel.admin.service.SeaTunnelBatchJobDefinitionService;
+import org.apache.seatunnel.admin.service.SeaTunnelJobInstanceService;
+import org.apache.seatunnel.admin.service.SeaTunnelJobScheduleService;
 import org.apache.seatunnel.admin.utils.DagUtil;
 import org.apache.seatunnel.communal.bean.dto.SeatunnelBatchJobDefinitionDTO;
 import org.apache.seatunnel.communal.bean.dto.SeatunnelJobScheduleDTO;
@@ -29,20 +29,20 @@ import java.util.List;
 @Service
 public class SeatunnelBatchJobDefinitionServiceImpl
         extends ServiceImpl<SeatunnelJobDefinitionMapper, SeatunnelBatchJobDefinitionPO>
-        implements SeatunnelBatchJobDefinitionService {
+        implements SeaTunnelBatchJobDefinitionService {
 
     private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
 
 
     @Lazy
     @Resource
-    private SeatunnelJobInstanceService seatunnelJobInstanceService;
+    private SeaTunnelJobInstanceService seatunnelJobInstanceService;
 
     @Resource
     private JobDefinitionResolver jobDefinitionResolver;
 
     @Resource
-    private SeatunnelJobScheduleService seatunnelJobScheduleService;
+    private SeaTunnelJobScheduleService seatunnelJobScheduleService;
 
 
     @Override

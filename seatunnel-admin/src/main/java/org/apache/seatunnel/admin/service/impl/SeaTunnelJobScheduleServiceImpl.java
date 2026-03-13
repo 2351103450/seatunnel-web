@@ -7,7 +7,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.seatunnel.admin.dao.TaskScheduleMapper;
 import org.apache.seatunnel.admin.quartz.QuartzJob;
-import org.apache.seatunnel.admin.service.SeatunnelJobScheduleService;
+import org.apache.seatunnel.admin.service.SeaTunnelJobScheduleService;
 import org.apache.seatunnel.communal.bean.dto.SeatunnelJobScheduleDTO;
 import org.apache.seatunnel.communal.bean.po.SeatunnelJobSchedulePO;
 import org.apache.seatunnel.communal.enums.ScheduleStatusEnum;
@@ -28,11 +28,11 @@ import java.util.List;
  */
 @Slf4j
 @Service
-public class SeatunnelJobScheduleServiceImpl extends ServiceImpl<TaskScheduleMapper, SeatunnelJobSchedulePO> implements SeatunnelJobScheduleService {
+public class SeaTunnelJobScheduleServiceImpl extends ServiceImpl<TaskScheduleMapper, SeatunnelJobSchedulePO> implements SeaTunnelJobScheduleService {
 
     private final Scheduler scheduler;
 
-    public SeatunnelJobScheduleServiceImpl(Scheduler scheduler) {
+    public SeaTunnelJobScheduleServiceImpl(Scheduler scheduler) {
         this.scheduler = scheduler;
     }
 

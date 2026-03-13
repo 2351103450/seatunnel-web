@@ -1,8 +1,8 @@
 package org.apache.seatunnel.admin.quartz;
 
 import lombok.extern.slf4j.Slf4j;
-import org.apache.seatunnel.admin.service.SeatunnelJobExecutorService;
-import org.apache.seatunnel.admin.service.SeatunnelJobScheduleService;
+import org.apache.seatunnel.admin.service.SeaTunnelJobExecutorService;
+import org.apache.seatunnel.admin.service.SeaTunnelJobScheduleService;
 import org.apache.seatunnel.communal.enums.JobSubmitStage;
 import org.apache.seatunnel.communal.enums.RunMode;
 import org.apache.seatunnel.communal.exception.JobSubmitException;
@@ -22,11 +22,11 @@ public class QuartzJob implements Job {
     private static final String KEY_JOB_DEFINITION_ID = "jobDefinitionId";
     private static final String KEY_JOB_SCHEDULE_ID = "jobScheduleId";
 
-    private final SeatunnelJobScheduleService scheduleService;
-    private final SeatunnelJobExecutorService executorService;
+    private final SeaTunnelJobScheduleService scheduleService;
+    private final SeaTunnelJobExecutorService executorService;
 
-    public QuartzJob(SeatunnelJobScheduleService scheduleService,
-                     SeatunnelJobExecutorService executorService) {
+    public QuartzJob(SeaTunnelJobScheduleService scheduleService,
+                     SeaTunnelJobExecutorService executorService) {
         this.scheduleService = scheduleService;
         this.executorService = executorService;
     }

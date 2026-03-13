@@ -10,7 +10,7 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.annotation.Resource;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotNull;
-import org.apache.seatunnel.admin.service.SeatunnelBatchJobDefinitionService;
+import org.apache.seatunnel.admin.service.SeaTunnelBatchJobDefinitionService;
 import org.apache.seatunnel.communal.bean.dto.SeatunnelBatchJobDefinitionDTO;
 import org.apache.seatunnel.communal.bean.entity.PaginationResult;
 import org.apache.seatunnel.communal.bean.entity.Result;
@@ -26,10 +26,10 @@ import org.springframework.web.bind.annotation.*;
 @RequestMapping("/api/v1/job/batch-definition")
 @Validated
 @Tag(name = "Batch Job Definition", description = "APIs for managing batch job definitions")
-public class SeatunnelBatchJobDefinitionController {
+public class SeaTunnelBatchJobDefinitionController {
 
     @Resource
-    private SeatunnelBatchJobDefinitionService seatunnelBatchJobDefinitionService;
+    private SeaTunnelBatchJobDefinitionService seatunnelBatchJobDefinitionService;
 
     @PostMapping("/hocon")
     @Operation(summary = "Build HOCON config", description = "Generate HOCON configuration from job definition")

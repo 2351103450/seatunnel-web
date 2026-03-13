@@ -14,7 +14,7 @@ import java.util.List;
  * This service provides operations for creating, updating, triggering,
  * starting, stopping, and querying Quartz-based job schedules.
  */
-public interface SeatunnelJobScheduleService extends IService<SeatunnelJobSchedulePO> {
+public interface SeaTunnelJobScheduleService extends IService<SeatunnelJobSchedulePO> {
 
     /**
      * Create a new task schedule.

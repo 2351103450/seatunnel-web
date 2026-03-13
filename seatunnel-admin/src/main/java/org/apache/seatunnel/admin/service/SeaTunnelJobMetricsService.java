@@ -26,7 +26,7 @@ import java.util.Map;
  *     <li>Generating time-based chart data for monitoring UI</li>
  * </ul>
  */
-public interface SeatunnelJobMetricsService extends IService<SeatunnelJobMetricsPO> {
+public interface SeaTunnelJobMetricsService extends IService<SeatunnelJobMetricsPO> {
 
     /**
      * Retrieves job metrics from the execution engine.

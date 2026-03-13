@@ -9,7 +9,7 @@ import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.annotation.Resource;
-import org.apache.seatunnel.admin.service.SeatunnelJobMetricsService;
+import org.apache.seatunnel.admin.service.SeaTunnelJobMetricsService;
 import org.apache.seatunnel.communal.bean.entity.Result;
 import org.apache.seatunnel.communal.bean.vo.OverviewChartsVO;
 import org.apache.seatunnel.communal.bean.vo.OverviewSummaryVO;
@@ -19,10 +19,10 @@ import org.springframework.web.bind.annotation.*;
 @RestController
 @RequestMapping("/api/v1/job/metrics")
 @Tag(name = "Job Metrics", description = "APIs for retrieving job metrics, statistics and charts")
-public class SeatunnelJobMetricsController {
+public class SeaTunnelJobMetricsController {
 
     @Resource
-    private SeatunnelJobMetricsService seatunnelJobMetricsService;
+    private SeaTunnelJobMetricsService seatunnelJobMetricsService;
 
     @GetMapping("/summary")
     @Operation(

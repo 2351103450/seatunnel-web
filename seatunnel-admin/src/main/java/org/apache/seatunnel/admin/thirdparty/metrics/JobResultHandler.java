@@ -1,7 +1,7 @@
 package org.apache.seatunnel.admin.thirdparty.metrics;
 
 import lombok.extern.slf4j.Slf4j;
-import org.apache.seatunnel.admin.service.SeatunnelJobInstanceService;
+import org.apache.seatunnel.admin.service.SeaTunnelJobInstanceService;
 import org.apache.seatunnel.admin.utils.JobUtils;
 import org.apache.seatunnel.communal.bean.po.SeatunnelJobInstancePO;
 import org.apache.seatunnel.communal.enums.JobResult;
@@ -26,10 +26,10 @@ public class JobResultHandler {
     /**
      * Service for operating on job instance persistence layer.
      */
-    private final SeatunnelJobInstanceService instanceService;
+    private final SeaTunnelJobInstanceService instanceService;
     private final JobMetricsMonitor jobMetricsMonitor;
 
-    public JobResultHandler(SeatunnelJobInstanceService instanceService, JobMetricsMonitor jobMetricsMonitor) {
+    public JobResultHandler(SeaTunnelJobInstanceService instanceService, JobMetricsMonitor jobMetricsMonitor) {
         this.instanceService = instanceService;
         this.jobMetricsMonitor = jobMetricsMonitor;
     }

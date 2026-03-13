@@ -10,8 +10,8 @@ import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import jakarta.annotation.Resource;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.seatunnel.admin.dao.SeatunnelStreamJobDefinitionMapper;
-import org.apache.seatunnel.admin.service.SeatunnelJobInstanceService;
-import org.apache.seatunnel.admin.service.SeatunnelStreamJobDefinitionService;
+import org.apache.seatunnel.admin.service.SeaTunnelJobInstanceService;
+import org.apache.seatunnel.admin.service.SeaTunnelStreamJobDefinitionService;
 import org.apache.seatunnel.communal.bean.dto.SeatunnelStreamJobDefinitionDTO;
 import org.apache.seatunnel.communal.bean.entity.PaginationResult;
 import org.apache.seatunnel.communal.bean.po.SeatunnelStreamJobDefinitionPO;
@@ -26,12 +26,12 @@ import java.util.Date;
 import java.util.List;
 
 @Service
-public class SeatunnelStreamJobDefinitionServiceImpl
+public class SeaTunnelStreamJobDefinitionServiceImpl
         extends ServiceImpl<SeatunnelStreamJobDefinitionMapper, SeatunnelStreamJobDefinitionPO>
-        implements SeatunnelStreamJobDefinitionService {
+        implements SeaTunnelStreamJobDefinitionService {
 
     @Resource
-    private SeatunnelJobInstanceService seatunnelJobInstanceService;
+    private SeaTunnelJobInstanceService seatunnelJobInstanceService;
 
 
     @Override

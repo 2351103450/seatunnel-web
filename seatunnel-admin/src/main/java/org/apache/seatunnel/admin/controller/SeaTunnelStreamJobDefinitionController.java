@@ -10,7 +10,7 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.annotation.Resource;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotNull;
-import org.apache.seatunnel.admin.service.SeatunnelStreamJobDefinitionService;
+import org.apache.seatunnel.admin.service.SeaTunnelStreamJobDefinitionService;
 import org.apache.seatunnel.communal.bean.dto.SeatunnelStreamJobDefinitionDTO;
 import org.apache.seatunnel.communal.bean.entity.PaginationResult;
 import org.apache.seatunnel.communal.bean.entity.Result;
@@ -26,10 +26,10 @@ import org.springframework.web.bind.annotation.*;
 @RequestMapping("/api/v1/job/stream-definition")
 @Validated
 @Tag(name = "Stream Job Definition", description = "APIs for managing stream job definitions")
-public class SeatunnelStreamJobDefinitionController {
+public class SeaTunnelStreamJobDefinitionController {
 
     @Resource
-    private SeatunnelStreamJobDefinitionService seatunnelStreamJobDefinitionService;
+    private SeaTunnelStreamJobDefinitionService seatunnelStreamJobDefinitionService;
 
     @PostMapping("/hocon")
     @Operation(
