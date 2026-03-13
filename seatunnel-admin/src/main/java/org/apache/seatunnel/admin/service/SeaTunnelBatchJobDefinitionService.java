@@ -3,6 +3,7 @@ package org.apache.seatunnel.admin.service;
 
 import com.baomidou.mybatisplus.extension.service.IService;
 import org.apache.seatunnel.communal.bean.dto.SeatunnelBatchJobDefinitionDTO;
+import org.apache.seatunnel.communal.bean.dto.SeatunnelBatchJobDefinitionQueryDTO;
 import org.apache.seatunnel.communal.bean.entity.PaginationResult;
 import org.apache.seatunnel.communal.bean.po.SeatunnelBatchJobDefinitionPO;
 import org.apache.seatunnel.communal.bean.vo.SeatunnelBatchJobDefinitionVO;
@@ -37,7 +38,7 @@ public interface SeaTunnelBatchJobDefinitionService extends IService<SeatunnelBa
      * @param dto query conditions and pagination parameters
      * @return paginated result of job definition view objects
      */
-    PaginationResult<SeatunnelBatchJobDefinitionVO> paging(SeatunnelBatchJobDefinitionDTO dto);
+    PaginationResult<SeatunnelBatchJobDefinitionVO> paging(SeatunnelBatchJobDefinitionQueryDTO dto);
 
     /**
      * Delete a SeaTunnel job definition by ID.

@@ -11,6 +11,7 @@ import org.apache.seatunnel.admin.service.SeaTunnelJobInstanceService;
 import org.apache.seatunnel.admin.service.SeaTunnelJobScheduleService;
 import org.apache.seatunnel.admin.utils.DagUtil;
 import org.apache.seatunnel.communal.bean.dto.SeatunnelBatchJobDefinitionDTO;
+import org.apache.seatunnel.communal.bean.dto.SeatunnelBatchJobDefinitionQueryDTO;
 import org.apache.seatunnel.communal.bean.dto.SeatunnelJobScheduleDTO;
 import org.apache.seatunnel.communal.bean.entity.NodeTypes;
 import org.apache.seatunnel.communal.bean.entity.PaginationResult;
@@ -122,7 +123,7 @@ public class SeatunnelBatchJobDefinitionServiceImpl
 
     @Override
     public PaginationResult<SeatunnelBatchJobDefinitionVO> paging(
-            SeatunnelBatchJobDefinitionDTO dto) {
+            SeatunnelBatchJobDefinitionQueryDTO dto) {
 
         if (dto == null) {
             throw new IllegalArgumentException("Job definition DTO cannot be null");

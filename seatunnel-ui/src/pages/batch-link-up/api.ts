@@ -27,7 +27,7 @@ export const apiPrefix = "/api/v1/job/batch-definition"
 export const seatunnelJobDefinitionApi = {
 
     saveOrUpdate: (data: any) => {
-        return HttpUtils.post(apiPrefix, data);
+        return HttpUtils.post(`${apiPrefix}/saveOrUpdate`, data);
     },
 
 
@@ -49,7 +49,7 @@ export const seatunnelJobDefinitionApi = {
     },
 
     hocon: (data: any) => {
-        return HttpUtils.post(`${apiPrefix}/hocon`, data);
+        return HttpUtils.post(`${apiPrefix}/buildHoconConfig`, data);
     },
 };
 
