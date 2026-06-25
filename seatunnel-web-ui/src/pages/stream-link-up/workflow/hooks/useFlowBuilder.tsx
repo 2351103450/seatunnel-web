@@ -484,8 +484,11 @@ export default function useFlowBuilder({ form, params }: Props) {
         danger: true,
       });
     }
+    
+    if (hasLeftConnections || hasRightConnections) {
+      items.push({ type: "divider" });
+    }
 
-    items.push({ type: "divider" });
     items.push({
       key: "delete",
       label: `删除节点${
@@ -710,41 +713,41 @@ export default function useFlowBuilder({ form, params }: Props) {
   );
 
   const syncTransformPluginConfig = useCallback(
-  (nodeId: string) => {
-    const currentEdges = getEdges();
-    const currentNodes = getNodes();
+    (nodeId: string) => {
+      const currentEdges = getEdges();
+      const currentNodes = getNodes();
 
-    const incomingEdge = currentEdges.find((edge) => edge.target === nodeId);
-    const outgoingEdge = currentEdges.find((edge) => edge.source === nodeId);
+      const incomingEdge = currentEdges.find((edge) => edge.target === nodeId);
+      const outgoingEdge = currentEdges.find((edge) => edge.source === nodeId);
 
-    const pluginInput = incomingEdge?.source;
-    const pluginOutput = outgoingEdge?.target;
+      const pluginInput = incomingEdge?.source;
+      const pluginOutput = outgoingEdge?.target;
 
-    setNodes((nds) =>
-      nds.map((node) => {
-        if (node.id !== nodeId) return node;
+      setNodes((nds) =>
+        nds.map((node) => {
+          if (node.id !== nodeId) return node;
 
-        return {
-          ...node,
-          data: {
-            ...node.data,
-            config: {
-              ...(node.data?.config || {}),
-              pluginInput,
-              pluginOutput,
+          return {
+            ...node,
+            data: {
+              ...node.data,
+              config: {
+                ...(node.data?.config || {}),
+                pluginInput,
+                pluginOutput,
+              },
             },
-          },
-        };
-      })
-    );
+          };
+        })
+      );
 
-    return {
-      pluginInput,
-      pluginOutput,
-    };
-  },
-  [getEdges, getNodes, setNodes]
-);
+      return {
+        pluginInput,
+        pluginOutput,
+      };
+    },
+    [getEdges, getNodes, setNodes]
+  );
 
   return {
     nodes,
@@ -787,6 +790,6 @@ export default function useFlowBuilder({ form, params }: Props) {
     refreshNodeSchema,
     refreshDownstreamSchemas,
     getFieldMapperLinkedNodeIds,
-    syncTransformPluginConfig
+    syncTransformPluginConfig,
   };
 }

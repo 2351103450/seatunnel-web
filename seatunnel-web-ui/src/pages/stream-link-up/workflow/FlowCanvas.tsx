@@ -212,8 +212,8 @@ export default function FlowCanvas({
     if (!bounds) return;
 
     const position = flow.screenToFlowPosition({
-      x: event.clientX - bounds.left,
-      y: event.clientY - bounds.top,
+      x: event.clientX,
+      y: event.clientY,
     });
 
     flow.addNode({
