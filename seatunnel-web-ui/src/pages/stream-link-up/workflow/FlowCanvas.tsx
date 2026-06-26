@@ -10,6 +10,7 @@ import ReactFlow, {
 } from 'reactflow';
 import 'reactflow/dist/style.css';
 
+import CanvasToolbar from '../../common/workflow/CanvasToolbar';
 import {
   type InsertableTransformNode,
   insertableTransformNodes,
@@ -332,6 +333,15 @@ export default function FlowCanvas({
       onDragOver={onDragOver}
       onDrop={onDrop}
     >
+      <CanvasToolbar
+        canRedo={flow.canRedo}
+        canUndo={flow.canUndo}
+        onAutoLayout={flow.autoLayout}
+        onFitView={flow.fitWorkflowView}
+        onRedo={flow.redo}
+        onUndo={flow.undo}
+      />
+
       <ReactFlow
         nodes={flow.nodes}
         edges={interactiveEdges}

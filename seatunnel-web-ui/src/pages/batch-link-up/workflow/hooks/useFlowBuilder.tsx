@@ -4,6 +4,8 @@ import {
   addEdge,
   applyEdgeChanges,
   applyNodeChanges,
+  type Edge,
+  type Node,
   useEdgesState,
   useNodesState,
   useReactFlow,
@@ -12,6 +14,7 @@ import {
   type InsertableTransformNode,
   createTransformNode,
   createWorkflowEdge,
+  layoutWorkflowGraph,
 } from '../../../common/workflow/graph';
 import { ControlMode } from '../config';
 
@@ -19,6 +22,27 @@ interface Props {
   form: any;
   params: any;
 }
+
+interface FlowSnapshot {
+  nodes: Node[];
+  edges: Edge[];
+}
+
+const MAX_HISTORY_SIZE = 50;
+
+const cloneSnapshot = (snapshot: FlowSnapshot): FlowSnapshot => ({
+  nodes: snapshot.nodes.map((node) => ({
+    ...node,
+    position: { ...node.position },
+    data: node.data ? { ...node.data } : node.data,
+    style: node.style ? { ...node.style } : node.style,
+  })),
+  edges: snapshot.edges.map((edge) => ({
+    ...edge,
+    data: edge.data ? { ...edge.data } : edge.data,
+    style: edge.style ? { ...edge.style } : edge.style,
+  })),
+});
 
 export default function useFlowBuilder({ form, params }: Props) {
   const { getNodes, getEdges, fitView, screenToFlowPosition } = useReactFlow();
@@ -47,6 +71,111 @@ export default function useFlowBuilder({ form, params }: Props) {
   const [menuPosition, setMenuPosition] = useState({ x: 0, y: 0 });
 
   const didFitViewRef = useRef(false);
+  const latestNodesRef = useRef<Node[]>([]);
+  const latestEdgesRef = useRef<Edge[]>([]);
+  const undoStackRef = useRef<FlowSnapshot[]>([]);
+  const redoStackRef = useRef<FlowSnapshot[]>([]);
+  const isNodeDraggingRef = useRef(false);
+  const [historyState, setHistoryState] = useState({
+    canUndo: false,
+    canRedo: false,
+  });
+
+  const updateHistoryState = useCallback(() => {
+    setHistoryState({
+      canUndo: undoStackRef.current.length > 0,
+      canRedo: redoStackRef.current.length > 0,
+    });
+  }, []);
+
+  const clearHistory = useCallback(() => {
+    undoStackRef.current = [];
+    redoStackRef.current = [];
+    isNodeDraggingRef.current = false;
+    updateHistoryState();
+  }, [updateHistoryState]);
+
+  const pushHistory = useCallback(() => {
+    undoStackRef.current = undoStackRef.current
+      .concat(
+        cloneSnapshot({
+          nodes: latestNodesRef.current,
+          edges: latestEdgesRef.current,
+        }),
+      )
+      .slice(-MAX_HISTORY_SIZE);
+    redoStackRef.current = [];
+    updateHistoryState();
+  }, [updateHistoryState]);
+
+  const restoreSnapshot = useCallback(
+    (snapshot: FlowSnapshot) => {
+      const nextSnapshot = cloneSnapshot(snapshot);
+      setNodes(nextSnapshot.nodes);
+      setEdges(nextSnapshot.edges);
+      setSelectedNodeId(null);
+      setSelectedEdgeId(null);
+      setDrawerVisible(false);
+      setMenuVisible(false);
+    },
+    [setEdges, setNodes],
+  );
+
+  const undo = useCallback(() => {
+    const previousSnapshot = undoStackRef.current.pop();
+    if (!previousSnapshot) return;
+
+    redoStackRef.current = redoStackRef.current.concat(
+      cloneSnapshot({
+        nodes: latestNodesRef.current,
+        edges: latestEdgesRef.current,
+      }),
+    );
+    restoreSnapshot(previousSnapshot);
+    updateHistoryState();
+  }, [restoreSnapshot, updateHistoryState]);
+
+  const redo = useCallback(() => {
+    const nextSnapshot = redoStackRef.current.pop();
+    if (!nextSnapshot) return;
+
+    undoStackRef.current = undoStackRef.current.concat(
+      cloneSnapshot({
+        nodes: latestNodesRef.current,
+        edges: latestEdgesRef.current,
+      }),
+    );
+    restoreSnapshot(nextSnapshot);
+    updateHistoryState();
+  }, [restoreSnapshot, updateHistoryState]);
+
+  const fitWorkflowView = useCallback(() => {
+    fitView({
+      padding: 0.2,
+      duration: 240,
+      minZoom: 0.25,
+      maxZoom: 0.75,
+    });
+  }, [fitView]);
+
+  const autoLayout = useCallback(() => {
+    const currentNodes = latestNodesRef.current;
+    const currentEdges = latestEdgesRef.current;
+
+    if (currentNodes.length === 0) return;
+
+    pushHistory();
+    setNodes(layoutWorkflowGraph(currentNodes, currentEdges));
+    requestAnimationFrame(fitWorkflowView);
+  }, [fitWorkflowView, pushHistory, setNodes]);
+
+  useEffect(() => {
+    latestNodesRef.current = nodes;
+  }, [nodes]);
+
+  useEffect(() => {
+    latestEdgesRef.current = edges;
+  }, [edges]);
 
   useEffect(() => {
     if (!params) return;
@@ -60,6 +189,7 @@ export default function useFlowBuilder({ form, params }: Props) {
 
     // 1. 编辑模式优先使用后端返回的 workflow
     if (params?.workflow) {
+      clearHistory();
       setNodes(params.workflow?.nodes || []);
       setEdges(params.workflow?.edges || []);
       return;
@@ -72,10 +202,11 @@ export default function useFlowBuilder({ form, params }: Props) {
           ? JSON.parse(params.jobDefinitionInfo || '{}')
           : params.jobDefinitionInfo || {};
 
+      clearHistory();
       setNodes(contentInfo?.nodes || []);
       setEdges(contentInfo?.edges || []);
     }
-  }, [params, form, setNodes, setEdges]);
+  }, [params, form, clearHistory, setNodes, setEdges]);
 
   useEffect(() => {
     if (nodes.length > 0 && !didFitViewRef.current) {
@@ -133,9 +264,10 @@ export default function useFlowBuilder({ form, params }: Props) {
         iconType,
       });
 
+      pushHistory();
       setNodes((nds) => nds.concat(newNode));
     },
-    [setNodes],
+    [pushHistory, setNodes],
   );
 
   const insertNodeOnEdge = useCallback(
@@ -147,6 +279,8 @@ export default function useFlowBuilder({ form, params }: Props) {
       const edge = getEdges().find((item) => item.id === edgeId);
 
       if (!edge) return;
+
+      pushHistory();
 
       const node = createTransformNode({
         ...nodeConfig,
@@ -168,17 +302,53 @@ export default function useFlowBuilder({ form, params }: Props) {
       setSelectedNodeId(node.id);
       setDrawerVisible(true);
     },
-    [getEdges, setEdges, setNodes],
+    [getEdges, pushHistory, setEdges, setNodes],
   );
 
   const onNodesChange = useCallback(
-    (changes: any) => setNodes((nds) => applyNodeChanges(changes, nds)),
-    [setNodes],
+    (changes: any) => {
+      const shouldPushHistory = changes.some((change: any) => {
+        if (change.type === 'position') {
+          if (change.dragging) {
+            if (isNodeDraggingRef.current) return false;
+
+            isNodeDraggingRef.current = true;
+            return true;
+          }
+
+          if (isNodeDraggingRef.current) {
+            isNodeDraggingRef.current = false;
+            return false;
+          }
+
+          return true;
+        }
+
+        return change.type === 'remove' || change.type === 'add';
+      });
+
+      if (shouldPushHistory) {
+        pushHistory();
+      }
+
+      setNodes((nds) => applyNodeChanges(changes, nds));
+    },
+    [pushHistory, setNodes],
   );
 
   const onEdgesChange = useCallback(
-    (changes: any) => setEdges((eds) => applyEdgeChanges(changes, eds)),
-    [setEdges],
+    (changes: any) => {
+      if (
+        changes.some(
+          (change: any) => change.type === 'remove' || change.type === 'add',
+        )
+      ) {
+        pushHistory();
+      }
+
+      setEdges((eds) => applyEdgeChanges(changes, eds));
+    },
+    [pushHistory, setEdges],
   );
 
   const toggleControlMode = useCallback((mode: string) => {
@@ -284,6 +454,7 @@ export default function useFlowBuilder({ form, params }: Props) {
       }
 
       if (isValidConnection()) {
+        pushHistory();
         setEdges((eds) =>
           addEdge(
             {
@@ -297,7 +468,7 @@ export default function useFlowBuilder({ form, params }: Props) {
         );
       }
     },
-    [getNodes, getEdges, isValidConnection, setEdges],
+    [getNodes, getEdges, isValidConnection, pushHistory, setEdges],
   );
 
   const onNodeClick = useCallback((_: any, node: any) => {
@@ -375,35 +546,40 @@ export default function useFlowBuilder({ form, params }: Props) {
       }
 
       const nodeIds = nodesToProcess.map((node) => node.id);
+      const currentEdges = getEdges();
+      let edgesToDelete: any[] = [];
 
-      setEdges((eds) => {
-        let edgesToDelete: any[] = [];
-
-        if (direction === 'left') {
-          edgesToDelete = eds.filter((edge) => nodeIds.includes(edge.target));
-        } else if (direction === 'right') {
-          edgesToDelete = eds.filter((edge) => nodeIds.includes(edge.source));
-        } else if (direction === 'both') {
-          edgesToDelete = eds.filter(
-            (edge) =>
-              nodeIds.includes(edge.source) || nodeIds.includes(edge.target),
-          );
-        }
-
-        if (edgesToDelete.length === 0) {
-          message.warning(`选中的节点没有${getDirectionText(direction)}边`);
-          return eds;
-        }
-
-        message.success(
-          `已删除 ${edgesToDelete.length} 条${getDirectionText(direction)}边`,
+      if (direction === 'left') {
+        edgesToDelete = currentEdges.filter((edge) =>
+          nodeIds.includes(edge.target),
         );
-        return eds.filter((edge) => !edgesToDelete.includes(edge));
-      });
+      } else if (direction === 'right') {
+        edgesToDelete = currentEdges.filter((edge) =>
+          nodeIds.includes(edge.source),
+        );
+      } else if (direction === 'both') {
+        edgesToDelete = currentEdges.filter(
+          (edge) =>
+            nodeIds.includes(edge.source) || nodeIds.includes(edge.target),
+        );
+      }
+
+      if (edgesToDelete.length === 0) {
+        message.warning(`选中的节点没有${getDirectionText(direction)}边`);
+        return;
+      }
+
+      const edgeIdsToDelete = new Set(edgesToDelete.map((edge) => edge.id));
+
+      pushHistory();
+      message.success(
+        `已删除 ${edgesToDelete.length} 条${getDirectionText(direction)}边`,
+      );
+      setEdges((eds) => eds.filter((edge) => !edgeIdsToDelete.has(edge.id)));
 
       setDrawerVisible(false);
     },
-    [selectedNode, selectedNodes, setEdges],
+    [getEdges, pushHistory, selectedNode, selectedNodes, setEdges],
   );
 
   const handleContextMenuAction = ({ key }: any, node?: any) => {
@@ -411,6 +587,7 @@ export default function useFlowBuilder({ form, params }: Props) {
 
     switch (key) {
       case 'delete':
+        pushHistory();
         setNodes((nds) =>
           nds.filter((n) => !nodesToDelete.some((sn: any) => sn.id === n.id)),
         );
@@ -791,6 +968,12 @@ export default function useFlowBuilder({ form, params }: Props) {
     screenToFlowPosition,
     addNode,
     insertNodeOnEdge,
+    undo,
+    redo,
+    canUndo: historyState.canUndo,
+    canRedo: historyState.canRedo,
+    autoLayout,
+    fitWorkflowView,
     getDirectUpstreamNode,
     getDirectUpstreamSchema,
     getDirectDownstreamNodes,
