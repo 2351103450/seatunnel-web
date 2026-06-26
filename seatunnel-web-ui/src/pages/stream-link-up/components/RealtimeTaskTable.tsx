@@ -21,6 +21,8 @@ interface RealtimeTaskTableProps {
   onEdit?: (record: StreamingJobDefinitionVO) => void;
   onRun?: (record: StreamingJobDefinitionVO) => Promise<void> | void;
   onStop?: (record: StreamingJobDefinitionVO) => Promise<void> | void;
+  onStopWithSavepoint?: (record: StreamingJobDefinitionVO) => Promise<void> | void;
+  onResumeFromSavepoint?: (record: StreamingJobDefinitionVO) => Promise<void> | void;
   onOnline?: (record: StreamingJobDefinitionVO) => Promise<void> | void;
   onOffline?: (record: StreamingJobDefinitionVO) => Promise<void> | void;
   onDelete?: (record: StreamingJobDefinitionVO) => Promise<void> | void;
@@ -39,6 +41,8 @@ const RealtimeTaskTable: React.FC<RealtimeTaskTableProps> = ({
   dataSource,
   selectedRowKeys,
   onSelectedRowKeysChange,
+  onStopWithSavepoint,
+  onResumeFromSavepoint,
   pagination,
   onView,
   onDetail,
@@ -136,6 +140,8 @@ const RealtimeTaskTable: React.FC<RealtimeTaskTableProps> = ({
           onDelete={onDelete}
           onLog={onLog}
           onCheckpoint={onCheckpoint}
+          onStopWithSavepoint={onStopWithSavepoint}
+          onResumeFromSavepoint={onResumeFromSavepoint}
         />
       ),
     },
