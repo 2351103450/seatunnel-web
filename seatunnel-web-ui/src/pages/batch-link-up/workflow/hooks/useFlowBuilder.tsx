@@ -701,7 +701,9 @@ export default function useFlowBuilder({ form, params }: Props) {
       });
     }
 
-    items.push({ type: 'divider' });
+    if (hasLeftConnections || hasRightConnections) {
+      items.push({ type: 'divider' });
+    }
     items.push({
       key: 'delete',
       label: `删除节点${

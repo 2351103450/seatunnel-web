@@ -1,11 +1,6 @@
 import { HolderOutlined } from "@ant-design/icons";
 import type { DragEndEvent } from "@dnd-kit/core";
-import {
-  DndContext,
-  PointerSensor,
-  useSensor,
-  useSensors,
-} from "@dnd-kit/core";
+import { DndContext, PointerSensor, useSensor, useSensors } from "@dnd-kit/core";
 import type { SyntheticListenerMap } from "@dnd-kit/core/dist/hooks/utilities";
 import { restrictToVerticalAxis } from "@dnd-kit/modifiers";
 import {
@@ -16,15 +11,7 @@ import {
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import type { MenuProps, TableColumnsType } from "antd";
-import {
-  Button,
-  Dropdown,
-  Input,
-  Space,
-  Table,
-  Typography,
-  message,
-} from "antd";
+import { Button, Dropdown, Input, Space, Table, Typography, message } from "antd";
 import React, {
   memo,
   useCallback,
@@ -82,6 +69,7 @@ interface RowProps extends React.HTMLAttributes<HTMLTableRowElement> {
 }
 
 const { Text } = Typography;
+
 const RowContext = React.createContext<RowContextProps>({});
 
 const buildFieldId = (prefix: string, index: number, name?: string) =>
@@ -91,7 +79,7 @@ const normalizeSchemaToList = (
   schema: any[] = [],
   prefix: string
 ): SchemaField[] =>
-  schema.map((field: any, index: number) => ({
+  schema.map((field: any, index) => ({
     id:
       field?.id ||
       buildFieldId(prefix, index, field?.originFieldName || field?.name),
@@ -131,6 +119,39 @@ const buildRowsFromMappings = (
     enabled: item?.enabled !== false,
   }));
 };
+
+function useDebouncedCallback<T extends (...args: any[]) => void>(
+  callback: T,
+  delay = 300
+): T {
+  const callbackRef = useRef(callback);
+  const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(() => {
+    callbackRef.current = callback;
+  }, [callback]);
+
+  useEffect(() => {
+    return () => {
+      if (timerRef.current) {
+        clearTimeout(timerRef.current);
+      }
+    };
+  }, []);
+
+  return useCallback(
+    ((...args: Parameters<T>) => {
+      if (timerRef.current) {
+        clearTimeout(timerRef.current);
+      }
+
+      timerRef.current = setTimeout(() => {
+        callbackRef.current(...args);
+      }, delay);
+    }) as T,
+    [delay]
+  );
+}
 
 const DragHandle: React.FC = () => {
   const { setActivatorNodeRef, listeners } = useContext(RowContext);
@@ -240,7 +261,6 @@ function FieldMapperPanel({
   }, [nodeId, getFieldMapperLinkedNodeIds]);
 
   const pluginInput = linkedNodeIds.sourceNodeId;
-  console.log(pluginInput);
   const pluginOutput = linkedNodeIds.sinkNodeId;
 
   useEffect(() => {
@@ -248,128 +268,184 @@ function FieldMapperPanel({
     setRows(buildRowsFromMappings(mappings, inputSchema));
   }, [selectedNode?.data?.config?.mappings, inputSchema]);
 
-  const updateSinkFieldName = useCallback((key: string, value: string) => {
-    setRows((prev) =>
-      prev.map((item) =>
-        item.key === key ? { ...item, sinkFieldName: value } : item
-      )
-    );
-  }, []);
+  const applyRows = useCallback(
+    (nextRows: FieldMappingRow[], silent = true) => {
+      if (!nodeId) {
+        if (!silent) {
+          message.warning("当前节点不存在");
+        }
+        return false;
+      }
 
-  function useDebounce<T extends (...args: any[]) => void>(fn: T, ms = 120): T {
-    const timer = useRef<NodeJS.Timeout | null>(null);
+      if (!nextRows.length) {
+        if (!silent) {
+          message.warning("请至少保留一条有效字段映射");
+        }
+        return false;
+      }
 
-    return useCallback(
-      ((...args: Parameters<T>) => {
-        if (timer.current) clearTimeout(timer.current);
-        timer.current = setTimeout(() => fn(...args), ms);
-      }) as T,
-      [fn, ms]
-    );
-  }
+      const hasInvalidRow = nextRows.some(
+        (item) => !item.sourceFieldName?.trim() || !item.sinkFieldName?.trim()
+      );
 
-  const debouncedUpdateSinkFieldName = useDebounce(updateSinkFieldName, 80);
+      if (hasInvalidRow) {
+        if (!silent) {
+          message.warning("请补全字段映射后再应用");
+        }
+        return false;
+      }
 
-  const handleSyncFields = () => {
+      const syncedPluginConfig = syncTransformPluginConfig(nodeId);
+
+      const nextPluginInput = syncedPluginConfig.pluginInput;
+      const nextPluginOutput = syncedPluginConfig.pluginOutput;
+
+      if (!nextPluginInput) {
+        if (!silent) {
+          message.warning("请先连接上游节点");
+        }
+        return false;
+      }
+
+      if (!nextPluginOutput) {
+        if (!silent) {
+          message.warning("请先连接下游节点");
+        }
+        return false;
+      }
+
+      const nextMappings = nextRows.map((item, index) => ({
+        id: item.key || `mapping_${index}`,
+        sourceField: item.sourceFieldName.trim(),
+        targetField: item.sinkFieldName.trim(),
+        targetType: item.sourceFieldType || "",
+        expression: "",
+        enabled: item.enabled !== false,
+      }));
+
+      const outputSchema = nextRows.map((item) => ({
+        name: item.sinkFieldName.trim(),
+        type: item.sourceFieldType || "",
+      }));
+
+      onNodeDataChange(nodeId, {
+        config: {
+          ...(selectedNode?.data?.config || {}),
+
+          pluginInput: nextPluginInput,
+          pluginOutput: nextPluginOutput,
+
+          mappings: nextMappings,
+          passThroughUnmapped,
+        },
+        meta: {
+          ...(selectedNode?.data?.meta || {}),
+          inputSchema: inputSchema.map((item) => ({
+            name: item.name,
+            type: item.type || "",
+            nullable: item.nullable,
+            comment: item.comment || "",
+          })),
+          outputSchema,
+        },
+      });
+
+      refreshNodeSchema(nodeId);
+      refreshDownstreamSchemas(nodeId);
+
+      if (!silent) {
+        message.success("字段映射已应用");
+      }
+
+      return true;
+    },
+    [
+      nodeId,
+      selectedNode?.data?.config,
+      selectedNode?.data?.meta,
+      passThroughUnmapped,
+      inputSchema,
+      syncTransformPluginConfig,
+      onNodeDataChange,
+      refreshNodeSchema,
+      refreshDownstreamSchemas,
+    ]
+  );
+
+  const debouncedApplyRows = useDebouncedCallback(
+    (nextRows: FieldMappingRow[]) => {
+      applyRows(nextRows, true);
+    },
+    400
+  );
+
+  const updateSinkFieldName = useCallback(
+    (key: string, value: string) => {
+      setRows((prev) => {
+        const nextRows = prev.map((item) =>
+          item.key === key ? { ...item, sinkFieldName: value } : item
+        );
+
+        debouncedApplyRows(nextRows);
+
+        return nextRows;
+      });
+    },
+    [debouncedApplyRows]
+  );
+
+  const handleSyncFields = useCallback(() => {
     if (!inputSchema.length) {
       message.warning("暂无输入字段可同步");
       return;
     }
 
-    setRows(buildRowsFromSchema(inputSchema));
+    const nextRows = buildRowsFromSchema(inputSchema);
+
+    setRows(nextRows);
+    applyRows(nextRows, true);
+
     message.success("已按输入字段同步");
-  };
+  }, [inputSchema, applyRows]);
 
-  const handleDeleteRow = useCallback((key: string) => {
-    setRows((prev) => prev.filter((item) => item.key !== key));
-  }, []);
+  const handleDeleteRow = useCallback(
+    (key: string) => {
+      setRows((prev) => {
+        const nextRows = prev.filter((item) => item.key !== key);
 
-  const handleDragEnd = ({ active, over }: DragEndEvent) => {
-    if (!over || active.id === over.id) return;
+        debouncedApplyRows(nextRows);
 
-    setRows((prev) => {
-      const oldIndex = prev.findIndex((item) => item.key === active.id);
-      const newIndex = prev.findIndex((item) => item.key === over.id);
+        return nextRows;
+      });
+    },
+    [debouncedApplyRows]
+  );
 
-      if (oldIndex < 0 || newIndex < 0) {
-        return prev;
-      }
+  const handleDragEnd = useCallback(
+    ({ active, over }: DragEndEvent) => {
+      if (!over || active.id === over.id) return;
 
-      return arrayMove(prev, oldIndex, newIndex);
-    });
-  };
+      setRows((prev) => {
+        const oldIndex = prev.findIndex((item) => item.key === active.id);
+        const newIndex = prev.findIndex((item) => item.key === over.id);
 
-  const handleApply = () => {
-    if (!nodeId) {
-      message.warning("当前节点不存在");
-      return;
-    }
+        if (oldIndex < 0 || newIndex < 0) {
+          return prev;
+        }
 
-    const validRows = rows.filter(
-      (item) => item.sourceFieldName?.trim() && item.sinkFieldName?.trim()
-    );
+        const nextRows = arrayMove(prev, oldIndex, newIndex);
 
-    if (!validRows.length) {
-      message.warning("请至少保留一条有效字段映射");
-      return;
-    }
+        debouncedApplyRows(nextRows);
 
-    const syncedPluginConfig = syncTransformPluginConfig(nodeId);
+        return nextRows;
+      });
+    },
+    [debouncedApplyRows]
+  );
 
-    const nextPluginInput = syncedPluginConfig.pluginInput;
-    const nextPluginOutput = syncedPluginConfig.pluginOutput;
-
-    if (!nextPluginInput) {
-      message.warning("请先连接上游节点");
-      return;
-    }
-
-    if (!nextPluginOutput) {
-      message.warning("请先连接下游节点");
-      return;
-    }
-
-    const nextMappings = validRows.map((item, index) => ({
-      id: item.key || `mapping_${index}`,
-      sourceField: item.sourceFieldName.trim(),
-      targetField: item.sinkFieldName.trim(),
-      targetType: item.sourceFieldType || "",
-      expression: "",
-      enabled: item.enabled !== false,
-    }));
-
-    const outputSchema = validRows.map((item) => ({
-      name: item.sinkFieldName.trim(),
-      type: item.sourceFieldType || "",
-    }));
-
-    onNodeDataChange(nodeId, {
-      config: {
-        ...(selectedNode?.data?.config || {}),
-
-        pluginInput: nextPluginInput,
-        pluginOutput: nextPluginOutput,
-
-        mappings: nextMappings,
-        passThroughUnmapped,
-      },
-      meta: {
-        ...(selectedNode?.data?.meta || {}),
-        inputSchema: inputSchema.map((item) => ({
-          name: item.name,
-          type: item.type || "",
-          nullable: item.nullable,
-          comment: item.comment || "",
-        })),
-        outputSchema,
-      },
-    });
-
-    refreshNodeSchema(nodeId);
-    refreshDownstreamSchemas(nodeId);
-
-    message.success("字段映射已应用");
-  };
+  const handleApply = useCallback(() => {
+    applyRows(rows, false);
+  }, [rows, applyRows]);
 
   const menuItems: MenuProps["items"] = [
     {
@@ -418,9 +494,7 @@ function FieldMapperPanel({
           style={{ width: "100%" }}
           value={record.sinkFieldName}
           placeholder="请输入目标字段名"
-          onChange={(e) =>
-            debouncedUpdateSinkFieldName(record.key, e.target.value)
-          }
+          onChange={(e) => updateSinkFieldName(record.key, e.target.value)}
           onContextMenu={(e) => e.stopPropagation()}
         />
       ),
@@ -450,15 +524,6 @@ function FieldMapperPanel({
       <section className="workflow-panel__section space-y-4">
         <div className="rounded-2xl border border-slate-200 bg-slate-50/70 px-4 py-3">
           <div className="flex flex-wrap items-center justify-between gap-3">
-            {/* <div className="space-y-1">
-              <div className="text-sm font-medium text-slate-800">字段信息</div>
-
-              <div className="text-xs text-slate-400">
-                当前输入：{pluginInput || "未连接"}；当前输出：
-                {pluginOutput || "未连接"}
-              </div>
-            </div> */}
-
             <Space wrap>
               <Button onClick={handleSyncFields} style={{ borderRadius: 16 }}>
                 同步字段
@@ -469,14 +534,14 @@ function FieldMapperPanel({
                 onClick={handleApply}
                 style={{ borderRadius: 16 }}
               >
-                应用映射
+                手动应用
               </Button>
             </Space>
           </div>
 
           <div className="mt-2">
             <Text className="text-xs text-slate-400">
-              右键某一行可快速删除该映射
+              修改字段后会自动应用，右键某一行可快速删除该映射
             </Text>
           </div>
         </div>
