@@ -1,5 +1,5 @@
-import { Menu, message } from "antd";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { Menu, message } from 'antd';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   addEdge,
   applyEdgeChanges,
@@ -7,8 +7,13 @@ import {
   useEdgesState,
   useNodesState,
   useReactFlow,
-} from "reactflow";
-import { ControlMode } from "../config";
+} from 'reactflow';
+import {
+  type InsertableTransformNode,
+  createTransformNode,
+  createWorkflowEdge,
+} from '../../../common/workflow/graph';
+import { ControlMode } from '../config';
 
 interface Props {
   form: any;
@@ -30,12 +35,13 @@ export default function useFlowBuilder({ form, params }: Props) {
   const [drawerVisible, setDrawerVisible] = useState(false);
 
   const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null);
+  const [selectedEdgeId, setSelectedEdgeId] = useState<string | null>(null);
   const selectedNode = useMemo(
     () => nodes.find((node) => node.id === selectedNodeId) || null,
-    [nodes, selectedNodeId]
+    [nodes, selectedNodeId],
   );
   const [selectedNodes, setSelectedNodes] = useState<any[]>([]);
-  const [selectedEdges, setSelectedEdges] = useState<any[]>([]);
+  const [, setSelectedEdges] = useState<any[]>([]);
 
   const [menuVisible, setMenuVisible] = useState(false);
   const [menuPosition, setMenuPosition] = useState({ x: 0, y: 0 });
@@ -49,7 +55,7 @@ export default function useFlowBuilder({ form, params }: Props) {
       jobName: params?.jobName,
       jobDesc: params?.jobDesc,
       clientId: params?.clientId,
-      syncMode: "DAG",
+      syncMode: 'DAG',
     });
 
     // 1. 编辑模式优先使用后端返回的 workflow
@@ -62,8 +68,8 @@ export default function useFlowBuilder({ form, params }: Props) {
     // 2. 兼容旧结构：jobDefinitionInfo
     if (params?.jobDefinitionInfo !== undefined) {
       const contentInfo =
-        typeof params.jobDefinitionInfo === "string"
-          ? JSON.parse(params.jobDefinitionInfo || "{}")
+        typeof params.jobDefinitionInfo === 'string'
+          ? JSON.parse(params.jobDefinitionInfo || '{}')
           : params.jobDefinitionInfo || {};
 
       setNodes(contentInfo?.nodes || []);
@@ -81,11 +87,11 @@ export default function useFlowBuilder({ form, params }: Props) {
   }, [nodes, fitView]);
 
   useEffect(() => {
-    const styleId = "reactflow-cursor-override";
+    const styleId = 'reactflow-cursor-override';
     let styleElement = document.getElementById(styleId);
 
     if (!styleElement) {
-      styleElement = document.createElement("style");
+      styleElement = document.createElement('style');
       styleElement.id = styleId;
       document.head.appendChild(styleElement);
     }
@@ -111,95 +117,68 @@ export default function useFlowBuilder({ form, params }: Props) {
       nodeType,
       label,
       componentType,
+      iconType,
     }: {
       position: { x: number; y: number };
       nodeType: string;
       label: string;
       componentType: string;
+      iconType?: string;
     }) => {
-      const id = `${nodeType}-${Date.now()}`;
-
-      const buildTransformData = () => {
-        if (componentType === "FIELDMAPPER") {
-          return {
-            label,
-            title: label,
-            description: "配置字段映射关系",
-            nodeType,
-            componentType,
-            config: {
-              mappings: [],
-              passThroughUnmapped: true,
-            },
-            meta: {
-              inputSchema: [],
-              outputSchema: [],
-              schemaStatus: "idle",
-              schemaError: "",
-            },
-          };
-        }
-
-        if (componentType === "SQL") {
-          return {
-            label,
-            title: label,
-            description: "支持自定义查询逻辑",
-            nodeType,
-            componentType,
-            config: {
-              sql: "",
-            },
-            meta: {
-              inputSchema: [],
-              outputSchema: [],
-              schemaStatus: "idle",
-              schemaError: "",
-            },
-          };
-        }
-
-        return {
-          label,
-          nodeType,
-          componentType,
-          config: {},
-          meta: {
-            inputSchema: [],
-            outputSchema: [],
-            schemaStatus: "idle",
-            schemaError: "",
-          },
-        };
-      };
-
-      const newNode = {
-        id,
-        type: "custom",
+      const newNode = createTransformNode({
         position,
-        data:
-          nodeType === "transform"
-            ? buildTransformData()
-            : {
-                label,
-                nodeType,
-                componentType,
-              },
-      };
+        nodeType,
+        label,
+        componentType,
+        iconType,
+      });
 
       setNodes((nds) => nds.concat(newNode));
     },
-    [setNodes]
+    [setNodes],
+  );
+
+  const insertNodeOnEdge = useCallback(
+    (
+      edgeId: string,
+      position: { x: number; y: number },
+      nodeConfig: InsertableTransformNode,
+    ) => {
+      const edge = getEdges().find((item) => item.id === edgeId);
+
+      if (!edge) return;
+
+      const node = createTransformNode({
+        ...nodeConfig,
+        position: {
+          x: position.x - 110,
+          y: position.y - 44,
+        },
+      });
+
+      const nextEdges = [
+        createWorkflowEdge(edge.source, node.id),
+        createWorkflowEdge(node.id, edge.target),
+      ];
+
+      setNodes((nds) => nds.concat(node));
+      setEdges((eds) =>
+        eds.filter((item) => item.id !== edgeId).concat(nextEdges),
+      );
+      setSelectedNodeId(node.id);
+      setDrawerVisible(true);
+    },
+    [getEdges, setEdges, setNodes],
   );
 
   const onNodesChange = useCallback(
     (changes: any) => setNodes((nds) => applyNodeChanges(changes, nds)),
-    [setNodes]
+    [setNodes],
   );
 
   const onEdgesChange = useCallback(
     (changes: any) => setEdges((eds) => applyEdgeChanges(changes, eds)),
-    [setEdges]
+    [setEdges],
   );
 
   const toggleControlMode = useCallback((mode: string) => {
@@ -208,14 +187,14 @@ export default function useFlowBuilder({ form, params }: Props) {
 
   const getStatusColor = (status: string) => {
     switch (status) {
-      case "running":
-        return "#296dff";
-      case "succeeded":
-        return "#17b26a";
-      case "failed":
-        return "#ff4d4f";
-      case "pending":
-        return "#faad14";
+      case 'running':
+        return '#296dff';
+      case 'succeeded':
+        return '#17b26a';
+      case 'failed':
+        return '#ff4d4f';
+      case 'pending':
+        return '#faad14';
       default:
         return undefined;
     }
@@ -232,19 +211,19 @@ export default function useFlowBuilder({ form, params }: Props) {
                 originalStroke:
                   edge.style?.stroke ||
                   getStatusColor(edge.data?.executionStatus) ||
-                  "#d0d5dc",
+                  '#d0d5dc',
               };
             }
             return {
               ...edge,
-              style: { ...edge.style, stroke: "hsl(231 48% 48%)" },
+              style: { ...edge.style, stroke: 'hsl(231 48% 48%)' },
             };
           }
           return edge;
-        })
+        }),
       );
     },
-    [setEdges]
+    [setEdges],
   );
 
   const onNodeMouseLeave = useCallback(
@@ -259,15 +238,15 @@ export default function useFlowBuilder({ form, params }: Props) {
                 stroke:
                   edge.data?.originalStroke ||
                   getStatusColor(edge.data?.executionStatus) ||
-                  "#d0d5dc",
+                  '#d0d5dc',
               },
             };
           }
           return edge;
-        })
+        }),
       );
     },
-    [setEdges]
+    [setEdges],
   );
 
   const onPaneContextMenu = useCallback((event: any) => {
@@ -285,35 +264,61 @@ export default function useFlowBuilder({ form, params }: Props) {
       const targetNode = nodes.find((n) => n.id === connection.target);
 
       const isTransform =
-        (sourceNode && sourceNode.data.nodeType === "transform") ||
-        (targetNode && targetNode.data.nodeType === "transform");
+        (sourceNode && sourceNode.data.nodeType === 'transform') ||
+        (targetNode && targetNode.data.nodeType === 'transform');
 
       if (!sourceNode || !targetNode) return;
 
       if (isTransform) {
         const hasIncoming = edges.some((e) => e.target === targetNode.id);
         if (hasIncoming) {
-          message.warning("Transform 节点只能有一个上游节点");
+          message.warning('Transform 节点只能有一个上游节点');
           return;
         }
 
         const hasOutgoing = edges.some((e) => e.source === sourceNode.id);
         if (hasOutgoing) {
-          message.warning("Transform 节点只能有一个下游节点");
+          message.warning('Transform 节点只能有一个下游节点');
           return;
         }
       }
 
       if (isValidConnection()) {
-        setEdges((eds) => addEdge(connection, eds));
+        setEdges((eds) =>
+          addEdge(
+            {
+              ...connection,
+              id: `${connection.source}-${connection.target}-${Date.now()}`,
+              type: 'custom',
+              data: {},
+            },
+            eds,
+          ),
+        );
       }
     },
-    [getNodes, getEdges, isValidConnection, setEdges]
+    [getNodes, getEdges, isValidConnection, setEdges],
   );
 
   const onNodeClick = useCallback((_: any, node: any) => {
     setSelectedNodeId(node.id);
     setDrawerVisible(true);
+  }, []);
+
+  const onEdgeClick = useCallback((_: any, edge?: any) => {
+    const edgeId = typeof _ === 'string' ? _ : edge?.id;
+
+    if (!edgeId) return;
+
+    setSelectedNodeId(null);
+    setSelectedEdgeId(edgeId);
+    setDrawerVisible(false);
+  }, []);
+
+  const selectEdge = useCallback((edgeId: string) => {
+    setSelectedNodeId(null);
+    setSelectedEdgeId(edgeId);
+    setDrawerVisible(false);
   }, []);
 
   const onNodeContextMenu = useCallback((event: any, node: any) => {
@@ -328,6 +333,7 @@ export default function useFlowBuilder({ form, params }: Props) {
   }, []);
 
   const onPaneClick = useCallback(() => {
+    setSelectedEdgeId(null);
     closeContextMenu();
   }, [closeContextMenu]);
 
@@ -347,14 +353,14 @@ export default function useFlowBuilder({ form, params }: Props) {
 
   const getDirectionText = (direction: string) => {
     switch (direction) {
-      case "left":
-        return "入";
-      case "right":
-        return "出";
-      case "both":
-        return "连";
+      case 'left':
+        return '入';
+      case 'right':
+        return '出';
+      case 'both':
+        return '连';
       default:
-        return "";
+        return '';
     }
   };
 
@@ -364,7 +370,7 @@ export default function useFlowBuilder({ form, params }: Props) {
         nodesArg || (selectedNode ? [selectedNode] : selectedNodes);
 
       if (!nodesToProcess || nodesToProcess.length === 0) {
-        message.warning("请先选择节点");
+        message.warning('请先选择节点');
         return;
       }
 
@@ -373,14 +379,14 @@ export default function useFlowBuilder({ form, params }: Props) {
       setEdges((eds) => {
         let edgesToDelete: any[] = [];
 
-        if (direction === "left") {
+        if (direction === 'left') {
           edgesToDelete = eds.filter((edge) => nodeIds.includes(edge.target));
-        } else if (direction === "right") {
+        } else if (direction === 'right') {
           edgesToDelete = eds.filter((edge) => nodeIds.includes(edge.source));
-        } else if (direction === "both") {
+        } else if (direction === 'both') {
           edgesToDelete = eds.filter(
             (edge) =>
-              nodeIds.includes(edge.source) || nodeIds.includes(edge.target)
+              nodeIds.includes(edge.source) || nodeIds.includes(edge.target),
           );
         }
 
@@ -390,43 +396,43 @@ export default function useFlowBuilder({ form, params }: Props) {
         }
 
         message.success(
-          `已删除 ${edgesToDelete.length} 条${getDirectionText(direction)}边`
+          `已删除 ${edgesToDelete.length} 条${getDirectionText(direction)}边`,
         );
         return eds.filter((edge) => !edgesToDelete.includes(edge));
       });
 
       setDrawerVisible(false);
     },
-    [selectedNode, selectedNodes, setEdges]
+    [selectedNode, selectedNodes, setEdges],
   );
 
   const handleContextMenuAction = ({ key }: any, node?: any) => {
     const nodesToDelete = node ? [node] : selectedNodes;
 
     switch (key) {
-      case "delete":
+      case 'delete':
         setNodes((nds) =>
-          nds.filter((n) => !nodesToDelete.some((sn: any) => sn.id === n.id))
+          nds.filter((n) => !nodesToDelete.some((sn: any) => sn.id === n.id)),
         );
         setEdges((eds) =>
           eds.filter(
             (e) =>
               !nodesToDelete.some(
-                (n: any) => e.source === n.id || e.target === n.id
-              )
-          )
+                (n: any) => e.source === n.id || e.target === n.id,
+              ),
+          ),
         );
         message.success(`已删除 ${nodesToDelete.length} 个节点`);
         setDrawerVisible(false);
         break;
-      case "delete_left_connections":
-        deleteConnections("left", nodesToDelete);
+      case 'delete_left_connections':
+        deleteConnections('left', nodesToDelete);
         break;
-      case "delete_right_connections":
-        deleteConnections("right", nodesToDelete);
+      case 'delete_right_connections':
+        deleteConnections('right', nodesToDelete);
         break;
-      case "delete_all_connections":
-        deleteConnections("both", nodesToDelete);
+      case 'delete_all_connections':
+        deleteConnections('both', nodesToDelete);
         break;
       default:
         break;
@@ -440,14 +446,14 @@ export default function useFlowBuilder({ form, params }: Props) {
       selectedNodes.length > 0
         ? selectedNodes
         : selectedNode
-        ? [selectedNode]
-        : [];
+          ? [selectedNode]
+          : [];
 
     const hasLeftConnections = edges.some((edge) =>
-      targetNodes.some((node) => edge.target === node.id)
+      targetNodes.some((node) => edge.target === node.id),
     );
     const hasRightConnections = edges.some((edge) =>
-      targetNodes.some((node) => edge.source === node.id)
+      targetNodes.some((node) => edge.source === node.id),
     );
     const hasAnyConnections = hasLeftConnections || hasRightConnections;
 
@@ -459,37 +465,37 @@ export default function useFlowBuilder({ form, params }: Props) {
 
     if (hasLeftConnections) {
       items.push({
-        key: "delete_left_connections",
+        key: 'delete_left_connections',
         label: `删除入边${
-          targetNodes.length > 1 ? `(${targetNodes.length})` : ""
+          targetNodes.length > 1 ? `(${targetNodes.length})` : ''
         }`,
       });
     }
 
     if (hasRightConnections) {
       items.push({
-        key: "delete_right_connections",
+        key: 'delete_right_connections',
         label: `删除出边${
-          targetNodes.length > 1 ? `(${targetNodes.length})` : ""
+          targetNodes.length > 1 ? `(${targetNodes.length})` : ''
         }`,
       });
     }
 
     if (hasAnyConnections) {
       items.push({
-        key: "delete_all_connections",
+        key: 'delete_all_connections',
         label: `删除所有连接${
-          targetNodes.length > 1 ? `(${targetNodes.length})` : ""
+          targetNodes.length > 1 ? `(${targetNodes.length})` : ''
         }`,
         danger: true,
       });
     }
 
-    items.push({ type: "divider" });
+    items.push({ type: 'divider' });
     items.push({
-      key: "delete",
+      key: 'delete',
       label: `删除节点${
-        targetNodes.length > 1 ? `(${targetNodes.length})` : ""
+        targetNodes.length > 1 ? `(${targetNodes.length})` : ''
       }`,
       danger: true,
     });
@@ -528,10 +534,10 @@ export default function useFlowBuilder({ form, params }: Props) {
               },
             },
           };
-        })
+        }),
       );
     },
-    [setNodes]
+    [setNodes],
   );
 
   const getDirectUpstreamNode = useCallback(
@@ -546,7 +552,7 @@ export default function useFlowBuilder({ form, params }: Props) {
         currentNodes.find((node) => node.id === incomingEdge.source) || null
       );
     },
-    [getEdges, getNodes]
+    [getEdges, getNodes],
   );
 
   const getDirectUpstreamSchema = useCallback(
@@ -555,7 +561,7 @@ export default function useFlowBuilder({ form, params }: Props) {
       console.log(upstreamNode?.data?.meta?.outputSchema);
       return upstreamNode?.data?.meta?.outputSchema || [];
     },
-    [getDirectUpstreamNode]
+    [getDirectUpstreamNode],
   );
 
   const getDirectDownstreamNodes = useCallback(
@@ -569,21 +575,22 @@ export default function useFlowBuilder({ form, params }: Props) {
 
       return currentNodes.filter((node) => targetIds.includes(node.id));
     },
-    [getEdges, getNodes]
+    [getEdges, getNodes],
   );
 
   const buildFieldMapperOutputSchema = (
     inputSchema: any[] = [],
     mappings: any[] = [],
-    passThroughUnmapped = false
+    passThroughUnmapped = false,
   ) => {
     const mappedFields = mappings
       .filter(
-        (item) => item.enabled !== false && item.sourceField && item.targetField
+        (item) =>
+          item.enabled !== false && item.sourceField && item.targetField,
       )
       .map((item) => {
         const sourceField = inputSchema.find(
-          (f) => f.name === item.sourceField
+          (f) => f.name === item.sourceField,
         );
 
         return {
@@ -602,7 +609,7 @@ export default function useFlowBuilder({ form, params }: Props) {
     const mappedSourceNames = new Set(
       mappings
         .filter((item) => item.enabled !== false)
-        .map((item) => item.sourceField)
+        .map((item) => item.sourceField),
     );
 
     const passthroughFields = inputSchema
@@ -621,10 +628,10 @@ export default function useFlowBuilder({ form, params }: Props) {
       const node = currentNodes.find((item) => item.id === nodeId);
       if (!node) return;
 
-      if (node.data?.nodeType === "transform") {
+      if (node.data?.nodeType === 'transform') {
         const inputSchema = getDirectUpstreamSchema(nodeId);
 
-        if (node.data?.componentType === "FIELDMAPPER") {
+        if (node.data?.componentType === 'FIELDMAPPER') {
           const mappings = node.data?.config?.mappings || [];
           const passThroughUnmapped =
             node.data?.config?.passThroughUnmapped ?? true;
@@ -632,44 +639,44 @@ export default function useFlowBuilder({ form, params }: Props) {
           const outputSchema = buildFieldMapperOutputSchema(
             inputSchema,
             mappings,
-            passThroughUnmapped
+            passThroughUnmapped,
           );
 
           handleNodeDataChange(nodeId, {
             meta: {
               inputSchema,
               outputSchema,
-              schemaStatus: "success",
-              schemaError: "",
+              schemaStatus: 'success',
+              schemaError: '',
             },
           });
         }
 
-        if (node.data?.componentType === "SQL") {
+        if (node.data?.componentType === 'SQL') {
           handleNodeDataChange(nodeId, {
             meta: {
               inputSchema,
               outputSchema: inputSchema, // 先占位，后面再接 SQL 解析
-              schemaStatus: "success",
-              schemaError: "",
+              schemaStatus: 'success',
+              schemaError: '',
             },
           });
         }
       }
 
-      if (node.data?.nodeType === "sink") {
+      if (node.data?.nodeType === 'sink') {
         const inputSchema = getDirectUpstreamSchema(nodeId);
 
         handleNodeDataChange(nodeId, {
           meta: {
             inputSchema,
-            schemaStatus: "success",
-            schemaError: "",
+            schemaStatus: 'success',
+            schemaError: '',
           },
         });
       }
     },
-    [getNodes, getDirectUpstreamSchema, handleNodeDataChange]
+    [getNodes, getDirectUpstreamSchema, handleNodeDataChange],
   );
 
   const refreshDownstreamSchemas = useCallback(
@@ -680,7 +687,7 @@ export default function useFlowBuilder({ form, params }: Props) {
         refreshNodeSchema(node.id);
       });
     },
-    [getDirectDownstreamNodes, refreshNodeSchema]
+    [getDirectDownstreamNodes, refreshNodeSchema],
   );
 
   const getFieldMapperLinkedNodeIds = useCallback(
@@ -706,45 +713,44 @@ export default function useFlowBuilder({ form, params }: Props) {
         sinkNodeId: downstreamNode?.id,
       };
     },
-    [getEdges, getNodes]
+    [getEdges, getNodes],
   );
 
   const syncTransformPluginConfig = useCallback(
-  (nodeId: string) => {
-    const currentEdges = getEdges();
-    const currentNodes = getNodes();
+    (nodeId: string) => {
+      const currentEdges = getEdges();
 
-    const incomingEdge = currentEdges.find((edge) => edge.target === nodeId);
-    const outgoingEdge = currentEdges.find((edge) => edge.source === nodeId);
+      const incomingEdge = currentEdges.find((edge) => edge.target === nodeId);
+      const outgoingEdge = currentEdges.find((edge) => edge.source === nodeId);
 
-    const pluginInput = incomingEdge?.source;
-    const pluginOutput = outgoingEdge?.target;
+      const pluginInput = incomingEdge?.source;
+      const pluginOutput = outgoingEdge?.target;
 
-    setNodes((nds) =>
-      nds.map((node) => {
-        if (node.id !== nodeId) return node;
+      setNodes((nds) =>
+        nds.map((node) => {
+          if (node.id !== nodeId) return node;
 
-        return {
-          ...node,
-          data: {
-            ...node.data,
-            config: {
-              ...(node.data?.config || {}),
-              pluginInput,
-              pluginOutput,
+          return {
+            ...node,
+            data: {
+              ...node.data,
+              config: {
+                ...(node.data?.config || {}),
+                pluginInput,
+                pluginOutput,
+              },
             },
-          },
-        };
-      })
-    );
+          };
+        }),
+      );
 
-    return {
-      pluginInput,
-      pluginOutput,
-    };
-  },
-  [getEdges, getNodes, setNodes]
-);
+      return {
+        pluginInput,
+        pluginOutput,
+      };
+    },
+    [getEdges, getNodes, setNodes],
+  );
 
   return {
     nodes,
@@ -761,12 +767,15 @@ export default function useFlowBuilder({ form, params }: Props) {
     setRunVisible,
     drawerVisible,
     selectedNode,
+    selectedEdgeId,
     menuVisible,
     menuPosition,
     onNodesChange,
     onEdgesChange,
     onConnect,
     onNodeClick,
+    onEdgeClick,
+    selectEdge,
     onNodeContextMenu,
     onPaneClick,
     onSelectionChange,
@@ -781,12 +790,13 @@ export default function useFlowBuilder({ form, params }: Props) {
     handleNodeDataChange,
     screenToFlowPosition,
     addNode,
+    insertNodeOnEdge,
     getDirectUpstreamNode,
     getDirectUpstreamSchema,
     getDirectDownstreamNodes,
     refreshNodeSchema,
     refreshDownstreamSchemas,
     getFieldMapperLinkedNodeIds,
-    syncTransformPluginConfig
+    syncTransformPluginConfig,
   };
 }
