@@ -5,8 +5,10 @@ import { Focus, GitBranch, Redo2, Undo2 } from 'lucide-react';
 interface CanvasToolbarProps {
   canUndo: boolean;
   canRedo: boolean;
+  canDeleteEdge: boolean;
   onUndo: () => void;
   onRedo: () => void;
+  onDeleteEdge: () => void;
   onAutoLayout: () => void;
   onFitView: () => void;
 }
@@ -33,8 +35,10 @@ const isEditableTarget = (target: EventTarget | null) => {
 export default function CanvasToolbar({
   canUndo,
   canRedo,
+  canDeleteEdge,
   onUndo,
   onRedo,
+  onDeleteEdge,
   onAutoLayout,
   onFitView,
 }: CanvasToolbarProps) {
@@ -44,6 +48,17 @@ export default function CanvasToolbar({
 
       const isModifierPressed = event.ctrlKey || event.metaKey;
       const key = event.key.toLowerCase();
+
+      if (
+        canDeleteEdge &&
+        !isModifierPressed &&
+        !event.altKey &&
+        (key === 'delete' || key === 'backspace')
+      ) {
+        event.preventDefault();
+        onDeleteEdge();
+        return;
+      }
 
       if (!isModifierPressed) return;
 
@@ -76,7 +91,7 @@ export default function CanvasToolbar({
     return () => {
       window.removeEventListener('keydown', handleKeyDown);
     };
-  }, [canRedo, canUndo, onRedo, onUndo]);
+  }, [canDeleteEdge, canRedo, canUndo, onDeleteEdge, onRedo, onUndo]);
 
   return (
     <div className="absolute right-4 top-4 z-10 flex items-center gap-1 rounded-full border border-solid border-[#e4e7ec] bg-white px-2 py-1 shadow-[0_8px_24px_rgba(15,23,42,0.08)]">

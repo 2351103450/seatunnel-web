@@ -60,6 +60,7 @@ export default function useFlowBuilder({ form, params }: Props) {
 
   const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null);
   const [selectedEdgeId, setSelectedEdgeId] = useState<string | null>(null);
+  const [hoveredEdgeId, setHoveredEdgeId] = useState<string | null>(null);
   const selectedNode = useMemo(
     () => nodes.find((node) => node.id === selectedNodeId) || null,
     [nodes, selectedNodeId],
@@ -486,6 +487,16 @@ export default function useFlowBuilder({ form, params }: Props) {
     setDrawerVisible(false);
   }, []);
 
+  const onEdgeMouseEnter = useCallback((edgeId: string) => {
+    setHoveredEdgeId(edgeId);
+  }, []);
+
+  const onEdgeMouseLeave = useCallback((edgeId: string) => {
+    setHoveredEdgeId((currentEdgeId) =>
+      currentEdgeId === edgeId ? null : currentEdgeId,
+    );
+  }, []);
+
   const selectEdge = useCallback((edgeId: string) => {
     setSelectedNodeId(null);
     setSelectedEdgeId(edgeId);
@@ -505,8 +516,29 @@ export default function useFlowBuilder({ form, params }: Props) {
 
   const onPaneClick = useCallback(() => {
     setSelectedEdgeId(null);
+    setHoveredEdgeId(null);
     closeContextMenu();
   }, [closeContextMenu]);
+
+  const deleteActiveEdge = useCallback(() => {
+    const edgeId = hoveredEdgeId || selectedEdgeId;
+
+    if (!edgeId) return;
+
+    const targetEdge = getEdges().find((edge) => edge.id === edgeId);
+
+    if (!targetEdge) {
+      setHoveredEdgeId(null);
+      setSelectedEdgeId(null);
+      return;
+    }
+
+    pushHistory();
+    setEdges((eds) => eds.filter((edge) => edge.id !== edgeId));
+    setHoveredEdgeId(null);
+    setSelectedEdgeId(null);
+    setDrawerVisible(false);
+  }, [getEdges, hoveredEdgeId, pushHistory, selectedEdgeId, setEdges]);
 
   const onSelectionChange = useCallback(({ nodes, edges }: any) => {
     setSelectedNodes(nodes);
@@ -952,7 +984,11 @@ export default function useFlowBuilder({ form, params }: Props) {
     onConnect,
     onNodeClick,
     onEdgeClick,
+    onEdgeMouseEnter,
+    onEdgeMouseLeave,
     selectEdge,
+    deleteActiveEdge,
+    canDeleteEdge: Boolean(hoveredEdgeId || selectedEdgeId),
     onNodeContextMenu,
     onPaneClick,
     onSelectionChange,

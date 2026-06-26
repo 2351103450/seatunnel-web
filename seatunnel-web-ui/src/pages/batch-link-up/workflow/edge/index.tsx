@@ -4,6 +4,8 @@ import { BaseEdge, type EdgeProps, getBezierPath } from 'reactflow';
 interface CustomEdgeData {
   executionStatus?: 'running' | 'succeeded' | 'failed' | 'pending';
   onEdgeClick?: (edgeId: string) => void;
+  onEdgeMouseEnter?: (edgeId: string) => void;
+  onEdgeMouseLeave?: (edgeId: string) => void;
   onOpenInsertMenu?: (
     edgeId: string,
     payload: {
@@ -62,8 +64,14 @@ const CustomEdge: React.FC<EdgeProps> = ({
 
   return (
     <g
-      onMouseEnter={() => setHovered(true)}
-      onMouseLeave={() => setHovered(false)}
+      onMouseEnter={() => {
+        setHovered(true);
+        edgeData?.onEdgeMouseEnter?.(id);
+      }}
+      onMouseLeave={() => {
+        setHovered(false);
+        edgeData?.onEdgeMouseLeave?.(id);
+      }}
       onClick={(event) => {
         event.stopPropagation();
         edgeData?.onEdgeClick?.(id);

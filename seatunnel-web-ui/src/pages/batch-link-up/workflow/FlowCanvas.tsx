@@ -246,10 +246,18 @@ export default function FlowCanvas({
         data: {
           ...(edge.data || {}),
           onEdgeClick: flow.onEdgeClick,
+          onEdgeMouseEnter: flow.onEdgeMouseEnter,
+          onEdgeMouseLeave: flow.onEdgeMouseLeave,
           onOpenInsertMenu: openEdgeInsertMenu,
         },
       })),
-    [flow.edges, flow.onEdgeClick, openEdgeInsertMenu],
+    [
+      flow.edges,
+      flow.onEdgeClick,
+      flow.onEdgeMouseEnter,
+      flow.onEdgeMouseLeave,
+      openEdgeInsertMenu,
+    ],
   );
 
   useEffect(() => {
@@ -327,9 +335,11 @@ export default function FlowCanvas({
       onDrop={onDrop}
     >
       <CanvasToolbar
+        canDeleteEdge={flow.canDeleteEdge}
         canRedo={flow.canRedo}
         canUndo={flow.canUndo}
         onAutoLayout={flow.autoLayout}
+        onDeleteEdge={flow.deleteActiveEdge}
         onFitView={flow.fitWorkflowView}
         onRedo={flow.redo}
         onUndo={flow.undo}
