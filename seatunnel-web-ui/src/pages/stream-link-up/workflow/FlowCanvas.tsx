@@ -1,5 +1,6 @@
 import { Dropdown } from 'antd';
-import { useEffect, useRef } from 'react';
+import { Braces, Database } from 'lucide-react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import ReactFlow, {
   Background,
   type Edge,
@@ -9,6 +10,12 @@ import ReactFlow, {
 } from 'reactflow';
 import 'reactflow/dist/style.css';
 
+import CanvasToolbar from '../../common/workflow/CanvasToolbar';
+import {
+  type InsertableTransformNode,
+  TRANSFORM_NODE_DROP_OFFSET,
+  insertableTransformNodes,
+} from '../../common/workflow/graph';
 import { ControlMode } from './config';
 import CustomEdge from './edge';
 import useFlowBuilder from './hooks/useFlowBuilder';
@@ -26,6 +33,17 @@ const edgeTypes = {
 
 const MIN_ZOOM = 0.25;
 const MAX_ZOOM = 1;
+
+const insertNodeIconMap: Record<string, React.ReactNode> = {
+  FIELDMAPPER: <Braces size={15} />,
+  SQL: <Database size={15} />,
+};
+
+interface EdgeInsertMenuState {
+  edgeId: string;
+  flowPosition: { x: number; y: number };
+  screenPosition: { x: number; y: number };
+}
 
 interface FlowCanvasProps {
   form: any;
@@ -164,6 +182,91 @@ export default function FlowCanvas({
     setControlMode: flow.setControlMode,
   });
   const initializedRef = useRef(false);
+  const [edgeInsertMenu, setEdgeInsertMenu] =
+    useState<EdgeInsertMenuState | null>(null);
+
+  const closeEdgeInsertMenu = useCallback(() => {
+    setEdgeInsertMenu(null);
+  }, []);
+
+  const openEdgeInsertMenu = useCallback(
+    (
+      edgeId: string,
+      payload: {
+        flowPosition: { x: number; y: number };
+        screenPosition: { x: number; y: number };
+      },
+    ) => {
+      flow.selectEdge(edgeId);
+      setEdgeInsertMenu({
+        edgeId,
+        flowPosition: payload.flowPosition,
+        screenPosition: payload.screenPosition,
+      });
+    },
+    [flow.selectEdge],
+  );
+
+  const handleInsertNodeFromMenu = useCallback(
+    (nodeConfig: InsertableTransformNode) => {
+      if (!edgeInsertMenu) return;
+
+      flow.insertNodeOnEdge(
+        edgeInsertMenu.edgeId,
+        edgeInsertMenu.flowPosition,
+        nodeConfig,
+      );
+      closeEdgeInsertMenu();
+    },
+    [closeEdgeInsertMenu, edgeInsertMenu, flow.insertNodeOnEdge],
+  );
+
+  const edgeInsertMenuItems = useMemo(
+    () =>
+      insertableTransformNodes.map((nodeConfig) => ({
+        key: nodeConfig.componentType,
+        label: (
+          <div className="flex min-w-[180px] items-center gap-3 py-1">
+            <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-indigo-50 text-indigo-600">
+              {insertNodeIconMap[nodeConfig.componentType]}
+            </div>
+            <div className="min-w-0">
+              <div className="text-[13px] font-semibold leading-[18px] text-slate-800">
+                {nodeConfig.label}
+              </div>
+              <div className="text-[12px] leading-[16px] text-slate-500">
+                {nodeConfig.description}
+              </div>
+            </div>
+          </div>
+        ),
+        onClick: () => handleInsertNodeFromMenu(nodeConfig),
+      })),
+    [handleInsertNodeFromMenu],
+  );
+
+  const interactiveEdges = useMemo(
+    () =>
+      flow.edges.map((edge) => ({
+        ...edge,
+        type: edge.type || 'custom',
+        selected: edge.id === flow.selectedEdgeId,
+        data: {
+          ...(edge.data || {}),
+          onEdgeClick: flow.onEdgeClick,
+          onEdgeMouseEnter: flow.onEdgeMouseEnter,
+          onEdgeMouseLeave: flow.onEdgeMouseLeave,
+          onOpenInsertMenu: openEdgeInsertMenu,
+        },
+      })),
+    [
+      flow.edges,
+      flow.onEdgeClick,
+      flow.onEdgeMouseEnter,
+      flow.onEdgeMouseLeave,
+      openEdgeInsertMenu,
+    ],
+  );
 
   useEffect(() => {
     onWorkflowChange?.({
@@ -196,11 +299,13 @@ export default function FlowCanvas({
   ]);
 
   const onDragOver = (event: React.DragEvent<HTMLDivElement>) => {
+    closeEdgeInsertMenu();
     event.preventDefault();
     event.dataTransfer.dropEffect = 'move';
   };
 
   const onDrop = (event: React.DragEvent<HTMLDivElement>) => {
+    closeEdgeInsertMenu();
     event.preventDefault();
 
     const raw = event.dataTransfer.getData('application/reactflow');
@@ -208,18 +313,19 @@ export default function FlowCanvas({
 
     const data = JSON.parse(raw);
 
-    const bounds = placement.reactFlowWrapper.current?.getBoundingClientRect();
-    if (!bounds) return;
-
-    const position = flow.screenToFlowPosition({
+    const pointerPosition = flow.screenToFlowPosition({
       x: event.clientX,
       y: event.clientY,
     });
 
     flow.addNode({
-      position,
+      position: {
+        x: pointerPosition.x - TRANSFORM_NODE_DROP_OFFSET.x,
+        y: pointerPosition.y - TRANSFORM_NODE_DROP_OFFSET.y,
+      },
       nodeType: data.nodeType,
       componentType: data.componentType,
+      iconType: data.iconType,
       label: data.label,
     });
   };
@@ -236,15 +342,27 @@ export default function FlowCanvas({
       onDragOver={onDragOver}
       onDrop={onDrop}
     >
+      <CanvasToolbar
+        canDeleteEdge={flow.canDeleteEdge}
+        canRedo={flow.canRedo}
+        canUndo={flow.canUndo}
+        onAutoLayout={flow.autoLayout}
+        onDeleteEdge={flow.deleteActiveEdge}
+        onFitView={flow.fitWorkflowView}
+        onRedo={flow.redo}
+        onUndo={flow.undo}
+      />
+
       <ReactFlow
         nodes={flow.nodes}
-        edges={flow.edges}
+        edges={interactiveEdges}
         nodeTypes={nodeTypesConfig}
         edgeTypes={edgeTypes}
         onNodesChange={flow.onNodesChange}
         onEdgesChange={flow.onEdgesChange}
         onConnect={flow.onConnect}
         onNodeClick={flow.onNodeClick}
+        onEdgeClick={flow.onEdgeClick}
         onNodeContextMenu={flow.onNodeContextMenu}
         onPaneClick={flow.onPaneClick}
         onSelectionChange={flow.onSelectionChange}
@@ -289,6 +407,26 @@ export default function FlowCanvas({
           maskColor="#E9EBF0"
         />
       </ReactFlow>
+
+      <Dropdown
+        menu={{ items: edgeInsertMenuItems }}
+        open={!!edgeInsertMenu}
+        onOpenChange={(open) => {
+          if (!open) closeEdgeInsertMenu();
+        }}
+        trigger={['click']}
+      >
+        <div
+          style={{
+            position: 'fixed',
+            left: edgeInsertMenu?.screenPosition.x || 0,
+            top: edgeInsertMenu?.screenPosition.y || 0,
+            width: 1,
+            height: 1,
+            pointerEvents: 'none',
+          }}
+        />
+      </Dropdown>
 
       <Dropdown
         overlay={flow.renderContextMenu()}

@@ -524,8 +524,6 @@ function FieldMapperPanel({
       <section className="workflow-panel__section space-y-4">
         <div className="rounded-2xl border border-slate-200 bg-slate-50/70 px-4 py-3">
           <div className="flex flex-wrap items-center justify-between gap-3">
-            
-
             <Space wrap>
               <Button onClick={handleSyncFields} style={{ borderRadius: 16 }}>
                 同步字段
