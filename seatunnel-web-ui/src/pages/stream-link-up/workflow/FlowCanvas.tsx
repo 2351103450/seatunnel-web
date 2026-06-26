@@ -13,6 +13,7 @@ import 'reactflow/dist/style.css';
 import CanvasToolbar from '../../common/workflow/CanvasToolbar';
 import {
   type InsertableTransformNode,
+  TRANSFORM_NODE_DROP_OFFSET,
   insertableTransformNodes,
 } from '../../common/workflow/graph';
 import { ControlMode } from './config';
@@ -312,16 +313,16 @@ export default function FlowCanvas({
 
     const data = JSON.parse(raw);
 
-    const bounds = placement.reactFlowWrapper.current?.getBoundingClientRect();
-    if (!bounds) return;
-
-    const position = flow.screenToFlowPosition({
-      x: event.clientX - bounds.left,
-      y: event.clientY - bounds.top,
+    const pointerPosition = flow.screenToFlowPosition({
+      x: event.clientX,
+      y: event.clientY,
     });
 
     flow.addNode({
-      position,
+      position: {
+        x: pointerPosition.x - TRANSFORM_NODE_DROP_OFFSET.x,
+        y: pointerPosition.y - TRANSFORM_NODE_DROP_OFFSET.y,
+      },
       nodeType: data.nodeType,
       componentType: data.componentType,
       iconType: data.iconType,

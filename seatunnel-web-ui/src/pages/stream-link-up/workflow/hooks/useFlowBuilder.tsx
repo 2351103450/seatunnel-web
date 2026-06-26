@@ -12,6 +12,7 @@ import {
 } from 'reactflow';
 import {
   type InsertableTransformNode,
+  TRANSFORM_NODE_DROP_OFFSET,
   createTransformNode,
   createWorkflowEdge,
   layoutWorkflowGraph,
@@ -286,8 +287,8 @@ export default function useFlowBuilder({ form, params }: Props) {
       const node = createTransformNode({
         ...nodeConfig,
         position: {
-          x: position.x - 110,
-          y: position.y - 44,
+          x: position.x - TRANSFORM_NODE_DROP_OFFSET.x,
+          y: position.y - TRANSFORM_NODE_DROP_OFFSET.y,
         },
       });
 

@@ -134,6 +134,11 @@ const NODE_HEIGHT = 96;
 const COLUMN_GAP = 240;
 const ROW_GAP = 80;
 
+export const TRANSFORM_NODE_DROP_OFFSET = {
+  x: 110,
+  y: 44,
+};
+
 const getNodePriority = (node: Node) => {
   if (node.data?.nodeType === 'source') return 0;
   if (node.data?.nodeType === 'transform') return 1;
