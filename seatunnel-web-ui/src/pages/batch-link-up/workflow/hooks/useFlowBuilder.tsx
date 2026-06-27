@@ -1,5 +1,5 @@
-import { Menu, message } from 'antd';
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { Menu, message } from "antd";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   addEdge,
   applyEdgeChanges,
@@ -9,15 +9,15 @@ import {
   useEdgesState,
   useNodesState,
   useReactFlow,
-} from 'reactflow';
+} from "reactflow";
 import {
-  type InsertableTransformNode,
-  TRANSFORM_NODE_DROP_OFFSET,
   createTransformNode,
   createWorkflowEdge,
+  type InsertableTransformNode,
   layoutWorkflowGraph,
-} from '../../../common/workflow/graph';
-import { ControlMode } from '../config';
+  TRANSFORM_NODE_DROP_OFFSET,
+} from "../../../common/workflow/graph";
+import { ControlMode } from "../config";
 
 interface Props {
   form: any;
@@ -64,7 +64,7 @@ export default function useFlowBuilder({ form, params }: Props) {
   const [hoveredEdgeId, setHoveredEdgeId] = useState<string | null>(null);
   const selectedNode = useMemo(
     () => nodes.find((node) => node.id === selectedNodeId) || null,
-    [nodes, selectedNodeId],
+    [nodes, selectedNodeId]
   );
   const [selectedNodes, setSelectedNodes] = useState<any[]>([]);
   const [, setSelectedEdges] = useState<any[]>([]);
@@ -103,7 +103,7 @@ export default function useFlowBuilder({ form, params }: Props) {
         cloneSnapshot({
           nodes: latestNodesRef.current,
           edges: latestEdgesRef.current,
-        }),
+        })
       )
       .slice(-MAX_HISTORY_SIZE);
     redoStackRef.current = [];
@@ -120,8 +120,51 @@ export default function useFlowBuilder({ form, params }: Props) {
       setDrawerVisible(false);
       setMenuVisible(false);
     },
-    [setEdges, setNodes],
+    [setEdges, setNodes]
   );
+
+  const initializedJobIdRef = useRef<any>(null);
+
+  useEffect(() => {
+    if (!params) return;
+
+    const currentJobId = params?.id ?? "new";
+
+    /**
+     * 同一个任务只初始化一次。
+     * 避免发布成功后 setParams 触发画布重置。
+     */
+    if (initializedJobIdRef.current === currentJobId) {
+      return;
+    }
+
+    initializedJobIdRef.current = currentJobId;
+
+    form.setFieldsValue({
+      jobName: params?.jobName,
+      jobDesc: params?.jobDesc,
+      clientId: params?.clientId,
+      syncMode: "DAG",
+    });
+
+    if (params?.workflow) {
+      clearHistory();
+      setNodes(params.workflow?.nodes || []);
+      setEdges(params.workflow?.edges || []);
+      return;
+    }
+
+    if (params?.jobDefinitionInfo !== undefined) {
+      const contentInfo =
+        typeof params.jobDefinitionInfo === "string"
+          ? JSON.parse(params.jobDefinitionInfo || "{}")
+          : params.jobDefinitionInfo || {};
+
+      clearHistory();
+      setNodes(contentInfo?.nodes || []);
+      setEdges(contentInfo?.edges || []);
+    }
+  }, [params?.id, form, clearHistory, setNodes, setEdges]);
 
   const undo = useCallback(() => {
     const previousSnapshot = undoStackRef.current.pop();
@@ -131,7 +174,7 @@ export default function useFlowBuilder({ form, params }: Props) {
       cloneSnapshot({
         nodes: latestNodesRef.current,
         edges: latestEdgesRef.current,
-      }),
+      })
     );
     restoreSnapshot(previousSnapshot);
     updateHistoryState();
@@ -145,7 +188,7 @@ export default function useFlowBuilder({ form, params }: Props) {
       cloneSnapshot({
         nodes: latestNodesRef.current,
         edges: latestEdgesRef.current,
-      }),
+      })
     );
     restoreSnapshot(nextSnapshot);
     updateHistoryState();
@@ -186,7 +229,7 @@ export default function useFlowBuilder({ form, params }: Props) {
       jobName: params?.jobName,
       jobDesc: params?.jobDesc,
       clientId: params?.clientId,
-      syncMode: 'DAG',
+      syncMode: "DAG",
     });
 
     // 1. 编辑模式优先使用后端返回的 workflow
@@ -200,8 +243,8 @@ export default function useFlowBuilder({ form, params }: Props) {
     // 2. 兼容旧结构：jobDefinitionInfo
     if (params?.jobDefinitionInfo !== undefined) {
       const contentInfo =
-        typeof params.jobDefinitionInfo === 'string'
-          ? JSON.parse(params.jobDefinitionInfo || '{}')
+        typeof params.jobDefinitionInfo === "string"
+          ? JSON.parse(params.jobDefinitionInfo || "{}")
           : params.jobDefinitionInfo || {};
 
       clearHistory();
@@ -220,11 +263,11 @@ export default function useFlowBuilder({ form, params }: Props) {
   }, [nodes, fitView]);
 
   useEffect(() => {
-    const styleId = 'reactflow-cursor-override';
+    const styleId = "reactflow-cursor-override";
     let styleElement = document.getElementById(styleId);
 
     if (!styleElement) {
-      styleElement = document.createElement('style');
+      styleElement = document.createElement("style");
       styleElement.id = styleId;
       document.head.appendChild(styleElement);
     }
@@ -269,14 +312,14 @@ export default function useFlowBuilder({ form, params }: Props) {
       pushHistory();
       setNodes((nds) => nds.concat(newNode));
     },
-    [pushHistory, setNodes],
+    [pushHistory, setNodes]
   );
 
   const insertNodeOnEdge = useCallback(
     (
       edgeId: string,
       position: { x: number; y: number },
-      nodeConfig: InsertableTransformNode,
+      nodeConfig: InsertableTransformNode
     ) => {
       const edge = getEdges().find((item) => item.id === edgeId);
 
@@ -299,18 +342,18 @@ export default function useFlowBuilder({ form, params }: Props) {
 
       setNodes((nds) => nds.concat(node));
       setEdges((eds) =>
-        eds.filter((item) => item.id !== edgeId).concat(nextEdges),
+        eds.filter((item) => item.id !== edgeId).concat(nextEdges)
       );
       setSelectedNodeId(node.id);
       setDrawerVisible(true);
     },
-    [getEdges, pushHistory, setEdges, setNodes],
+    [getEdges, pushHistory, setEdges, setNodes]
   );
 
   const onNodesChange = useCallback(
     (changes: any) => {
       const shouldPushHistory = changes.some((change: any) => {
-        if (change.type === 'position') {
+        if (change.type === "position") {
           if (change.dragging) {
             if (isNodeDraggingRef.current) return false;
 
@@ -326,7 +369,7 @@ export default function useFlowBuilder({ form, params }: Props) {
           return true;
         }
 
-        return change.type === 'remove' || change.type === 'add';
+        return change.type === "remove" || change.type === "add";
       });
 
       if (shouldPushHistory) {
@@ -335,14 +378,14 @@ export default function useFlowBuilder({ form, params }: Props) {
 
       setNodes((nds) => applyNodeChanges(changes, nds));
     },
-    [pushHistory, setNodes],
+    [pushHistory, setNodes]
   );
 
   const onEdgesChange = useCallback(
     (changes: any) => {
       if (
         changes.some(
-          (change: any) => change.type === 'remove' || change.type === 'add',
+          (change: any) => change.type === "remove" || change.type === "add"
         )
       ) {
         pushHistory();
@@ -350,7 +393,7 @@ export default function useFlowBuilder({ form, params }: Props) {
 
       setEdges((eds) => applyEdgeChanges(changes, eds));
     },
-    [pushHistory, setEdges],
+    [pushHistory, setEdges]
   );
 
   const toggleControlMode = useCallback((mode: string) => {
@@ -359,14 +402,14 @@ export default function useFlowBuilder({ form, params }: Props) {
 
   const getStatusColor = (status: string) => {
     switch (status) {
-      case 'running':
-        return '#296dff';
-      case 'succeeded':
-        return '#17b26a';
-      case 'failed':
-        return '#ff4d4f';
-      case 'pending':
-        return '#faad14';
+      case "running":
+        return "#296dff";
+      case "succeeded":
+        return "#17b26a";
+      case "failed":
+        return "#ff4d4f";
+      case "pending":
+        return "#faad14";
       default:
         return undefined;
     }
@@ -383,19 +426,19 @@ export default function useFlowBuilder({ form, params }: Props) {
                 originalStroke:
                   edge.style?.stroke ||
                   getStatusColor(edge.data?.executionStatus) ||
-                  '#d0d5dc',
+                  "#d0d5dc",
               };
             }
             return {
               ...edge,
-              style: { ...edge.style, stroke: 'hsl(231 48% 48%)' },
+              style: { ...edge.style, stroke: "hsl(231 48% 48%)" },
             };
           }
           return edge;
-        }),
+        })
       );
     },
-    [setEdges],
+    [setEdges]
   );
 
   const onNodeMouseLeave = useCallback(
@@ -410,15 +453,15 @@ export default function useFlowBuilder({ form, params }: Props) {
                 stroke:
                   edge.data?.originalStroke ||
                   getStatusColor(edge.data?.executionStatus) ||
-                  '#d0d5dc',
+                  "#d0d5dc",
               },
             };
           }
           return edge;
-        }),
+        })
       );
     },
-    [setEdges],
+    [setEdges]
   );
 
   const onPaneContextMenu = useCallback((event: any) => {
@@ -436,21 +479,21 @@ export default function useFlowBuilder({ form, params }: Props) {
       const targetNode = nodes.find((n) => n.id === connection.target);
 
       const isTransform =
-        (sourceNode && sourceNode.data.nodeType === 'transform') ||
-        (targetNode && targetNode.data.nodeType === 'transform');
+        (sourceNode && sourceNode.data.nodeType === "transform") ||
+        (targetNode && targetNode.data.nodeType === "transform");
 
       if (!sourceNode || !targetNode) return;
 
       if (isTransform) {
         const hasIncoming = edges.some((e) => e.target === targetNode.id);
         if (hasIncoming) {
-          message.warning('Transform 节点只能有一个上游节点');
+          message.warning("Transform 节点只能有一个上游节点");
           return;
         }
 
         const hasOutgoing = edges.some((e) => e.source === sourceNode.id);
         if (hasOutgoing) {
-          message.warning('Transform 节点只能有一个下游节点');
+          message.warning("Transform 节点只能有一个下游节点");
           return;
         }
       }
@@ -462,15 +505,15 @@ export default function useFlowBuilder({ form, params }: Props) {
             {
               ...connection,
               id: `${connection.source}-${connection.target}-${Date.now()}`,
-              type: 'custom',
+              type: "custom",
               data: {},
             },
-            eds,
-          ),
+            eds
+          )
         );
       }
     },
-    [getNodes, getEdges, isValidConnection, pushHistory, setEdges],
+    [getNodes, getEdges, isValidConnection, pushHistory, setEdges]
   );
 
   const onNodeClick = useCallback((_: any, node: any) => {
@@ -479,7 +522,7 @@ export default function useFlowBuilder({ form, params }: Props) {
   }, []);
 
   const onEdgeClick = useCallback((_: any, edge?: any) => {
-    const edgeId = typeof _ === 'string' ? _ : edge?.id;
+    const edgeId = typeof _ === "string" ? _ : edge?.id;
 
     if (!edgeId) return;
 
@@ -494,7 +537,7 @@ export default function useFlowBuilder({ form, params }: Props) {
 
   const onEdgeMouseLeave = useCallback((edgeId: string) => {
     setHoveredEdgeId((currentEdgeId) =>
-      currentEdgeId === edgeId ? null : currentEdgeId,
+      currentEdgeId === edgeId ? null : currentEdgeId
     );
   }, []);
 
@@ -557,14 +600,14 @@ export default function useFlowBuilder({ form, params }: Props) {
 
   const getDirectionText = (direction: string) => {
     switch (direction) {
-      case 'left':
-        return '入';
-      case 'right':
-        return '出';
-      case 'both':
-        return '连';
+      case "left":
+        return "入";
+      case "right":
+        return "出";
+      case "both":
+        return "连";
       default:
-        return '';
+        return "";
     }
   };
 
@@ -574,7 +617,7 @@ export default function useFlowBuilder({ form, params }: Props) {
         nodesArg || (selectedNode ? [selectedNode] : selectedNodes);
 
       if (!nodesToProcess || nodesToProcess.length === 0) {
-        message.warning('请先选择节点');
+        message.warning("请先选择节点");
         return;
       }
 
@@ -582,18 +625,18 @@ export default function useFlowBuilder({ form, params }: Props) {
       const currentEdges = getEdges();
       let edgesToDelete: any[] = [];
 
-      if (direction === 'left') {
+      if (direction === "left") {
         edgesToDelete = currentEdges.filter((edge) =>
-          nodeIds.includes(edge.target),
+          nodeIds.includes(edge.target)
         );
-      } else if (direction === 'right') {
+      } else if (direction === "right") {
         edgesToDelete = currentEdges.filter((edge) =>
-          nodeIds.includes(edge.source),
+          nodeIds.includes(edge.source)
         );
-      } else if (direction === 'both') {
+      } else if (direction === "both") {
         edgesToDelete = currentEdges.filter(
           (edge) =>
-            nodeIds.includes(edge.source) || nodeIds.includes(edge.target),
+            nodeIds.includes(edge.source) || nodeIds.includes(edge.target)
         );
       }
 
@@ -606,43 +649,43 @@ export default function useFlowBuilder({ form, params }: Props) {
 
       pushHistory();
       message.success(
-        `已删除 ${edgesToDelete.length} 条${getDirectionText(direction)}边`,
+        `已删除 ${edgesToDelete.length} 条${getDirectionText(direction)}边`
       );
       setEdges((eds) => eds.filter((edge) => !edgeIdsToDelete.has(edge.id)));
 
       setDrawerVisible(false);
     },
-    [getEdges, pushHistory, selectedNode, selectedNodes, setEdges],
+    [getEdges, pushHistory, selectedNode, selectedNodes, setEdges]
   );
 
   const handleContextMenuAction = ({ key }: any, node?: any) => {
     const nodesToDelete = node ? [node] : selectedNodes;
 
     switch (key) {
-      case 'delete':
+      case "delete":
         pushHistory();
         setNodes((nds) =>
-          nds.filter((n) => !nodesToDelete.some((sn: any) => sn.id === n.id)),
+          nds.filter((n) => !nodesToDelete.some((sn: any) => sn.id === n.id))
         );
         setEdges((eds) =>
           eds.filter(
             (e) =>
               !nodesToDelete.some(
-                (n: any) => e.source === n.id || e.target === n.id,
-              ),
-          ),
+                (n: any) => e.source === n.id || e.target === n.id
+              )
+          )
         );
         message.success(`已删除 ${nodesToDelete.length} 个节点`);
         setDrawerVisible(false);
         break;
-      case 'delete_left_connections':
-        deleteConnections('left', nodesToDelete);
+      case "delete_left_connections":
+        deleteConnections("left", nodesToDelete);
         break;
-      case 'delete_right_connections':
-        deleteConnections('right', nodesToDelete);
+      case "delete_right_connections":
+        deleteConnections("right", nodesToDelete);
         break;
-      case 'delete_all_connections':
-        deleteConnections('both', nodesToDelete);
+      case "delete_all_connections":
+        deleteConnections("both", nodesToDelete);
         break;
       default:
         break;
@@ -656,14 +699,14 @@ export default function useFlowBuilder({ form, params }: Props) {
       selectedNodes.length > 0
         ? selectedNodes
         : selectedNode
-          ? [selectedNode]
-          : [];
+        ? [selectedNode]
+        : [];
 
     const hasLeftConnections = edges.some((edge) =>
-      targetNodes.some((node) => edge.target === node.id),
+      targetNodes.some((node) => edge.target === node.id)
     );
     const hasRightConnections = edges.some((edge) =>
-      targetNodes.some((node) => edge.source === node.id),
+      targetNodes.some((node) => edge.source === node.id)
     );
     const hasAnyConnections = hasLeftConnections || hasRightConnections;
 
@@ -675,39 +718,39 @@ export default function useFlowBuilder({ form, params }: Props) {
 
     if (hasLeftConnections) {
       items.push({
-        key: 'delete_left_connections',
+        key: "delete_left_connections",
         label: `删除入边${
-          targetNodes.length > 1 ? `(${targetNodes.length})` : ''
+          targetNodes.length > 1 ? `(${targetNodes.length})` : ""
         }`,
       });
     }
 
     if (hasRightConnections) {
       items.push({
-        key: 'delete_right_connections',
+        key: "delete_right_connections",
         label: `删除出边${
-          targetNodes.length > 1 ? `(${targetNodes.length})` : ''
+          targetNodes.length > 1 ? `(${targetNodes.length})` : ""
         }`,
       });
     }
 
     if (hasAnyConnections) {
       items.push({
-        key: 'delete_all_connections',
+        key: "delete_all_connections",
         label: `删除所有连接${
-          targetNodes.length > 1 ? `(${targetNodes.length})` : ''
+          targetNodes.length > 1 ? `(${targetNodes.length})` : ""
         }`,
         danger: true,
       });
     }
 
     if (hasLeftConnections || hasRightConnections) {
-      items.push({ type: 'divider' });
+      items.push({ type: "divider" });
     }
     items.push({
-      key: 'delete',
+      key: "delete",
       label: `删除节点${
-        targetNodes.length > 1 ? `(${targetNodes.length})` : ''
+        targetNodes.length > 1 ? `(${targetNodes.length})` : ""
       }`,
       danger: true,
     });
@@ -746,10 +789,10 @@ export default function useFlowBuilder({ form, params }: Props) {
               },
             },
           };
-        }),
+        })
       );
     },
-    [setNodes],
+    [setNodes]
   );
 
   const getDirectUpstreamNode = useCallback(
@@ -764,7 +807,7 @@ export default function useFlowBuilder({ form, params }: Props) {
         currentNodes.find((node) => node.id === incomingEdge.source) || null
       );
     },
-    [getEdges, getNodes],
+    [getEdges, getNodes]
   );
 
   const getDirectUpstreamSchema = useCallback(
@@ -773,7 +816,7 @@ export default function useFlowBuilder({ form, params }: Props) {
       console.log(upstreamNode?.data?.meta?.outputSchema);
       return upstreamNode?.data?.meta?.outputSchema || [];
     },
-    [getDirectUpstreamNode],
+    [getDirectUpstreamNode]
   );
 
   const getDirectDownstreamNodes = useCallback(
@@ -787,22 +830,21 @@ export default function useFlowBuilder({ form, params }: Props) {
 
       return currentNodes.filter((node) => targetIds.includes(node.id));
     },
-    [getEdges, getNodes],
+    [getEdges, getNodes]
   );
 
   const buildFieldMapperOutputSchema = (
     inputSchema: any[] = [],
     mappings: any[] = [],
-    passThroughUnmapped = false,
+    passThroughUnmapped = false
   ) => {
     const mappedFields = mappings
       .filter(
-        (item) =>
-          item.enabled !== false && item.sourceField && item.targetField,
+        (item) => item.enabled !== false && item.sourceField && item.targetField
       )
       .map((item) => {
         const sourceField = inputSchema.find(
-          (f) => f.name === item.sourceField,
+          (f) => f.name === item.sourceField
         );
 
         return {
@@ -821,7 +863,7 @@ export default function useFlowBuilder({ form, params }: Props) {
     const mappedSourceNames = new Set(
       mappings
         .filter((item) => item.enabled !== false)
-        .map((item) => item.sourceField),
+        .map((item) => item.sourceField)
     );
 
     const passthroughFields = inputSchema
@@ -840,10 +882,10 @@ export default function useFlowBuilder({ form, params }: Props) {
       const node = currentNodes.find((item) => item.id === nodeId);
       if (!node) return;
 
-      if (node.data?.nodeType === 'transform') {
+      if (node.data?.nodeType === "transform") {
         const inputSchema = getDirectUpstreamSchema(nodeId);
 
-        if (node.data?.componentType === 'FIELDMAPPER') {
+        if (node.data?.componentType === "FIELDMAPPER") {
           const mappings = node.data?.config?.mappings || [];
           const passThroughUnmapped =
             node.data?.config?.passThroughUnmapped ?? true;
@@ -851,44 +893,44 @@ export default function useFlowBuilder({ form, params }: Props) {
           const outputSchema = buildFieldMapperOutputSchema(
             inputSchema,
             mappings,
-            passThroughUnmapped,
+            passThroughUnmapped
           );
 
           handleNodeDataChange(nodeId, {
             meta: {
               inputSchema,
               outputSchema,
-              schemaStatus: 'success',
-              schemaError: '',
+              schemaStatus: "success",
+              schemaError: "",
             },
           });
         }
 
-        if (node.data?.componentType === 'SQL') {
+        if (node.data?.componentType === "SQL") {
           handleNodeDataChange(nodeId, {
             meta: {
               inputSchema,
               outputSchema: inputSchema, // 先占位，后面再接 SQL 解析
-              schemaStatus: 'success',
-              schemaError: '',
+              schemaStatus: "success",
+              schemaError: "",
             },
           });
         }
       }
 
-      if (node.data?.nodeType === 'sink') {
+      if (node.data?.nodeType === "sink") {
         const inputSchema = getDirectUpstreamSchema(nodeId);
 
         handleNodeDataChange(nodeId, {
           meta: {
             inputSchema,
-            schemaStatus: 'success',
-            schemaError: '',
+            schemaStatus: "success",
+            schemaError: "",
           },
         });
       }
     },
-    [getNodes, getDirectUpstreamSchema, handleNodeDataChange],
+    [getNodes, getDirectUpstreamSchema, handleNodeDataChange]
   );
 
   const refreshDownstreamSchemas = useCallback(
@@ -899,7 +941,7 @@ export default function useFlowBuilder({ form, params }: Props) {
         refreshNodeSchema(node.id);
       });
     },
-    [getDirectDownstreamNodes, refreshNodeSchema],
+    [getDirectDownstreamNodes, refreshNodeSchema]
   );
 
   const getFieldMapperLinkedNodeIds = useCallback(
@@ -925,7 +967,7 @@ export default function useFlowBuilder({ form, params }: Props) {
         sinkNodeId: downstreamNode?.id,
       };
     },
-    [getEdges, getNodes],
+    [getEdges, getNodes]
   );
 
   const syncTransformPluginConfig = useCallback(
@@ -953,7 +995,7 @@ export default function useFlowBuilder({ form, params }: Props) {
               },
             },
           };
-        }),
+        })
       );
 
       return {
@@ -961,7 +1003,7 @@ export default function useFlowBuilder({ form, params }: Props) {
         pluginOutput,
       };
     },
-    [getEdges, getNodes, setNodes],
+    [getEdges, getNodes, setNodes]
   );
 
   return {

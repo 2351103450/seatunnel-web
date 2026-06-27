@@ -133,7 +133,21 @@ export default function Workflow({
   const [baselineSignature, setBaselineSignature] =
     useState<string>(currentSignature);
 
-  const isDirty = !!publishedJobDefineId && currentSignature !== baselineSignature;
+  const baselineJobIdRef = useRef<any>(null);
+
+  useEffect(() => {
+    if (!params?.id) return;
+
+    if (baselineJobIdRef.current === params.id) {
+      return;
+    }
+
+    baselineJobIdRef.current = params.id;
+    setBaselineSignature(currentSignature);
+  }, [params?.id, currentSignature]);
+
+  const isDirty =
+    !!publishedJobDefineId && currentSignature !== baselineSignature;
 
   const { checkStat, checkGroups } = useFlowChecks(workflowGraph.nodes || []);
 
@@ -143,8 +157,8 @@ export default function Workflow({
   const runDisabledReason = !publishedJobDefineId
     ? "请先发布任务，再执行"
     : isDirty
-      ? "当前内容已变更，请重新发布后再执行"
-      : "";
+    ? "当前内容已变更，请重新发布后再执行"
+    : "";
 
   const validateChecklistBeforeAction = () => {
     const total =
@@ -271,7 +285,6 @@ export default function Workflow({
       setPreviewContent(res?.data || "");
       setPreviewOpen(true);
     } catch (error: any) {
-      
     } finally {
       setPreviewLoading(false);
     }
@@ -285,7 +298,19 @@ export default function Workflow({
 
       setPublishLoading(true);
 
-      const finalPayload = buildFinalPayload();
+      const nextBasic = buildBasicData();
+      const nextWorkflow = buildWorkflowData();
+      const nextSchedule = buildScheduleData();
+      const nextEnv = buildEnvData();
+
+      const finalPayload = {
+        id: params?.id ?? publishedJobDefineId,
+        basic: nextBasic,
+        workflow: nextWorkflow,
+        schedule: nextSchedule,
+        env: nextEnv,
+      };
+
       const res = await seatunnelJobDefinitionApi.saveOrUpdateGuideSingle(
         finalPayload
       );
@@ -296,19 +321,35 @@ export default function Workflow({
         setPublishedJobDefineId(jobDefineId);
 
         const nextSignature = buildDirtySignature({
-          basicConfig,
-          scheduleConfig,
-          envConfig,
-          workflowGraph,
+          basicConfig: nextBasic,
+          scheduleConfig: nextSchedule,
+          envConfig: nextEnv,
+          workflowGraph: nextWorkflow,
         });
 
         setBaselineSignature(nextSignature);
 
-        // 如果你希望发布后让 params.id 也同步，可以保留这段。
-        // 这里建议打开，避免新建发布后 params 里没有 id。
+        /**
+         * 关键点：
+         * 发布成功后，要把当前页面最新内容同步回 params。
+         * 否则 useFlowBuilder 监听 params 变化后，会拿旧的 params.workflow 重置画布。
+         */
         setParams((prev: any) => ({
           ...prev,
           id: jobDefineId,
+
+          // 保持当前最新画布内容
+          workflow: nextWorkflow,
+
+          // 保持当前最新配置内容
+          basic: nextBasic,
+          schedule: nextSchedule,
+          env: nextEnv,
+
+          // 兼容你 useFlowBuilder 里面用的扁平字段
+          jobName: nextBasic?.jobName ?? prev?.jobName,
+          jobDesc: nextBasic?.jobDesc ?? prev?.jobDesc,
+          clientId: nextBasic?.clientId ?? prev?.clientId,
         }));
       }
 
