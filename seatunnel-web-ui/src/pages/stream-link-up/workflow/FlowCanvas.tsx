@@ -1,4 +1,5 @@
-import { Dropdown } from 'antd';
+import { SearchOutlined } from '@ant-design/icons';
+import { Dropdown, Input } from 'antd';
 import { Braces, Database } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import ReactFlow, {
@@ -34,6 +35,10 @@ const edgeTypes = {
 
 const MIN_ZOOM = 0.25;
 const MAX_ZOOM = 1;
+const EDGE_INSERT_MENU_WIDTH = 208;
+const EDGE_INSERT_MENU_GAP = 12;
+const EDGE_INSERT_INFO_CARD_WIDTH = 188;
+const EDGE_INSERT_INFO_CARD_GAP = 10;
 
 const insertNodeIconMap: Record<string, React.ReactNode> = {
   FIELDMAPPER: <Braces size={15} />,
@@ -44,6 +49,11 @@ interface EdgeInsertMenuState {
   edgeId: string;
   flowPosition: { x: number; y: number };
   screenPosition: { x: number; y: number };
+}
+
+interface HoveredInsertNodeState {
+  nodeConfig: InsertableTransformNode;
+  itemRect: DOMRect;
 }
 
 interface FlowCanvasProps {
@@ -186,9 +196,14 @@ export default function FlowCanvas({
   const initializedRef = useRef(false);
   const [edgeInsertMenu, setEdgeInsertMenu] =
     useState<EdgeInsertMenuState | null>(null);
+  const [edgeInsertSearchText, setEdgeInsertSearchText] = useState('');
+  const [hoveredInsertNode, setHoveredInsertNode] =
+    useState<HoveredInsertNodeState | null>(null);
 
   const closeEdgeInsertMenu = useCallback(() => {
     setEdgeInsertMenu(null);
+    setEdgeInsertSearchText('');
+    setHoveredInsertNode(null);
   }, []);
 
   const openEdgeInsertMenu = useCallback(
@@ -223,28 +238,59 @@ export default function FlowCanvas({
     [closeEdgeInsertMenu, edgeInsertMenu, flow.insertNodeOnEdge],
   );
 
-  const edgeInsertMenuItems = useMemo(
-    () =>
-      insertableTransformNodes.map((nodeConfig) => ({
-        key: nodeConfig.componentType,
-        label: (
-          <div className="flex min-w-[180px] items-center gap-3 py-1">
-            <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-indigo-50 text-indigo-600">
-              {insertNodeIconMap[nodeConfig.componentType]}
-            </div>
-            <div className="min-w-0">
-              <div className="text-[13px] font-semibold leading-[18px] text-slate-800">
-                {nodeConfig.label}
-              </div>
-              <div className="text-[12px] leading-[16px] text-slate-500">
-                {nodeConfig.description}
-              </div>
-            </div>
-          </div>
-        ),
-        onClick: () => handleInsertNodeFromMenu(nodeConfig),
-      })),
-    [handleInsertNodeFromMenu],
+  const edgeInsertMenuNodes = useMemo(
+    () => {
+      const normalizedSearchText = edgeInsertSearchText.trim().toLowerCase();
+
+      if (!normalizedSearchText) return insertableTransformNodes;
+
+      return insertableTransformNodes.filter((nodeConfig) =>
+        [
+          nodeConfig.label,
+          nodeConfig.description,
+          nodeConfig.componentType,
+          nodeConfig.nodeType,
+        ]
+          .filter((value): value is string => Boolean(value))
+          .some((value) => value.toLowerCase().includes(normalizedSearchText)),
+      );
+    },
+    [edgeInsertSearchText],
+  );
+
+  const edgeInsertMenuPosition = useMemo(
+    () => {
+      if (!edgeInsertMenu) return { left: 0, top: 0 };
+
+      return {
+        left: edgeInsertMenu.screenPosition.x + EDGE_INSERT_MENU_GAP,
+        top: edgeInsertMenu.screenPosition.y,
+      };
+    },
+    [edgeInsertMenu],
+  );
+
+  const edgeInsertInfoCardPosition = useMemo(
+    () => {
+      if (!hoveredInsertNode) return { left: 0, top: 0 };
+
+      const rightSideLeft =
+        hoveredInsertNode.itemRect.right + EDGE_INSERT_INFO_CARD_GAP;
+      const leftSideLeft =
+        hoveredInsertNode.itemRect.left -
+        EDGE_INSERT_INFO_CARD_WIDTH -
+        EDGE_INSERT_INFO_CARD_GAP;
+      const hasRightSpace =
+        rightSideLeft + EDGE_INSERT_INFO_CARD_WIDTH <= window.innerWidth - 8;
+
+      return {
+        left: hasRightSpace ? rightSideLeft : Math.max(8, leftSideLeft),
+        top:
+          hoveredInsertNode.itemRect.top +
+          hoveredInsertNode.itemRect.height / 2,
+      };
+    },
+    [hoveredInsertNode],
   );
 
   const interactiveEdges = useMemo(
@@ -332,6 +378,14 @@ export default function FlowCanvas({
     });
   };
 
+  const handlePaneClick = useCallback(
+    () => {
+      closeEdgeInsertMenu();
+      flow.onPaneClick();
+    },
+    [closeEdgeInsertMenu, flow.onPaneClick],
+  );
+
   const clearSelectionRect = useCallback(() => {
     store.setState({
       userSelectionActive: false,
@@ -345,6 +399,22 @@ export default function FlowCanvas({
       });
     });
   }, [store]);
+
+  useEffect(() => {
+    if (!edgeInsertMenu) return;
+
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        closeEdgeInsertMenu();
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [closeEdgeInsertMenu, edgeInsertMenu]);
 
   return (
     <div
@@ -382,7 +452,7 @@ export default function FlowCanvas({
         onNodeClick={flow.onNodeClick}
         onEdgeClick={flow.onEdgeClick}
         onNodeContextMenu={flow.onNodeContextMenu}
-        onPaneClick={flow.onPaneClick}
+        onPaneClick={handlePaneClick}
         onSelectionChange={flow.onSelectionChange}
         onSelectionEnd={clearSelectionRect}
         onSelectionContextMenu={flow.onSelectionContextMenu}
@@ -428,25 +498,112 @@ export default function FlowCanvas({
         />
       </ReactFlow>
 
-      <Dropdown
-        menu={{ items: edgeInsertMenuItems }}
-        open={!!edgeInsertMenu}
-        onOpenChange={(open) => {
-          if (!open) closeEdgeInsertMenu();
-        }}
-        trigger={['click']}
-      >
+      {edgeInsertMenu && (
         <div
+          className="edge-insert-menu nodrag nopan"
+          onMouseDown={(event) => event.stopPropagation()}
+          onClick={(event) => event.stopPropagation()}
           style={{
             position: 'fixed',
-            left: edgeInsertMenu?.screenPosition.x || 0,
-            top: edgeInsertMenu?.screenPosition.y || 0,
-            width: 1,
-            height: 1,
-            pointerEvents: 'none',
+            left: edgeInsertMenuPosition.left,
+            top: edgeInsertMenuPosition.top,
+            width: EDGE_INSERT_MENU_WIDTH,
+            maxHeight: 520,
+            padding: 8,
+            background: '#fff',
+            border: '1px solid #e4e7ec',
+            borderRadius: 8,
+            boxShadow: '0 10px 30px rgba(16, 24, 40, 0.16)',
+            transform: 'translateY(-50%)',
+            zIndex: 1000,
           }}
-        />
-      </Dropdown>
+        >
+          <Input
+            allowClear
+            autoFocus
+            className="edge-insert-search"
+            prefix={<SearchOutlined style={{ color: '#98a2b3' }} />}
+            placeholder="搜索节点"
+            value={edgeInsertSearchText}
+            onChange={(event) => setEdgeInsertSearchText(event.target.value)}
+          />
+
+          <div className="edge-insert-divider" />
+
+          <div style={{ maxHeight: 456, overflowY: 'auto' }}>
+            {edgeInsertMenuNodes.map((nodeConfig) => (
+              <div
+                key={nodeConfig.componentType}
+                className="edge-insert-node-item"
+                onClick={() => handleInsertNodeFromMenu(nodeConfig)}
+                onMouseEnter={(event) => {
+                  setHoveredInsertNode({
+                    nodeConfig,
+                    itemRect: event.currentTarget.getBoundingClientRect(),
+                  });
+                }}
+                onMouseLeave={() => setHoveredInsertNode(null)}
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 8,
+                  height: 32,
+                  padding: '0 8px',
+                  borderRadius: 6,
+                  cursor: 'pointer',
+                }}
+              >
+                <div className="flex h-5 w-5 shrink-0 items-center justify-center rounded-md bg-indigo-50 text-indigo-600">
+                  {insertNodeIconMap[nodeConfig.componentType]}
+                </div>
+                <div
+                  className="truncate text-[14px] leading-[20px] text-slate-800"
+                  style={{ minWidth: 0 }}
+                >
+                  {nodeConfig.label}
+                </div>
+              </div>
+            ))}
+
+            {edgeInsertMenuNodes.length === 0 && (
+              <div
+                style={{
+                  padding: '16px 0',
+                  textAlign: 'center',
+                  color: '#98a2b3',
+                  fontSize: 13,
+                }}
+              >
+                暂无匹配节点
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {hoveredInsertNode && (
+        <div
+          className="edge-insert-info-card nodrag nopan"
+          style={{
+            position: 'fixed',
+            left: edgeInsertInfoCardPosition.left,
+            top: edgeInsertInfoCardPosition.top,
+            width: EDGE_INSERT_INFO_CARD_WIDTH,
+            transform: 'translateY(-50%)',
+            zIndex: 1001,
+          }}
+        >
+          <div className="edge-insert-info-icon">
+            {insertNodeIconMap[hoveredInsertNode.nodeConfig.componentType]}
+          </div>
+          <div className="edge-insert-info-title">
+            {hoveredInsertNode.nodeConfig.label}
+          </div>
+          <div className="edge-insert-info-desc">
+            {hoveredInsertNode.nodeConfig.description}
+          </div>
+        </div>
+      )}
 
       <Dropdown
         overlay={flow.renderContextMenu()}

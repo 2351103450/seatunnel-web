@@ -63,9 +63,14 @@ const CustomEdge: React.FC<EdgeProps> = ({
 
   const handleInsertClick = (event: React.MouseEvent<HTMLButtonElement>) => {
     event.stopPropagation();
+    const buttonRect = event.currentTarget.getBoundingClientRect();
+
     edgeData?.onOpenInsertMenu?.(id, {
       flowPosition: { x: labelX, y: labelY },
-      screenPosition: { x: event.clientX, y: event.clientY },
+      screenPosition: {
+        x: buttonRect.left + buttonRect.width / 2,
+        y: buttonRect.top + buttonRect.height / 2,
+      },
     });
   };
 
@@ -110,6 +115,10 @@ const CustomEdge: React.FC<EdgeProps> = ({
           x={labelX - INSERT_BUTTON_HIT_AREA / 2}
           y={labelY - INSERT_BUTTON_HIT_AREA / 2}
           requiredExtensions="http://www.w3.org/1999/xhtml"
+          style={{
+            background: 'transparent',
+            overflow: 'visible',
+          }}
         >
           <button
             className="nodrag nopan"
@@ -130,6 +139,9 @@ const CustomEdge: React.FC<EdgeProps> = ({
               background: ACTIVE_EDGE_COLOR,
               boxShadow: '0 6px 14px rgba(49, 94, 251, 0.24)',
               cursor: 'pointer',
+              appearance: 'none',
+              outline: 'none',
+              outlineOffset: 0,
               padding: 0,
               transform: insertButtonHovered
                 ? `scale(${INSERT_BUTTON_HOVER_SCALE})`

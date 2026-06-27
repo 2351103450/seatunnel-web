@@ -161,6 +161,84 @@
 }
 
 :global {
+  .edge-insert-search {
+    height: 32px;
+    border-radius: 8px;
+    border: 1px solid transparent;
+    background: #f1f3f6;
+    box-shadow: none;
+
+    .ant-input {
+      color: #344054;
+      font-size: 13px;
+      background: transparent;
+    }
+
+    .ant-input::placeholder {
+      color: #98a2b3;
+    }
+
+    &:hover,
+    &:active,
+    &:focus,
+    &.ant-input-affix-wrapper-focused {
+      border-color: #d8dee8;
+      background: #f9fafb;
+      box-shadow: none;
+    }
+  }
+
+  .edge-insert-divider {
+    height: 1px;
+    margin: 8px -8px 6px;
+    background: #eef2f7;
+  }
+
+  .edge-insert-node-item {
+    transition:
+      background-color 0.16s ease,
+      color 0.16s ease;
+
+    &:hover {
+      background: #f2f4f7;
+    }
+  }
+
+  .edge-insert-info-card {
+    padding: 12px;
+    border: 1px solid #eef2f7;
+    border-radius: 10px;
+    background: #ffffff;
+    box-shadow: 0 12px 32px rgba(16, 24, 40, 0.14);
+    pointer-events: none;
+  }
+
+  .edge-insert-info-icon {
+    display: inline-flex;
+    width: 24px;
+    height: 24px;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 10px;
+    border-radius: 7px;
+    color: #4f66ff;
+    background: #eef1ff;
+  }
+
+  .edge-insert-info-title {
+    margin-bottom: 6px;
+    color: #1f2937;
+    font-size: 14px;
+    font-weight: 500;
+    line-height: 20px;
+  }
+
+  .edge-insert-info-desc {
+    color: #475467;
+    font-size: 13px;
+    line-height: 18px;
+  }
+
   .st-hocon-popover {
     .ant-popover-inner {
       border-radius: 16px;
