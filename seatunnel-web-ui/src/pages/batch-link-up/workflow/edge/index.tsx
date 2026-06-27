@@ -1,6 +1,12 @@
 import React, { useState } from 'react';
 import { BaseEdge, type EdgeProps, getBezierPath } from 'reactflow';
 
+const DEFAULT_EDGE_COLOR = '#d0d5dc';
+const ACTIVE_EDGE_COLOR = '#315EFB';
+const INSERT_BUTTON_SIZE = 18;
+const INSERT_BUTTON_HOVER_SCALE = 1.28;
+const INSERT_BUTTON_HIT_AREA = 32;
+
 interface CustomEdgeData {
   executionStatus?: 'running' | 'succeeded' | 'failed' | 'pending';
   onEdgeClick?: (edgeId: string) => void;
@@ -29,6 +35,7 @@ const CustomEdge: React.FC<EdgeProps> = ({
   selected,
 }) => {
   const [hovered, setHovered] = useState(false);
+  const [insertButtonHovered, setInsertButtonHovered] = useState(false);
   const edgeData = data as CustomEdgeData | undefined;
 
   const [edgePath, labelX, labelY] = getBezierPath({
@@ -52,7 +59,7 @@ const CustomEdge: React.FC<EdgeProps> = ({
           ? '#ff4d4f'
           : edgeData?.executionStatus === 'pending'
             ? '#296dff'
-            : '#d0d5dc');
+            : DEFAULT_EDGE_COLOR);
 
   const handleInsertClick = (event: React.MouseEvent<HTMLButtonElement>) => {
     event.stopPropagation();
@@ -91,17 +98,17 @@ const CustomEdge: React.FC<EdgeProps> = ({
         markerEnd={markerEnd}
         style={{
           ...style,
-          stroke: hovered || selected ? '#315EFB' : strokeColor,
-          strokeWidth: hovered || selected ? 2.2 : style.strokeWidth || 1.5,
+          stroke: selected ? ACTIVE_EDGE_COLOR : strokeColor,
+          strokeWidth: selected ? 2.2 : style.strokeWidth || 1.5,
         }}
       />
 
       {hovered && edgeData?.onOpenInsertMenu && (
         <foreignObject
-          width={32}
-          height={32}
-          x={labelX - 16}
-          y={labelY - 16}
+          width={INSERT_BUTTON_HIT_AREA}
+          height={INSERT_BUTTON_HIT_AREA}
+          x={labelX - INSERT_BUTTON_HIT_AREA / 2}
+          y={labelY - INSERT_BUTTON_HIT_AREA / 2}
           requiredExtensions="http://www.w3.org/1999/xhtml"
         >
           <button
@@ -109,23 +116,43 @@ const CustomEdge: React.FC<EdgeProps> = ({
             type="button"
             aria-label="在连接线上插入节点"
             onClick={handleInsertClick}
+            onMouseEnter={() => setInsertButtonHovered(true)}
+            onMouseLeave={() => setInsertButtonHovered(false)}
             style={{
-              width: 24,
-              height: 24,
-              margin: 4,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              width: INSERT_BUTTON_SIZE,
+              height: INSERT_BUTTON_SIZE,
+              margin: (INSERT_BUTTON_HIT_AREA - INSERT_BUTTON_SIZE) / 2,
               borderRadius: 999,
-              border: '1px solid #C7D7FE',
-              background: '#FFFFFF',
-              color: '#315EFB',
-              boxShadow: '0 8px 20px rgba(49, 94, 251, 0.18)',
+              border: 0,
+              background: ACTIVE_EDGE_COLOR,
+              boxShadow: '0 6px 14px rgba(49, 94, 251, 0.24)',
               cursor: 'pointer',
-              fontSize: 18,
-              fontWeight: 600,
-              lineHeight: '20px',
               padding: 0,
+              transform: insertButtonHovered
+                ? `scale(${INSERT_BUTTON_HOVER_SCALE})`
+                : 'scale(1)',
+              transformOrigin: 'center',
+              transition:
+                'transform 0.14s ease, box-shadow 0.14s ease, background-color 0.14s ease',
             }}
           >
-            +
+            <svg
+              width={10}
+              height={10}
+              viewBox="0 0 10 10"
+              aria-hidden="true"
+              focusable="false"
+            >
+              <path
+                d="M5 1.5V8.5M1.5 5H8.5"
+                stroke="#FFFFFF"
+                strokeLinecap="round"
+                strokeWidth={2}
+              />
+            </svg>
           </button>
         </foreignObject>
       )}
