@@ -7,14 +7,15 @@ import ReactFlow, {
   MiniMap,
   type Node,
   SelectionMode,
+  useStoreApi,
 } from 'reactflow';
 import 'reactflow/dist/style.css';
 
 import CanvasToolbar from '../../common/workflow/CanvasToolbar';
 import {
   type InsertableTransformNode,
-  TRANSFORM_NODE_DROP_OFFSET,
   insertableTransformNodes,
+  TRANSFORM_NODE_DROP_OFFSET,
 } from '../../common/workflow/graph';
 import { ControlMode } from './config';
 import CustomEdge from './edge';
@@ -176,6 +177,7 @@ export default function FlowCanvas({
   onWorkflowChange,
   scheduleConfig,
 }: FlowCanvasProps) {
+  const store = useStoreApi();
   const flow = useFlowBuilder({ form, params });
   const placement = useNodePlacement({
     setNodes: flow.setNodes,
@@ -330,6 +332,20 @@ export default function FlowCanvas({
     });
   };
 
+  const clearSelectionRect = useCallback(() => {
+    store.setState({
+      userSelectionActive: false,
+      userSelectionRect: null,
+    });
+
+    requestAnimationFrame(() => {
+      store.setState({
+        userSelectionActive: false,
+        userSelectionRect: null,
+      });
+    });
+  }, [store]);
+
   return (
     <div
       className="relative h-full w-full min-w-[960px]"
@@ -346,7 +362,9 @@ export default function FlowCanvas({
         canDeleteEdge={flow.canDeleteEdge}
         canRedo={flow.canRedo}
         canUndo={flow.canUndo}
+        controlMode={flow.controlMode}
         onAutoLayout={flow.autoLayout}
+        onControlModeChange={flow.toggleControlMode}
         onDeleteEdge={flow.deleteActiveEdge}
         onFitView={flow.fitWorkflowView}
         onRedo={flow.redo}
@@ -366,6 +384,7 @@ export default function FlowCanvas({
         onNodeContextMenu={flow.onNodeContextMenu}
         onPaneClick={flow.onPaneClick}
         onSelectionChange={flow.onSelectionChange}
+        onSelectionEnd={clearSelectionRect}
         onSelectionContextMenu={flow.onSelectionContextMenu}
         onNodeMouseEnter={flow.onNodeMouseEnter}
         onNodeMouseLeave={flow.onNodeMouseLeave}
@@ -377,7 +396,7 @@ export default function FlowCanvas({
         minZoom={MIN_ZOOM}
         maxZoom={MAX_ZOOM}
         nodesDraggable={
-          !flow.nodesReadOnly && flow.interactionMode === ControlMode.Pointer
+          !flow.nodesReadOnly && flow.controlMode === ControlMode.Pointer
         }
         nodesConnectable={!flow.nodesReadOnly}
         nodesFocusable={!flow.nodesReadOnly}
@@ -387,7 +406,7 @@ export default function FlowCanvas({
         zoomOnScroll={!flow.workflowReadOnly}
         zoomOnDoubleClick={!flow.workflowReadOnly}
         selectionOnDrag={
-          flow.interactionMode === ControlMode.Pointer && !flow.workflowReadOnly
+          flow.controlMode === ControlMode.Pointer && !flow.workflowReadOnly
         }
         fitView
         fitViewOptions={{
@@ -402,6 +421,7 @@ export default function FlowCanvas({
         <Background gap={[14, 14]} size={2} color="#8585ad26" />
 
         <MiniMap
+          className="workflow-minimap"
           position="bottom-left"
           style={{ width: 102, height: 72 }}
           maskColor="#E9EBF0"
