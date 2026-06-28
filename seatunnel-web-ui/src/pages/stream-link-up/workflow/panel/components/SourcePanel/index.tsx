@@ -224,6 +224,7 @@ function SourcePanel({
                   tableNames: value ? [value] : [],
                 })
               }
+              showSearch
               options={tableOptions}
               loading={tableLoading}
               placeholder="请选择 CDC 表"
