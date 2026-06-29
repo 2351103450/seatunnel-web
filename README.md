@@ -77,5 +77,5 @@ or help us build the ecosystem from **0 to 1**, you are warmly welcome to join t
 
 Being a contributor here isn’t just about writing code or documentation—anyone who **shares ideas**, **gives feedback**, or **talks about SeaTunnel** can be a valued part of the project. Your **voice matters** in shaping the future of SeaTunnel Web!
 
-<img width="200" height="320" alt="f8fc097c800b192c10655b8e49195fb4" src="https://github.com/user-attachments/assets/5755a97a-841d-442a-b52a-dcc1147deeab" />
+<img width="200" height="320" alt="c69429e8a38228e15882f6eec335b052" src="https://github.com/user-attachments/assets/d5f747fa-a862-48ec-980e-55d7c63ce445" />
 
