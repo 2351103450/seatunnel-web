@@ -9,6 +9,7 @@ import org.apache.seatunnel.web.engine.client.rest.SeaTunnelRestClient;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
+import java.util.Locale;
 import java.util.Map;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -18,9 +19,6 @@ import java.util.concurrent.Executors;
 public class StreamingJobResultWatcher {
 
     private final ExecutorService executor = Executors.newCachedThreadPool();
-
-    @Resource
-    private StreamingJobMetricsMonitor streamingJobMetricsMonitor;
 
     @Resource
     private StreamingJobResultHandler streamingJobResultHandler;
@@ -52,12 +50,20 @@ public class StreamingJobResultWatcher {
                 String statusStr = readStatus(jobInfo);
 
                 if (statusStr == null) {
-                    log.warn("Streaming job-info returned no status, engineId={}, resp={}", engineId, jobInfo);
+                    log.warn("Streaming job-info returned no status, instanceId={}, engineId={}, resp={}",
+                            instanceId, engineId, jobInfo);
                     sleepQuietly();
                     continue;
                 }
 
                 JobStatus status = parseJobStatus(statusStr);
+
+                if (status == null) {
+                    log.warn("Unknown streaming job status, instanceId={}, engineId={}, status={}, resp={}",
+                            instanceId, engineId, statusStr, jobInfo);
+                    sleepQuietly();
+                    continue;
+                }
 
                 if (isRunningStatus(status)) {
                     sleepQuietly();
@@ -67,16 +73,15 @@ public class StreamingJobResultWatcher {
                 handleFinalStatus(instanceId, status, jobInfo);
                 return;
             }
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            log.warn("Streaming REST job result watcher interrupted, instanceId={}, engineId={}",
+                    instanceId, engineId, e);
         } catch (Exception e) {
             log.warn("Streaming REST job result watcher failed, instanceId={}, engineId={}",
                     instanceId, engineId, e);
 
             streamingJobResultHandler.handleFailure(instanceId, e);
-
-            try {
-                streamingJobMetricsMonitor.finalizeAndPersist(instanceId, "FAILED");
-            } catch (Exception ignored) {
-            }
         } finally {
             log.info("Streaming REST job result watcher finished, instanceId={}, engineId={}",
                     instanceId, engineId);
@@ -88,7 +93,11 @@ public class StreamingJobResultWatcher {
                                    Map jobInfo) {
         if (status == JobStatus.FINISHED) {
             streamingJobResultHandler.handleSuccess(instanceId);
-            streamingJobMetricsMonitor.finalizeAndPersist(instanceId, "FINISHED");
+            return;
+        }
+
+        if (status == JobStatus.CANCELED) {
+            streamingJobResultHandler.handleCanceled(instanceId, readErrorMsg(jobInfo));
             return;
         }
 
@@ -97,7 +106,6 @@ public class StreamingJobResultWatcher {
         jr.setError(readErrorMsg(jobInfo));
 
         streamingJobResultHandler.handleFailure(instanceId, jr);
-        streamingJobMetricsMonitor.finalizeAndPersist(instanceId, status.name());
     }
 
     private boolean isRunningStatus(JobStatus status) {
@@ -134,7 +142,7 @@ public class StreamingJobResultWatcher {
             return null;
         }
 
-        return value;
+        return value.trim();
     }
 
     private String readErrorMsg(Map jobInfo) {
@@ -151,14 +159,34 @@ public class StreamingJobResultWatcher {
     }
 
     private JobStatus parseJobStatus(String value) {
-        try {
-            return JobStatus.valueOf(value);
-        } catch (Exception e) {
-            if ("CANCELLED".equalsIgnoreCase(value)) {
-                return JobStatus.CANCELED;
-            }
+        if (value == null || value.trim().isEmpty()) {
+            return null;
+        }
 
-            return JobStatus.UNKNOWABLE;
+        String normalized = value.trim().toUpperCase(Locale.ROOT);
+
+        if ("CANCELLED".equals(normalized)
+                || "CANCELED".equals(normalized)
+                || "STOPPED".equals(normalized)) {
+            return JobStatus.CANCELED;
+        }
+
+        if ("CANCELLING".equals(normalized)
+                || "CANCELING".equals(normalized)
+                || "STOPPING".equals(normalized)) {
+            return JobStatus.RUNNING;
+        }
+
+        if ("COMPLETED".equals(normalized)
+                || "SUCCEEDED".equals(normalized)
+                || "SUCCESS".equals(normalized)) {
+            return JobStatus.FINISHED;
+        }
+
+        try {
+            return JobStatus.valueOf(normalized);
+        } catch (Exception e) {
+            return null;
         }
     }
 }

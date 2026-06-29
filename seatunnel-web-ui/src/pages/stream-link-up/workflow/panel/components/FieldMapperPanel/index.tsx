@@ -386,6 +386,40 @@ function FieldMapperPanel({
     },
   ];
 
+  const SinkFieldInput = useMemo(() => {
+    // 定义组件
+    const InputComponent: React.FC<{
+      value: string;
+      onChange: (value: string) => void;
+    }> = ({ value, onChange }) => {
+      const [inputValue, setInputValue] = useState(value);
+
+      useEffect(() => {
+        setInputValue(value);
+      }, [value]);
+
+      const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const newValue = e.target.value;
+        setInputValue(newValue);
+        onChange(newValue);
+      };
+
+      return (
+        <Input
+          size="small"
+          variant="filled"
+          style={{ width: "100%" }}
+          value={inputValue}
+          placeholder="请输入目标字段名"
+          onChange={handleChange}
+          onContextMenu={(e) => e.stopPropagation()}
+        />
+      );
+    };
+    // 返回组件
+    return InputComponent;
+  }, []);
+
   const columns: TableColumnsType<FieldMappingRow> = [
     {
       key: "sort",
@@ -412,16 +446,9 @@ function FieldMapperPanel({
       width: "42%",
       ellipsis: true,
       render: (_, record) => (
-        <Input
-          size="small"
-          variant="filled"
-          style={{ width: "100%" }}
+        <SinkFieldInput
           value={record.sinkFieldName}
-          placeholder="请输入目标字段名"
-          onChange={(e) =>
-            debouncedUpdateSinkFieldName(record.key, e.target.value)
-          }
-          onContextMenu={(e) => e.stopPropagation()}
+          onChange={(newValue) => debouncedUpdateSinkFieldName(record.key, newValue)}
         />
       ),
     },

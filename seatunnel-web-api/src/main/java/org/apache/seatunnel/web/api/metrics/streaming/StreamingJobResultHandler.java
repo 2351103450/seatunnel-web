@@ -6,6 +6,7 @@ import org.apache.seatunnel.web.api.utils.JobUtils;
 import org.apache.seatunnel.web.common.enums.JobResult;
 import org.apache.seatunnel.web.common.enums.JobStatus;
 import org.apache.seatunnel.web.dao.entity.StreamingJobInstance;
+import org.apache.seatunnel.web.spi.bean.vo.JobInstanceVO;
 import org.springframework.stereotype.Component;
 
 import java.util.Date;
@@ -28,14 +29,48 @@ public class StreamingJobResultHandler {
         log.info("Streaming job completed successfully. instanceId={}", jobInstanceId);
     }
 
+    public void handleCanceled(Long jobInstanceId, String message) {
+        String finalMessage = message == null || message.trim().isEmpty()
+                ? "Streaming job was canceled."
+                : message;
+
+        updateStatus(jobInstanceId, JobStatus.CANCELED, finalMessage);
+        log.info("Streaming job canceled. instanceId={}, message={}", jobInstanceId, finalMessage);
+    }
+
     public void handleFailure(Long jobInstanceId, Throwable error) {
-        String message = JobUtils.getJobInstanceErrorMessage(error.getMessage());
+        if (shouldSkipFailureOverwrite(jobInstanceId)) {
+            log.info("Skip failure overwrite because streaming job is already finished. instanceId={}", jobInstanceId);
+            return;
+        }
+
+        String message = error == null
+                ? "Unknown error"
+                : JobUtils.getJobInstanceErrorMessage(error.getMessage());
 
         updateStatus(jobInstanceId, JobStatus.FAILED, message);
         log.error("Streaming job failed. instanceId={}, error={}", jobInstanceId, message, error);
     }
 
     public void handleFailure(Long jobInstanceId, JobResult jobResult) {
+        JobStatus realStatus = jobResult == null ? null : jobResult.getStatus();
+
+        if (realStatus == JobStatus.FINISHED) {
+            handleSuccess(jobInstanceId);
+            return;
+        }
+
+        if (realStatus == JobStatus.CANCELED) {
+            handleCanceled(jobInstanceId, jobResult.getError());
+            return;
+        }
+
+        if (shouldSkipFailureOverwrite(jobInstanceId)) {
+            log.info("Skip failure overwrite because streaming job is already finished. instanceId={}, engineStatus={}",
+                    jobInstanceId, realStatus);
+            return;
+        }
+
         String message = jobResult != null ? jobResult.getError() : "Unknown error";
 
         updateStatus(jobInstanceId, JobStatus.FAILED, message);
@@ -43,7 +78,7 @@ public class StreamingJobResultHandler {
         log.error(
                 "Streaming job failed. instanceId={}, status={}, error={}",
                 jobInstanceId,
-                jobResult != null ? jobResult.getStatus() : "null",
+                realStatus,
                 message
         );
     }
@@ -71,5 +106,19 @@ public class StreamingJobResultHandler {
         streamingJobInstanceService.updateById(po);
 
         streamingJobMetricsMonitor.finalizeAndPersist(jobInstanceId, status.name());
+    }
+
+    private boolean shouldSkipFailureOverwrite(Long jobInstanceId) {
+        JobInstanceVO current = streamingJobInstanceService.selectById(jobInstanceId);
+        if (current == null || current.getJobStatus() == null) {
+            return false;
+        }
+
+        String currentStatus = current.getJobStatus();
+
+        return "FINISHED".equalsIgnoreCase(currentStatus)
+                || "CANCELED".equalsIgnoreCase(currentStatus)
+                || "CANCELLED".equalsIgnoreCase(currentStatus)
+                || "STOPPED".equalsIgnoreCase(currentStatus);
     }
 }

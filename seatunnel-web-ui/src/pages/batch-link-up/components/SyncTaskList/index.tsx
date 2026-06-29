@@ -508,7 +508,7 @@ const App: React.FC<Props> = ({ goDetail }) => {
               pagination={false}
               loading={loading}
               rowSelection={{ type: "checkbox", ...rowSelection }}
-              scroll={{ x: "max-content", y: "calc(100vh - 450px)" }}
+              scroll={{ x: "max-content", y: "calc(100vh - 470px)" }}
               className={[
                 "[&_.ant-table]:!rounded-xl",
                 "[&_.ant-table-thead>tr>th]:!bg-slate-50",
