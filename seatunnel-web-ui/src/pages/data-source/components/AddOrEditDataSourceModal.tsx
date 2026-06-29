@@ -244,7 +244,7 @@ const AddOrEditDataSourceModal = forwardRef<DataSourceModalRef>((_, ref) => {
         body: {
           padding: "20px 24px 16px",
           background: "#F8FAFC",
-          maxHeight: "82vh",
+          maxHeight: "69vh",
           overflowY: "auto",
           minHeight: "65vh",
         },

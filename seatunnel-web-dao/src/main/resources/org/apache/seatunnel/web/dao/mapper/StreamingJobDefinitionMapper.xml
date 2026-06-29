@@ -14,6 +14,7 @@
         <result property="mode" column="mode"/>
         <result property="jobType" column="job_type"/>
         <result property="clientId" column="client_id"/>
+        <result property="savepointPath" column="savepoint_path"/>
         <result property="jobVersion" column="job_version"/>
         <result property="releaseState" column="release_state"/>
 
@@ -90,6 +91,7 @@
         NULL AS checkpoint_config,
 
         ji.id AS instance_id,
+        ji.savepoint_path AS savepoint_path,
         ji.job_status AS last_job_status,
         ji.engine_job_id AS engine_job_id,
         ji.submit_time AS last_submit_time,

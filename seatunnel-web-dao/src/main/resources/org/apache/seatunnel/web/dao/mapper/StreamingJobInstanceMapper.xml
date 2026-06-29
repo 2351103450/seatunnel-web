@@ -60,6 +60,7 @@
         i.trigger_source AS triggerSource,
         i.retry_count AS retryCount,
         i.engine_job_id AS engineJobId,
+        i.savepoint_path AS savepointPath,
         i.runtime_config AS runtimeConfig,
         i.log_path AS logPath,
         i.error_message AS errorMessage,
