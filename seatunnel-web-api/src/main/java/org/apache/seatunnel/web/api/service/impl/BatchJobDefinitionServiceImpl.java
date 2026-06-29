@@ -191,7 +191,7 @@ public class BatchJobDefinitionServiceImpl extends BaseServiceImpl implements Ba
                 records.forEach(vo -> fillScheduleFields(vo.getId(), vo));
             }
 
-            return PaginationResult.buildSuc(records, dto.getPageNo(), dto.getPageSize(), total);
+            return PaginationResult.buildSuc(records, total, dto.getPageNo(), dto.getPageSize());
         } catch (ServiceException e) {
             throw e;
         } catch (Exception e) {

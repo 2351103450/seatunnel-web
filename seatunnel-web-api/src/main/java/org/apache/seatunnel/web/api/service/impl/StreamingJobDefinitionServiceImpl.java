@@ -163,7 +163,7 @@ public class StreamingJobDefinitionServiceImpl extends BaseServiceImpl implement
 
             Long total = streamingJobDefinitionDao.count(dto);
 
-            return PaginationResult.buildSuc(records, dto.getPageNo(), dto.getPageSize(), total);
+            return PaginationResult.buildSuc(records, total, dto.getPageNo(), dto.getPageSize());
         } catch (ServiceException e) {
             throw e;
         } catch (Exception e) {

@@ -21,8 +21,12 @@ interface RealtimeTaskTableProps {
   onEdit?: (record: StreamingJobDefinitionVO) => void;
   onRun?: (record: StreamingJobDefinitionVO) => Promise<void> | void;
   onStop?: (record: StreamingJobDefinitionVO) => Promise<void> | void;
-  onStopWithSavepoint?: (record: StreamingJobDefinitionVO) => Promise<void> | void;
-  onResumeFromSavepoint?: (record: StreamingJobDefinitionVO) => Promise<void> | void;
+  onStopWithSavepoint?: (
+    record: StreamingJobDefinitionVO
+  ) => Promise<void> | void;
+  onResumeFromSavepoint?: (
+    record: StreamingJobDefinitionVO
+  ) => Promise<void> | void;
   onOnline?: (record: StreamingJobDefinitionVO) => Promise<void> | void;
   onOffline?: (record: StreamingJobDefinitionVO) => Promise<void> | void;
   onDelete?: (record: StreamingJobDefinitionVO) => Promise<void> | void;
@@ -151,15 +155,15 @@ const RealtimeTaskTable: React.FC<RealtimeTaskTableProps> = ({
     <Table
       rowKey="id"
       loading={loading}
-      columns={columns}
+      columns={columns as any}
       dataSource={dataSource}
-      pagination={pagination}
-      scroll={{ x: 1480 }}
+      pagination={false}
       bordered
       // rowSelection={{
       //   selectedRowKeys,
       //   onChange: onSelectedRowKeysChange,
       // }}
+      scroll={{ x: "max-content", y: "calc(100vh - 480px)" }}
       className={[
         "[&_.ant-table]:!rounded-xl",
         "[&_.ant-table-thead>tr>th]:!bg-slate-50",
