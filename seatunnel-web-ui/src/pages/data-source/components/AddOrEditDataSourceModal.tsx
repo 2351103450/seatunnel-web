@@ -229,7 +229,7 @@ const AddOrEditDataSourceModal = forwardRef<DataSourceModalRef>((_, ref) => {
 
   return (
     <Modal
-      width={920}
+      width="67vw"
       open={open}
       centered
       maskClosable={false}
@@ -244,9 +244,9 @@ const AddOrEditDataSourceModal = forwardRef<DataSourceModalRef>((_, ref) => {
         body: {
           padding: "20px 24px 16px",
           background: "#F8FAFC",
-          maxHeight: "72vh",
+          maxHeight: "69vh",
           overflowY: "auto",
-          minHeight: "60vh",
+          minHeight: "65vh",
         },
         footer: {
           padding: "14px 24px 18px",

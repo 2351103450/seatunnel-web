@@ -33,6 +33,8 @@ public class StreamingJobDefinitionVO {
 
     private String sourceTable;
 
+    private String savepointPath;
+
     private String sinkTable;
 
     private Long sourceDatasourceId;
