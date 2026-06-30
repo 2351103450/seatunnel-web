@@ -114,7 +114,10 @@
         ) ji
         ON ji.job_definition_id = d.id
         <include refid="StreamingDefinitionWhere"/>
-        ORDER BY d.update_time DESC
+        ORDER BY
+        COALESCE(ji.start_time, ji.submit_time, ji.create_time, d.update_time, d.create_time) DESC,
+        d.update_time DESC,
+        d.id DESC
         LIMIT #{offset}, #{pageSize}
     </select>
 

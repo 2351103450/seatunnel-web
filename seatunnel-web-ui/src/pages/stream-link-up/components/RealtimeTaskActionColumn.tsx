@@ -5,6 +5,7 @@ import {
   DownOutlined,
   EditOutlined,
   EyeOutlined,
+  FileSearchOutlined,
   FileTextOutlined,
   PauseCircleOutlined,
   PlayCircleOutlined,
@@ -12,6 +13,7 @@ import {
   SyncOutlined,
 } from "@ant-design/icons";
 import { Dropdown, Popconfirm, Space, message } from "antd";
+import { FileSearchIcon } from "lucide-react";
 import React, { useState } from "react";
 
 export interface StreamingJobDefinitionVO {
@@ -373,6 +375,14 @@ const RealtimeTaskActionColumn: React.FC<RealtimeTaskActionColumnProps> = ({
               icon: <SyncOutlined />,
               label: "从检查点恢复",
               disabled: !canResumeFromSavepoint,
+            },
+            {
+              type: "divider",
+            },
+            {
+              key: "log",
+              icon: <FileSearchOutlined />,
+              label: "查看日志",
             },
             {
               type: "divider",

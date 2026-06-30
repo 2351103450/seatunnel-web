@@ -13,7 +13,7 @@ import MultiWorkflow from "./MultiWorkflow";
 const defaultScheduleConfig: ScheduleConfig = {
   paramsList: [],
   instanceGenerateMode: "nextDay",
-  scheduleRunType: "normal",
+  scheduleRunType: "pause",
   timeoutMode: "system",
   timeoutValue: 1,
   timeoutUnit: "hour",

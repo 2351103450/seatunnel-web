@@ -5,6 +5,7 @@ import {
   DownOutlined,
   EditOutlined,
   EyeOutlined,
+  FileSearchOutlined,
   PauseCircleOutlined,
   PlayCircleOutlined,
 } from "@ant-design/icons";
@@ -16,6 +17,7 @@ import {
   seatunnelJobExecuteApi,
 } from "../../../api";
 import TaskViewModal from "../../../TaskViewModal";
+import RunLogDrawer from "./RunLogDrawer";
 
 interface ActionColumnProps {
   record: any;
@@ -57,7 +59,7 @@ const ActionColumn: React.FC<ActionColumnProps> = ({
 
   const isOnline = isReleaseOnline(record?.releaseState);
   const isRunning = record?.lastJobStatus === "RUNNING";
-
+  const [logOpen, setLogOpen] = useState(false);
   const canRun = isOnline && !isRunning;
 
   /**
@@ -242,6 +244,11 @@ const ActionColumn: React.FC<ActionColumnProps> = ({
       return;
     }
 
+    if (info?.key === "log") {
+      setLogOpen(true);
+      return;
+    }
+
     if (info?.key === "delete") {
       handleDeleteTask();
     }
@@ -261,20 +268,21 @@ const ActionColumn: React.FC<ActionColumnProps> = ({
     {
       key: "view",
       icon: <EyeOutlined />,
-      label: (
-        <span style={{ fontWeight: 500 }}>
-          查看详情
-        </span>
-      ),
+      label: <span style={{ fontWeight: 500 }}>查看详情</span>,
     },
     {
       key: "edit",
       icon: <EditOutlined />,
-      label: (
-        <span style={{ fontWeight: 500 }}>
-          编辑配置
-        </span>
-      ),
+      label: <span style={{ fontWeight: 500 }}>编辑配置</span>,
+      disabled: !canEdit,
+    },
+    {
+      type: "divider" as const,
+    },
+    {
+      key: "log",
+      icon: <FileSearchOutlined />,
+      label: <span style={{ fontWeight: 500 }}>查看日志</span>,
       disabled: !canEdit,
     },
     {
@@ -283,11 +291,7 @@ const ActionColumn: React.FC<ActionColumnProps> = ({
     {
       key: "delete",
       icon: <DeleteOutlined />,
-      label: (
-        <span style={{ fontWeight: 500 }}>
-          删除任务
-        </span>
-      ),
+      label: <span style={{ fontWeight: 500 }}>删除任务</span>,
       danger: true,
       disabled: !canDelete,
     },
@@ -465,6 +469,16 @@ const ActionColumn: React.FC<ActionColumnProps> = ({
       </Space>
 
       <TaskViewModal ref={ref} />
+      <RunLogDrawer
+        open={logOpen}
+        jobMode="BATCH"
+        instanceId={record?.instanceId}
+        onClose={() => setLogOpen(false)}
+        title="运行日志"
+        subtitle={
+          record?.jobName ? `任务：${record.jobName}` : "查看任务运行输出"
+        }
+      />
     </>
   );
 };

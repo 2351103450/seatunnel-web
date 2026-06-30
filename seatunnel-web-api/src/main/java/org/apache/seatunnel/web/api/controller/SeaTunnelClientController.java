@@ -57,4 +57,11 @@ public class SeaTunnelClientController {
             @RequestBody ClientDatasourceVerifyDTO dto) {
         return Result.buildSuc(seatunnelClientService.verifyDatasource(clientId, dto));
     }
+
+    @GetMapping("/instance/{instanceId}/logs")
+    public Result<String> logsByInstanceId(
+            @PathVariable("instanceId") Long instanceId,
+            @RequestParam(value = "jobMode", required = false) String jobMode) {
+        return Result.buildSuc(seatunnelClientService.logsByInstanceId(instanceId, jobMode));
+    }
 }

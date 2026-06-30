@@ -312,9 +312,10 @@ public class SeaTunnelRestClient {
         );
     }
 
-    public Object logs(Long clientId, Long jobIdOrNull, String formatOrNull) {
+    public String logs(Long clientId, Long jobIdOrNull, String formatOrNull) {
         try {
-            String path = jobIdOrNull == null ? "/logs" : "/logs/" + jobIdOrNull;
+            String fullPath = String.format("job-%s.log", jobIdOrNull);
+            String path = jobIdOrNull == null ? "/log" : "/log/" + fullPath;
 
             UriComponentsBuilder builder = UriComponentsBuilder.fromHttpUrl(url(clientId, path));
             if (!isBlank(formatOrNull)) {
@@ -324,19 +325,31 @@ public class SeaTunnelRestClient {
             return get(
                     clientId,
                     builder.build(true).toUriString(),
-                    Object.class,
-                    "GET /logs failed"
+                    String.class,
+                    "GET /log failed"
             );
         } catch (Exception e) {
-            throw wrap(e, "GET /logs failed");
+            throw wrap(e, "GET /log failed");
         }
     }
 
-    public Object nodeLogs(Long clientId) {
+    public String jobLogs(Long clientId, Long engineJobId, String formatOrNull) {
+        if (clientId == null) {
+            throw new IllegalArgumentException("clientId cannot be empty");
+        }
+
+        if (engineJobId == null) {
+            throw new IllegalArgumentException("engineJobId cannot be empty");
+        }
+
+        return logs(clientId, engineJobId, formatOrNull);
+    }
+
+    public String nodeLogs(Long clientId) {
         return get(
                 clientId,
                 url(clientId, "/log"),
-                Object.class,
+                String.class,
                 "GET /log failed"
         );
     }
