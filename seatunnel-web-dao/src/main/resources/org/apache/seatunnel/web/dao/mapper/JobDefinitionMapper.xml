@@ -122,7 +122,10 @@
             </if>
         </where>
 
-        ORDER BY d.create_time DESC
+        ORDER BY
+        COALESCE(i.start_time, d.update_time, d.create_time) DESC,
+        d.update_time DESC,
+        d.id DESC
 
     </select>
 

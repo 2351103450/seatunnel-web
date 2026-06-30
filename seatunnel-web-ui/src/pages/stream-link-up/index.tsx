@@ -9,6 +9,7 @@ import React, {
 } from "react";
 import { history } from "umi";
 
+import RunLogDrawer from "../batch-link-up/components/SyncTaskList/components/RunLogDrawer";
 import {
   seatunnelStreamingJobExecuteApi,
   seatunnelStremJobDefinitionApi,
@@ -188,6 +189,9 @@ const RealtimeSyncPage: React.FC = () => {
 
   const [dataSource, setDataSource] = useState<StreamingJobDefinitionVO[]>([]);
   const [selectedRowKeys, setSelectedRowKeys] = useState<React.Key[]>([]);
+  const [logRecord, setLogRecord] = useState<StreamingJobDefinitionVO | null>(
+    null
+  );
 
   const [loading, setLoading] = useState(false);
   const [creating, setCreating] = useState(false);
@@ -570,15 +574,16 @@ const RealtimeSyncPage: React.FC = () => {
     });
   };
 
+  const [logOpen, setLogOpen] = useState(false);
+
   const handleLog = (record: StreamingJobDefinitionVO) => {
-    if (!record?.id) {
-      message.warning("任务 ID 不存在");
+    if (!record?.instanceId) {
+      message.warning("当前任务没有运行实例，暂无日志");
       return;
     }
 
-    history.push(
-      `/sync/stream-link-up/${record.id}/detail?tab=logs&readonly=true`
-    );
+    setLogRecord(record);
+    setLogOpen(true);
   };
 
   const handleCheckpoint = (record: StreamingJobDefinitionVO) => {
@@ -798,6 +803,20 @@ const RealtimeSyncPage: React.FC = () => {
       </div>
       <RealtimeTaskViewModal ref={ref} />
       <TaskViewModal ref={refDetail} />
+
+      <RunLogDrawer
+        open={logOpen}
+        jobMode="STREAMING"
+        instanceId={logRecord?.instanceId}
+        onClose={() => {
+          setLogOpen(false);
+          setLogRecord(null);
+        }}
+        title="运行日志"
+        subtitle={
+          logRecord?.jobName ? `任务：${logRecord.jobName}` : "查看任务运行输出"
+        }
+      />
     </>
   );
 };

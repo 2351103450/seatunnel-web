@@ -69,7 +69,7 @@ export const layout: RunTimeLayoutConfig = ({
       <GlobalSearch key="globalsearch" />,
       // <OpenAPI key="open-api" />,
       <Knowledge key="knowledge" />,
-      <BI key="bi" />,
+      // <BI key="bi" />,
       <ThemeSwitch key="theme-switch" />,
       <SelectLang key="SelectLang" />,
     ],

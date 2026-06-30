@@ -8,6 +8,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.seatunnel.web.api.service.DataSourceService;
 import org.apache.seatunnel.web.api.service.SeaTunnelClientService;
+import org.apache.seatunnel.web.common.enums.JobMode;
 import org.apache.seatunnel.web.common.enums.SeaTunnelClientHealthStatusEnum;
 import org.apache.seatunnel.web.core.exceptions.ServiceException;
 import org.apache.seatunnel.web.core.utils.MetricValueParser;
@@ -17,8 +18,12 @@ import org.apache.seatunnel.web.core.verify.DatasourceConnectivityVerificationSt
 import org.apache.seatunnel.web.core.verify.cache.ClientDatasourceVerifyMemoryCache;
 import org.apache.seatunnel.web.core.verify.modal.DatasourceVerifyContext;
 import org.apache.seatunnel.web.dao.entity.DataSource;
+import org.apache.seatunnel.web.dao.entity.JobInstance;
 import org.apache.seatunnel.web.dao.entity.SeaTunnelClient;
+import org.apache.seatunnel.web.dao.entity.StreamingJobInstance;
+import org.apache.seatunnel.web.dao.repository.JobInstanceDao;
 import org.apache.seatunnel.web.dao.repository.SeaTunnelClientDao;
+import org.apache.seatunnel.web.dao.repository.StreamingJobInstanceDao;
 import org.apache.seatunnel.web.engine.client.modal.SeaTunnelClientAuth;
 import org.apache.seatunnel.web.engine.client.rest.SeaTunnelRestClient;
 import org.apache.seatunnel.web.spi.bean.dto.ClientDatasourceVerifyDTO;
@@ -57,6 +62,13 @@ public class SeaTunnelClientServiceImpl implements SeaTunnelClientService {
 
     @Resource
     private ClientDatasourceVerifyMemoryCache verifyMemoryCache;
+
+    @Resource
+    private JobInstanceDao jobInstanceDao;
+
+    @Resource
+    private StreamingJobInstanceDao streamingJobInstanceDao;
+
 
     @Resource
     private DatasourceConnectivityVerificationStrategyFactory strategyFactory;
@@ -271,6 +283,103 @@ public class SeaTunnelClientServiceImpl implements SeaTunnelClientService {
         }
 
         return result;
+    }
+
+    @Override
+    public String logsByInstanceId(Long instanceId, String jobMode) {
+        if (instanceId == null) {
+            throw new IllegalArgumentException("instanceId cannot be empty");
+        }
+
+        JobMode type = JobMode.valueOf(jobMode);
+
+        if (type == JobMode.BATCH) {
+            return getOfflineInstanceLogs(instanceId);
+        }
+
+        if (type == JobMode.STREAMING) {
+            return getStreamingInstanceLogs(instanceId);
+        }
+
+        /*
+         * 兜底逻辑：
+         * 如果前端没有传 instanceType，则先查离线实例，再查实时实例。
+         * 如果你的 ID 是全局雪花 ID，这样一般没问题。
+         * 但更推荐前端明确传 instanceType。
+         */
+        JobInstance offlineInstance = jobInstanceDao.queryById(instanceId);
+        if (offlineInstance != null) {
+            return getEngineLogs(
+                    offlineInstance.getClientId(),
+                    offlineInstance.getEngineJobId(),
+                    "OFFLINE",
+                    instanceId
+            );
+        }
+
+        StreamingJobInstance streamingInstance = streamingJobInstanceDao.queryById(instanceId);
+        if (streamingInstance != null) {
+            return getEngineLogs(
+                    streamingInstance.getClientId(),
+                    streamingInstance.getEngineJobId(),
+                    "STREAMING",
+                    instanceId
+            );
+        }
+
+        throw new IllegalArgumentException("Job instance not found, instanceId=" + instanceId);
+    }
+
+    private String getOfflineInstanceLogs(Long instanceId) {
+        JobInstance instance = jobInstanceDao.queryById(instanceId);
+
+        if (instance == null) {
+            throw new IllegalArgumentException("Offline job instance not found, instanceId=" + instanceId);
+        }
+
+        return getEngineLogs(
+                instance.getClientId(),
+                instance.getEngineJobId(),
+                "OFFLINE",
+                instanceId
+        );
+    }
+
+    private String getStreamingInstanceLogs(Long instanceId) {
+        StreamingJobInstance instance = streamingJobInstanceDao.queryById(instanceId);
+
+        if (instance == null) {
+            throw new IllegalArgumentException("Streaming job instance not found, instanceId=" + instanceId);
+        }
+
+        return getEngineLogs(
+                instance.getClientId(),
+                instance.getEngineJobId(),
+                "STREAMING",
+                instanceId
+        );
+    }
+
+    private String getEngineLogs(
+            Long clientId,
+            Long engineJobId,
+            String instanceType,
+            Long instanceId
+    ) {
+        if (clientId == null) {
+            throw new IllegalArgumentException(
+                    "clientId is empty, jobMode=" + instanceType + ", instanceId=" + instanceId
+            );
+        }
+
+        if (engineJobId == null) {
+            throw new IllegalArgumentException(
+                    "engineJobId is empty, the job may not have been submitted successfully, jobMode="
+                            + instanceType + ", instanceId=" + instanceId
+            );
+        }
+
+        return seaTunnelRestClient.jobLogs(clientId, engineJobId, "json");
     }
 
     private void fillBaseInfo(

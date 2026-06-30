@@ -91,20 +91,29 @@ export const taskScheduleApi = {
     },
 };
 
+export const seatunnelClientApi = {
+    getLogsByInstanceId(
+        instanceId: string | number,
+        jobMode: any
+    ) {
+        return HttpUtils.get<any[]>(`/api/v1/devops/client/instance/${instanceId}/logs?jobMode=${jobMode}`);
+    },
+};
+
 
 
 export const apiPrefixExecutor = "/api/v1/executor";
 
 export const batchJobExecutorApi = {
-  batchExecute: (jobDefinitionIds: React.Key[]): any => {
-    return HttpUtils.post(`${apiPrefixExecutor}/batch-execute`, {
-      jobDefinitionIds: jobDefinitionIds.map(Number),
-    });
-  },
+    batchExecute: (jobDefinitionIds: React.Key[]): any => {
+        return HttpUtils.post(`${apiPrefixExecutor}/batch-execute`, {
+            jobDefinitionIds: jobDefinitionIds.map(Number),
+        });
+    },
 
-  batchPause: (jobDefinitionIds: React.Key[]): any => {
-    return HttpUtils.post(`${apiPrefixExecutor}/batch-pause`, {
-      jobDefinitionIds: jobDefinitionIds.map(Number),
-    });
-  },
+    batchPause: (jobDefinitionIds: React.Key[]): any => {
+        return HttpUtils.post(`${apiPrefixExecutor}/batch-pause`, {
+            jobDefinitionIds: jobDefinitionIds.map(Number),
+        });
+    },
 };

@@ -22,4 +22,6 @@ public interface SeaTunnelClientService {
     ClientDatasourceVerifyVO verifyDatasource(Long clientId, ClientDatasourceVerifyDTO dto);
 
     void deleteById(Long id);
+
+    String logsByInstanceId(Long instanceId, String jobMode);
 }
