@@ -4,6 +4,7 @@ import { useMemo } from "react";
 import MysqlIcon from "../data-source/icon/MysqlIcon";
 import OracleIcon from "../data-source/icon/OracleIcon";
 import PostgreSQL from "../data-source/icon/PsSqlIcon";
+import DorisIcon from "../data-source/icon/DorisIcon";
 import "./index.less";
 // 类型定义
 interface DataSourceType {
@@ -45,6 +46,17 @@ export const generateDataSourceOptions = (): DataSourceType[] => [
       <div style={{ display: "flex", alignItems: "center" }}>
         <PostgreSQL />
         <span style={{ marginLeft: 8 }}>PostGreSQL</span>
+      </div>
+    ),
+  },
+  {
+    value: "DORIS",
+    connectorType: "Doris",
+    pluginName: "DORIS",
+    label: (
+      <div style={{ display: "flex", alignItems: "center" }}>
+        <DorisIcon />
+        <span style={{ marginLeft: 8 }}>Doris</span>
       </div>
     ),
   },

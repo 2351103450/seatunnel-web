@@ -11,6 +11,7 @@ public class ConnectivitySourceBuilderResolver {
             case MYSQL -> "JDBC-MYSQL";
             case POSTGRE_SQL -> "JDBC-POSTGRESQL";
             case ORACLE -> "JDBC-ORACLE";
+            case DORIS -> "DORIS";
             default -> throw new IllegalArgumentException("暂不支持该数据源类型的 Source Builder 解析: " + dbType);
         };
     }

@@ -12,6 +12,7 @@ export const COMMON_DB_OPTIONS: DataSourceOptionItem[] = [
   { label: "MYSQL", value: "MYSQL" },
   { label: "ORACLE", value: "ORACLE" },
   { label: "POSTGRE_SQL", value: "POSTGRE_SQL" },
+  { label: "DORIS", value: "DORIS" },
 ];
 
 export const ENVIRONMENT_OPTIONS: DataSourceOptionItem[] = [
@@ -41,6 +42,17 @@ export const dataSourceGroupList: DataSourceGroup[] = [
         dbType: "POSTGRE_SQL",
         type: "POSTGRE_SQL",
         connectorType: "Jdbc",
+      },
+    ],
+  },
+  {
+    groupName: "OLAP 数据库",
+    datasourceList: [
+      {
+        onlyDiScript: false,
+        dbType: "DORIS",
+        type: "DORIS",
+        connectorType: "Doris",
       },
     ],
   },

@@ -15,6 +15,7 @@ public enum DbType {
     MYSQL("MYSQL", "MYSQL", "MYSQL"),
     ORACLE("ORACLE", "ORACLE", "ORACLE"),
     POSTGRE_SQL("POSTGRE_SQL", "POSTGRE_SQL", "POSTGRE_SQL"),
+    DORIS("DORIS", "DORIS", "DORIS"),
     H2("H2", "H2", "H2")
     ;
 
