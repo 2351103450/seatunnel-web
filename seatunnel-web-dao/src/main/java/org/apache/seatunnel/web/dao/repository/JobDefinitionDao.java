@@ -22,4 +22,8 @@ public interface JobDefinitionDao extends IDao<JobDefinitionEntity> {
     boolean updateReleaseState(Long id, ReleaseState releaseState);
 
     List<JobDefinitionEntity> listByIds(List<Long> ids);
+
+    boolean existsByDatasourceId(Long datasourceId);
+
+    List<Long> selectReferencedDatasourceIds(List<Long> datasourceIds);
 }

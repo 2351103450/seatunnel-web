@@ -6,13 +6,15 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.seatunnel.plugin.datasource.api.jdbc.DataSourceProcessor;
 import org.apache.seatunnel.plugin.datasource.api.utils.DataSourceUtils;
-import org.apache.seatunnel.web.core.exceptions.ServiceException;
 import org.apache.seatunnel.web.api.service.DataSourceService;
 import org.apache.seatunnel.web.common.enums.ConnStatus;
 import org.apache.seatunnel.web.common.utils.ConvertUtil;
 import org.apache.seatunnel.web.common.utils.JSONUtils;
+import org.apache.seatunnel.web.core.exceptions.ServiceException;
 import org.apache.seatunnel.web.dao.entity.DataSource;
 import org.apache.seatunnel.web.dao.repository.DataSourceDao;
+import org.apache.seatunnel.web.dao.repository.JobDefinitionDao;
+import org.apache.seatunnel.web.dao.repository.StreamingJobDefinitionDao;
 import org.apache.seatunnel.web.spi.bean.dto.DataSourceDTO;
 import org.apache.seatunnel.web.spi.bean.entity.PaginationResult;
 import org.apache.seatunnel.web.spi.bean.vo.DBOptionVO;
@@ -28,11 +30,7 @@ import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
 import java.io.InputStream;
-import java.nio.file.CopyOption;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
-import java.nio.file.StandardCopyOption;
+import java.nio.file.*;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -48,6 +46,12 @@ public class DataSourceServiceImpl extends BaseServiceImpl implements DataSource
 
     @Resource
     private DataSourceDao dataSourceDao;
+
+    @Resource
+    private JobDefinitionDao jobDefinitionDao;
+
+    @Resource
+    private StreamingJobDefinitionDao streamingJobDefinitionDao;
 
     @Override
     @Transactional(rollbackFor = Exception.class)
@@ -149,11 +153,44 @@ public class DataSourceServiceImpl extends BaseServiceImpl implements DataSource
         getDataSourceOrThrow(datasourceId);
 
         try {
+            checkDataSourceNotUsed(datasourceId);
             dataSourceDao.deleteById(datasourceId);
         } catch (ServiceException e) {
             throw e;
         } catch (Exception e) {
             log.error("Delete data source failed, id={}", datasourceId, e);
+            throw new ServiceException(Status.INTERNAL_SERVER_ERROR_ARGS, e.getMessage());
+        }
+    }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public boolean batchDelete(List<Long> ids) {
+        if (ids == null || ids.isEmpty()) {
+            throw new ServiceException(Status.REQUEST_PARAMS_NOT_VALID_ERROR, "ids");
+        }
+
+        try {
+            List<Long> distinctIds = ids.stream()
+                    .filter(id -> id != null && id > 0)
+                    .distinct()
+                    .collect(Collectors.toList());
+
+            if (distinctIds.isEmpty()) {
+                throw new ServiceException(Status.REQUEST_PARAMS_NOT_VALID_ERROR, "ids");
+            }
+
+            for (Long id : distinctIds) {
+                getDataSourceOrThrow(id);
+            }
+
+            checkDataSourcesNotUsed(distinctIds);
+
+            return dataSourceDao.deleteByIds(distinctIds);
+        } catch (ServiceException e) {
+            throw e;
+        } catch (Exception e) {
+            log.error("Batch delete data sources failed, ids={}", ids, e);
             throw new ServiceException(Status.INTERNAL_SERVER_ERROR_ARGS, e.getMessage());
         }
     }
@@ -231,8 +268,8 @@ public class DataSourceServiceImpl extends BaseServiceImpl implements DataSource
                 Files.copy(inputStream, tempFile, StandardCopyOption.REPLACE_EXISTING);
 
                 CopyOption[] moveOptions = overwrite
-                        ? new CopyOption[] {StandardCopyOption.REPLACE_EXISTING, StandardCopyOption.ATOMIC_MOVE}
-                        : new CopyOption[] {StandardCopyOption.ATOMIC_MOVE};
+                        ? new CopyOption[]{StandardCopyOption.REPLACE_EXISTING, StandardCopyOption.ATOMIC_MOVE}
+                        : new CopyOption[]{StandardCopyOption.ATOMIC_MOVE};
 
                 Files.move(tempFile, targetFile, moveOptions);
             } finally {
@@ -271,18 +308,33 @@ public class DataSourceServiceImpl extends BaseServiceImpl implements DataSource
         }
     }
 
-    @Override
-    @Transactional(rollbackFor = Exception.class)
-    public boolean batchDelete(List<Long> ids) {
-        if (ids == null || ids.isEmpty()) {
-            throw new ServiceException(Status.REQUEST_PARAMS_NOT_VALID_ERROR, "ids");
-        }
 
-        try {
-            return dataSourceDao.deleteByIds(ids);
-        } catch (Exception e) {
-            log.error("Batch delete data sources failed, ids={}", ids, e);
-            throw new ServiceException(Status.INTERNAL_SERVER_ERROR_ARGS, e.getMessage());
+    private void checkDataSourceNotUsed(Long datasourceId) {
+        boolean usedByBatchJob = jobDefinitionDao.existsByDatasourceId(datasourceId);
+        boolean usedByStreamingJob = streamingJobDefinitionDao.existsByDatasourceId(datasourceId);
+
+        if (usedByBatchJob || usedByStreamingJob) {
+            throw new ServiceException(
+                    Status.REQUEST_PARAMS_NOT_VALID_ERROR,
+                    "Data source is used by batch or streaming job definition and cannot be deleted. datasourceId=" + datasourceId
+            );
+        }
+    }
+
+    private void checkDataSourcesNotUsed(List<Long> datasourceIds) {
+        List<Long> batchReferencedIds = jobDefinitionDao.selectReferencedDatasourceIds(datasourceIds);
+        List<Long> streamingReferencedIds = streamingJobDefinitionDao.selectReferencedDatasourceIds(datasourceIds);
+
+        List<Long> referencedIds = java.util.stream.Stream
+                .concat(batchReferencedIds.stream(), streamingReferencedIds.stream())
+                .distinct()
+                .collect(Collectors.toList());
+
+        if (!referencedIds.isEmpty()) {
+            throw new ServiceException(
+                    Status.REQUEST_PARAMS_NOT_VALID_ERROR,
+                    "Data sources are used by batch or streaming job definitions and cannot be deleted. datasourceIds=" + referencedIds
+            );
         }
     }
 
