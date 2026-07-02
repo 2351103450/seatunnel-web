@@ -1,5 +1,6 @@
+import { CopyOutlined } from "@ant-design/icons";
 import { history, useIntl } from "@umijs/max";
-import { Divider, Empty, Table, message } from "antd";
+import { Divider, Empty, Table, Tooltip, message } from "antd";
 import { TableRowSelection } from "antd/es/table/interface";
 import moment from "moment";
 import { useEffect, useState } from "react";
@@ -78,6 +79,30 @@ const App: React.FC<Props> = ({ goDetail }) => {
   const [pagination, setPagination] = useState(() => parsePaginationFromUrl());
   const [loading, setLoading] = useState(false);
   const [selectedRowKeys, setSelectedRowKeys] = useState<React.Key[]>([]);
+
+  const copyToClipboard = async (text: string | number) => {
+    const value = String(text);
+
+    try {
+      if (navigator.clipboard && window.isSecureContext) {
+        await navigator.clipboard.writeText(value);
+      } else {
+        const textarea = document.createElement("textarea");
+        textarea.value = value;
+        textarea.style.position = "fixed";
+        textarea.style.opacity = "0";
+        document.body.appendChild(textarea);
+        textarea.focus();
+        textarea.select();
+        document.execCommand("copy");
+        document.body.removeChild(textarea);
+      }
+
+      message.success("JobId 已复制");
+    } catch {
+      message.error("复制失败，请手动复制");
+    }
+  };
 
   const syncUrlParams = (
     params: any,
@@ -165,22 +190,47 @@ const App: React.FC<Props> = ({ goDetail }) => {
       ellipsis: true,
       render: (_content: any, record: any) => (
         <div>
-          <em style={{ fontWeight: 500 }}>
-            {intl.formatMessage({
-              id: "pages.job.table.label.jobId",
-              defaultMessage: "JobId",
-            })}
-          </em>
-          :{" "}
-          <span style={{ fontSize: "12px", color: "gray" }}>{record?.id}</span>{" "}
-          <br />
-          <em style={{ fontWeight: 500 }}>
-            {intl.formatMessage({
-              id: "pages.job.table.label.jobName",
-              defaultMessage: "JobName",
-            })}
-          </em>
-          : {record?.jobName}
+          <div>
+            <em style={{ fontWeight: 500 }}>
+              {intl.formatMessage({
+                id: "pages.job.table.label.jobName",
+                defaultMessage: "JobName",
+              })}
+            </em>
+            : {record?.jobName}
+          </div>
+          <div>
+            <em style={{ fontWeight: 500 }}>
+              {intl.formatMessage({
+                id: "pages.job.table.label.jobId",
+                defaultMessage: "JobId",
+              })}
+            </em>
+            :{" "}
+            <span style={{ fontSize: "12px", color: "gray" }}>
+              {record?.id}
+            </span>{" "}
+            <Tooltip title="复制 JobId">
+              <button
+                type="button"
+                style={{
+                  border: "none",
+                  background: "transparent",
+                  padding: 0,
+                  marginLeft: 4,
+                  cursor: "pointer",
+                  color: "#94a3b8",
+                  lineHeight: 1,
+                }}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  copyToClipboard(record?.id);
+                }}
+              >
+                <CopyOutlined style={{ fontSize: 12 }} />
+              </button>
+            </Tooltip>
+          </div>
         </div>
       ),
     },
