@@ -1,6 +1,8 @@
-CREATE DATABASE IF NOT EXISTS seatunnel_web;
+CREATE
+DATABASE IF NOT EXISTS seatunnel_web;
 
-use seatunnel_web;
+use
+seatunnel_web;
 
 -- =========================================
 -- 连接器参数元数据表
@@ -54,6 +56,12 @@ CREATE TABLE `t_seatunnel_web_client`
     KEY              `idx_heartbeat_time` (`heartbeat_time`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='SeaTunnel Client 表';
 
+ALTER TABLE t_seatunnel_web_client
+    ADD COLUMN deploy_mode varchar(32) DEFAULT 'SINGLE' COMMENT '部署模式：SINGLE / SEPARATED_CLUSTER',
+ADD COLUMN protocol varchar(16) DEFAULT 'http' COMMENT '协议：http / https',
+ADD COLUMN active_master_node_id bigint DEFAULT NULL COMMENT '当前可用 Master 节点 ID',
+ADD COLUMN last_error text COMMENT '最近一次连接失败原因';
+
 -- =========================================
 -- 数据源表
 -- =========================================
@@ -102,8 +110,8 @@ CREATE TABLE `t_seatunnel_web_job_definition`
     `sink_type`            varchar(255)          DEFAULT NULL COMMENT '目标类型摘要',
     `source_table`         varchar(1024)         DEFAULT NULL COMMENT '源表摘要',
     `sink_table`           varchar(1024)         DEFAULT NULL COMMENT '目标表摘要',
-    `source_datasource_id` bigint                DEFAULT NULL COMMENT '源端数据源ID',
-    `sink_datasource_id`   bigint                DEFAULT NULL COMMENT '目标端数据源ID',
+    `source_datasource_id` bigint       NOT NULL COMMENT '源端数据源ID',
+    `sink_datasource_id`   bigint       NOT NULL COMMENT '目标端数据源ID',
     `create_time`          datetime     NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
     `update_time`          datetime     NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
     PRIMARY KEY (`id`),
@@ -322,8 +330,8 @@ CREATE TABLE `t_seatunnel_web_streaming_job_definition`
     `sink_type`            varchar(128)  DEFAULT NULL COMMENT '目标端类型',
     `source_table`         varchar(512)  DEFAULT NULL COMMENT '源表',
     `sink_table`           varchar(512)  DEFAULT NULL COMMENT '目标表',
-    `source_datasource_id` bigint        DEFAULT NULL COMMENT '源数据源ID',
-    `sink_datasource_id`   bigint        DEFAULT NULL COMMENT '目标数据源ID',
+    `source_datasource_id` bigint NOT NULL COMMENT '源数据源ID',
+    `sink_datasource_id`   bigint NOT NULL COMMENT '目标数据源ID',
     `create_time`          datetime      DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
     `update_time`          datetime      DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
     PRIMARY KEY (`id`),
@@ -366,7 +374,7 @@ CREATE TABLE `t_seatunnel_web_streaming_job_metrics_current`
 (
     `job_instance_id`         bigint         NOT NULL COMMENT 'Web侧实例ID',
     `job_definition_id`       bigint         NOT NULL COMMENT '任务定义ID',
-    `engine_job_id`           varchar(64)                  DEFAULT NULL COMMENT 'SeaTunnel Engine Job ID',
+    `engine_job_id`           varchar(64)             DEFAULT NULL COMMENT 'SeaTunnel Engine Job ID',
     `client_id`               bigint                  DEFAULT NULL COMMENT 'SeaTunnel Client ID',
     `job_status`              varchar(32)             DEFAULT NULL COMMENT '引擎返回的任务状态',
     `read_row_count`          bigint         NOT NULL DEFAULT 0 COMMENT '读取行数',
@@ -402,7 +410,7 @@ CREATE TABLE `t_seatunnel_web_streaming_job_metrics_snapshot`
     `collect_time_ms`         bigint         NOT NULL COMMENT '采集时间戳，单位：毫秒',
     `job_instance_id`         bigint         NOT NULL COMMENT 'Web侧实例ID',
     `job_definition_id`       bigint         NOT NULL COMMENT '任务定义ID',
-    `engine_job_id`           varchar(64)                  DEFAULT NULL COMMENT 'SeaTunnel Engine Job ID',
+    `engine_job_id`           varchar(64)             DEFAULT NULL COMMENT 'SeaTunnel Engine Job ID',
     `client_id`               bigint                  DEFAULT NULL COMMENT 'SeaTunnel Client ID',
     `pipeline_id`             int            NOT NULL DEFAULT 0 COMMENT 'Pipeline ID',
     `job_status`              varchar(32)             DEFAULT NULL COMMENT '引擎返回的任务状态',
@@ -432,7 +440,7 @@ CREATE TABLE `t_seatunnel_web_streaming_job_table_metrics_current`
 (
     `job_instance_id`      bigint         NOT NULL COMMENT 'Web侧实例ID',
     `job_definition_id`    bigint         NOT NULL COMMENT '任务定义ID',
-    `engine_job_id`        varchar(64)                  DEFAULT NULL COMMENT 'SeaTunnel Engine Job ID',
+    `engine_job_id`        varchar(64)             DEFAULT NULL COMMENT 'SeaTunnel Engine Job ID',
     `client_id`            bigint                  DEFAULT NULL COMMENT 'SeaTunnel Client ID',
     `pipeline_id`          int            NOT NULL DEFAULT 0 COMMENT 'Pipeline ID',
     `source_table`         varchar(512)            DEFAULT NULL COMMENT '源表',
@@ -473,7 +481,7 @@ CREATE TABLE `t_seatunnel_web_streaming_job_instance`
     `job_status`        varchar(32) NOT NULL COMMENT '实例状态',
     `trigger_source`    varchar(64)          DEFAULT NULL COMMENT '触发来源',
     `retry_count`       int         NOT NULL DEFAULT 0 COMMENT '重试次数',
-    `engine_job_id`     varchar(64)               DEFAULT NULL COMMENT 'SeaTunnel Engine Job ID',
+    `engine_job_id`     varchar(64)          DEFAULT NULL COMMENT 'SeaTunnel Engine Job ID',
     `runtime_config`    longtext COMMENT '本次执行使用的 HOCON 配置',
     `log_path`          varchar(512)         DEFAULT NULL COMMENT '日志路径',
     `error_message`     text COMMENT '错误摘要',
@@ -730,17 +738,17 @@ CREATE TABLE `QRTZ_TRIGGERS`
 DROP TABLE IF EXISTS `t_seatunnel_web_cdc_server_id_pool`;
 CREATE TABLE `t_seatunnel_web_cdc_server_id_pool`
 (
-    `id`            bigint(20) NOT NULL AUTO_INCREMENT COMMENT 'primary key',
-    `datasource_id` bigint(20) NOT NULL COMMENT 'datasource id for this MySQL CDC server-id pool',
+    `id`            bigint                                                  NOT NULL COMMENT 'primary key',
+    `datasource_id` bigint                                                  NOT NULL COMMENT 'datasource id for this MySQL CDC server-id pool',
     `instance_key`  varchar(255) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL COMMENT 'unique MySQL instance or cluster key',
-    `min_server_id` bigint(20) NOT NULL DEFAULT 5400 COMMENT 'minimum allocatable server-id',
-    `max_server_id` bigint(20) NOT NULL DEFAULT 6400 COMMENT 'maximum allocatable server-id',
+    `min_server_id` bigint                                                  NOT NULL DEFAULT 5400 COMMENT 'minimum allocatable server-id',
+    `max_server_id` bigint                                                  NOT NULL DEFAULT 6400 COMMENT 'maximum allocatable server-id',
     `status`        tinyint(4) NOT NULL DEFAULT 1 COMMENT '1 enabled, 0 disabled',
-    `create_time`   datetime(0) NOT NULL DEFAULT CURRENT_TIMESTAMP(0) COMMENT 'create time',
-    `update_time`   datetime(0) NOT NULL DEFAULT CURRENT_TIMESTAMP(0) ON UPDATE CURRENT_TIMESTAMP(0) COMMENT 'update time',
+    `create_time`   datetime(0) NOT NULL DEFAULT CURRENT_TIMESTAMP (0) COMMENT 'create time',
+    `update_time`   datetime(0) NOT NULL DEFAULT CURRENT_TIMESTAMP (0) ON UPDATE CURRENT_TIMESTAMP (0) COMMENT 'update time',
     PRIMARY KEY (`id`) USING BTREE,
     UNIQUE KEY `uk_cdc_server_id_pool_instance` (`instance_key`) USING BTREE,
-    KEY `idx_cdc_server_id_pool_datasource` (`datasource_id`) USING BTREE
+    KEY             `idx_cdc_server_id_pool_datasource` (`datasource_id`) USING BTREE
 ) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_general_ci COMMENT = 'MySQL CDC server-id allocation pool' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
@@ -749,19 +757,41 @@ CREATE TABLE `t_seatunnel_web_cdc_server_id_pool`
 DROP TABLE IF EXISTS `t_seatunnel_web_cdc_server_id_allocation`;
 CREATE TABLE `t_seatunnel_web_cdc_server_id_allocation`
 (
-    `id`                bigint(20) NOT NULL AUTO_INCREMENT COMMENT 'primary key',
-    `pool_id`           bigint(20) NOT NULL COMMENT 'server-id pool id',
-    `server_id`         bigint(20) NOT NULL COMMENT 'allocated MySQL CDC server-id',
-    `job_definition_id` bigint(20) NOT NULL COMMENT 'job definition id',
-    `job_instance_id`   bigint(20) NULL DEFAULT NULL COMMENT 'job instance id',
+    `id`                bigint                                                 NOT NULL COMMENT 'primary key',
+    `pool_id`           bigint                                                 NOT NULL COMMENT 'server-id pool id',
+    `server_id`         bigint                                                 NOT NULL COMMENT 'allocated MySQL CDC server-id',
+    `job_definition_id` bigint                                                 NOT NULL COMMENT 'job definition id',
+    `job_instance_id`   bigint NULL DEFAULT NULL COMMENT 'job instance id',
     `source`            varchar(32) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL DEFAULT 'MANUAL' COMMENT 'MANUAL or AUTO',
     `active`            tinyint(4) NULL DEFAULT 1 COMMENT '1 currently occupied, NULL released',
-    `allocated_time`    datetime(0) NOT NULL DEFAULT CURRENT_TIMESTAMP(0) COMMENT 'allocated time',
+    `allocated_time`    datetime(0) NOT NULL DEFAULT CURRENT_TIMESTAMP (0) COMMENT 'allocated time',
     `released_time`     datetime(0) NULL DEFAULT NULL COMMENT 'released time',
-    `create_time`       datetime(0) NOT NULL DEFAULT CURRENT_TIMESTAMP(0) COMMENT 'create time',
-    `update_time`       datetime(0) NOT NULL DEFAULT CURRENT_TIMESTAMP(0) ON UPDATE CURRENT_TIMESTAMP(0) COMMENT 'update time',
+    `create_time`       datetime(0) NOT NULL DEFAULT CURRENT_TIMESTAMP (0) COMMENT 'create time',
+    `update_time`       datetime(0) NOT NULL DEFAULT CURRENT_TIMESTAMP (0) ON UPDATE CURRENT_TIMESTAMP (0) COMMENT 'update time',
     PRIMARY KEY (`id`) USING BTREE,
     UNIQUE KEY `uk_cdc_server_id_active` (`pool_id`, `server_id`, `active`) USING BTREE,
-    KEY `idx_cdc_server_id_job_definition` (`job_definition_id`) USING BTREE,
-    KEY `idx_cdc_server_id_job_instance` (`job_instance_id`) USING BTREE
+    KEY                 `idx_cdc_server_id_job_definition` (`job_definition_id`) USING BTREE,
+    KEY                 `idx_cdc_server_id_job_instance` (`job_instance_id`) USING BTREE
 ) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_general_ci COMMENT = 'MySQL CDC server-id allocation records' ROW_FORMAT = Dynamic;
+
+CREATE TABLE t_seatunnel_web_client_node
+(
+    id                  bigint       NOT NULL PRIMARY KEY COMMENT '主键 ID',
+    client_id           bigint       NOT NULL COMMENT '客户端 ID',
+    node_role           varchar(32)  NOT NULL COMMENT '节点角色：MASTER / WORKER',
+    node_name           varchar(128) DEFAULT NULL COMMENT '节点名称',
+    host                varchar(255) NOT NULL COMMENT '节点地址',
+    port                int          DEFAULT NULL COMMENT 'REST 端口',
+    base_url            varchar(512) DEFAULT NULL COMMENT 'REST Base URL',
+    active_master       tinyint(1) DEFAULT 0 COMMENT '是否当前活跃 Master',
+    health_status       int          DEFAULT 0 COMMENT '健康状态：0 UNKNOWN, 1 LIVE, 2 DEAD',
+    client_version      varchar(64)  DEFAULT NULL COMMENT '节点版本',
+    last_heartbeat_time datetime     DEFAULT NULL COMMENT '最近探活时间',
+    last_error          text COMMENT '最近错误信息',
+    `create_time`       datetime(0) NOT NULL DEFAULT CURRENT_TIMESTAMP (0) COMMENT 'create time',
+    `update_time`       datetime(0) NOT NULL DEFAULT CURRENT_TIMESTAMP (0) ON UPDATE CURRENT_TIMESTAMP (0) COMMENT 'update time',
+    UNIQUE KEY uk_client_role_host_port (client_id, node_role, host, port),
+    KEY                 idx_client_id (client_id),
+    KEY                 idx_client_role (client_id, node_role),
+    KEY                 idx_health_status (health_status)
+) COMMENT='SeaTunnel Client 节点表';

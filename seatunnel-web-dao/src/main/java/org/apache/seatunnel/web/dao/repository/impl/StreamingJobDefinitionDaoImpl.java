@@ -1,5 +1,6 @@
 package org.apache.seatunnel.web.dao.repository.impl;
 
+import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import jakarta.annotation.Resource;
 import lombok.NonNull;
@@ -14,6 +15,7 @@ import org.springframework.stereotype.Repository;
 
 import java.util.Collections;
 import java.util.List;
+import java.util.stream.Collectors;
 
 @Repository
 public class StreamingJobDefinitionDaoImpl
@@ -95,5 +97,64 @@ public class StreamingJobDefinitionDaoImpl
     public Long count(StreamingJobDefinitionQueryDTO dto) {
         Long count = streamingJobDefinitionMapper.countPage(dto);
         return count == null ? 0L : count;
+    }
+
+    @Override
+    public boolean existsByDatasourceId(Long datasourceId) {
+        if (datasourceId == null || datasourceId <= 0) {
+            return false;
+        }
+
+        LambdaQueryWrapper<StreamingJobDefinitionEntity> wrapper = new LambdaQueryWrapper<>();
+        wrapper.select(StreamingJobDefinitionEntity::getId)
+                .and(w -> w
+                        .eq(StreamingJobDefinitionEntity::getSourceDatasourceId, datasourceId)
+                        .or()
+                        .eq(StreamingJobDefinitionEntity::getSinkDatasourceId, datasourceId)
+                )
+                .last("LIMIT 1");
+
+        return streamingJobDefinitionMapper.selectOne(wrapper) != null;
+    }
+
+    @Override
+    public List<Long> selectReferencedDatasourceIds(List<Long> datasourceIds) {
+        if (datasourceIds == null || datasourceIds.isEmpty()) {
+            return Collections.emptyList();
+        }
+
+        List<Long> validIds = datasourceIds.stream()
+                .filter(id -> id != null && id > 0)
+                .distinct()
+                .collect(Collectors.toList());
+
+        if (validIds.isEmpty()) {
+            return Collections.emptyList();
+        }
+
+        LambdaQueryWrapper<StreamingJobDefinitionEntity> wrapper = new LambdaQueryWrapper<>();
+        wrapper.select(
+                StreamingJobDefinitionEntity::getSourceDatasourceId,
+                StreamingJobDefinitionEntity::getSinkDatasourceId
+        )
+                .and(w -> w
+                        .in(StreamingJobDefinitionEntity::getSourceDatasourceId, validIds)
+                        .or()
+                        .in(StreamingJobDefinitionEntity::getSinkDatasourceId, validIds)
+                );
+
+        List<StreamingJobDefinitionEntity> records = streamingJobDefinitionMapper.selectList(wrapper);
+        if (records == null || records.isEmpty()) {
+            return Collections.emptyList();
+        }
+
+        return records.stream()
+                .flatMap(record -> java.util.stream.Stream.of(
+                        record.getSourceDatasourceId(),
+                        record.getSinkDatasourceId()
+                ))
+                .filter(id -> id != null && validIds.contains(id))
+                .distinct()
+                .collect(Collectors.toList());
     }
 }
