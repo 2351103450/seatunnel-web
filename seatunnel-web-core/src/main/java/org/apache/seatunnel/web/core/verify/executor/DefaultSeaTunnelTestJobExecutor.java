@@ -33,7 +33,7 @@ public class DefaultSeaTunnelTestJobExecutor implements SeaTunnelTestJobExecutor
             long pollIntervalMs) {
 
         long start = System.currentTimeMillis();
-        Long jobId = null;
+        String jobId = null;
         JobExecutionResult result = new JobExecutionResult();
 
         try {
@@ -95,7 +95,7 @@ public class DefaultSeaTunnelTestJobExecutor implements SeaTunnelTestJobExecutor
     }
 
     /** Submit the test job and parse its jobId. */
-    private Long submitTestJob(SeaTunnelClient client, ConnectivityTestJob job) {
+    private String submitTestJob(SeaTunnelClient client, ConnectivityTestJob job) {
         Map submitResponse = seaTunnelRestClient.submitJobText(
                 client.getId(),
                 job.getJobConfig(),
@@ -121,7 +121,7 @@ public class DefaultSeaTunnelTestJobExecutor implements SeaTunnelTestJobExecutor
             JobExecutionResult result,
             SeaTunnelClient client,
             ConnectivityTestJob job,
-            Long jobId,
+            String jobId,
             long start,
             long pollIntervalMs,
             long timeoutMs) {
@@ -140,7 +140,7 @@ public class DefaultSeaTunnelTestJobExecutor implements SeaTunnelTestJobExecutor
     private JobExecutionResult handleVerifyFail(
             JobExecutionResult result,
             SeaTunnelClient client,
-            Long jobId,
+            String jobId,
             long start) {
 
         result.setSuccess(false);
@@ -154,7 +154,7 @@ public class DefaultSeaTunnelTestJobExecutor implements SeaTunnelTestJobExecutor
             JobExecutionResult result,
             SeaTunnelClient client,
             ConnectivityTestJob job,
-            Long jobId,
+            String jobId,
             JobStatus observedStatus,
             long start,
             long timeoutMs,
@@ -185,7 +185,7 @@ public class DefaultSeaTunnelTestJobExecutor implements SeaTunnelTestJobExecutor
     /** Wait until the job reaches a verifiable status. */
     private JobStatus waitForVerificationPhase(
             Long clientId,
-            Long jobId,
+            String jobId,
             long timeoutMs,
             long pollIntervalMs) throws InterruptedException {
 
@@ -200,7 +200,7 @@ public class DefaultSeaTunnelTestJobExecutor implements SeaTunnelTestJobExecutor
     /** Wait until the job reaches a terminal status after stop. */
     private JobStatus waitForTerminalAfterStop(
             Long clientId,
-            Long jobId,
+            String jobId,
             long timeoutMs,
             long pollIntervalMs) throws InterruptedException {
 
@@ -215,7 +215,7 @@ public class DefaultSeaTunnelTestJobExecutor implements SeaTunnelTestJobExecutor
     /** Poll job status until the stop condition is met or timeout occurs. */
     private JobStatus pollStatusUntil(
             Long clientId,
-            Long jobId,
+            String jobId,
             long timeoutMs,
             long pollIntervalMs,
             StatusStopCondition stopCondition) throws InterruptedException {
@@ -234,7 +234,7 @@ public class DefaultSeaTunnelTestJobExecutor implements SeaTunnelTestJobExecutor
     /** Stop the job and wait for terminal status quietly. */
     private void tryCleanupAndWaitTerminal(
             Long clientId,
-            Long jobId,
+            String jobId,
             long pollIntervalMs,
             long timeoutMs) {
         if (jobId == null) {
@@ -250,7 +250,7 @@ public class DefaultSeaTunnelTestJobExecutor implements SeaTunnelTestJobExecutor
     }
 
     /** Query current job status with detail-first and list-based fallback. */
-    private JobStatus queryJobStatus(Long clientId, Long jobId) {
+    private JobStatus queryJobStatus(Long clientId, String jobId) {
         try {
             Map info = seaTunnelRestClient.jobInfo(clientId, jobId);
             JobStatus status = responseParser.extractStatus(info);
@@ -296,7 +296,7 @@ public class DefaultSeaTunnelTestJobExecutor implements SeaTunnelTestJobExecutor
     }
 
     /** Try to stop the job without interrupting the main flow. */
-    private void stopJobQuietly(Long clientId, Long jobId) {
+    private void stopJobQuietly(Long clientId, String jobId) {
         if (jobId == null) {
             return;
         }
@@ -310,7 +310,7 @@ public class DefaultSeaTunnelTestJobExecutor implements SeaTunnelTestJobExecutor
     }
 
     /** Read job log for troubleshooting when possible. */
-    private String tryReadLog(Long clientId, Long jobId) {
+    private String tryReadLog(Long clientId, String jobId) {
         try {
             Object logObj = seaTunnelRestClient.logs(clientId, jobId, "TEXT");
             return logObj == null ? null : String.valueOf(logObj);

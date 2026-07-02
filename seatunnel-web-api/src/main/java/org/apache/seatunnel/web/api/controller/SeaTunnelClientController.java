@@ -16,6 +16,7 @@ import org.apache.seatunnel.web.spi.bean.vo.SeaTunnelClientVO;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/api/v1/devops/client")
@@ -63,5 +64,32 @@ public class SeaTunnelClientController {
             @PathVariable("instanceId") Long instanceId,
             @RequestParam(value = "jobMode", required = false) String jobMode) {
         return Result.buildSuc(seatunnelClientService.logsByInstanceId(instanceId, jobMode));
+    }
+
+    @GetMapping("/{clientId}/jobs/checkpoints/{jobId}")
+    public Result<Map<String, Object>> checkpointOverview(
+            @PathVariable("clientId") Long clientId,
+            @PathVariable("jobId") Long jobId) {
+        return Result.buildSuc(
+                seatunnelClientService.checkpointOverview(clientId, jobId)
+        );
+    }
+
+    @GetMapping("/{clientId}/jobs/checkpoints/history/{jobId}")
+    public Result<List<Map<String, Object>>> checkpointHistory(
+            @PathVariable("clientId") Long clientId,
+            @PathVariable("jobId") Long jobId,
+            @RequestParam(value = "pipelineId", required = false) Long pipelineId,
+            @RequestParam(value = "limit", required = false, defaultValue = "20") Integer limit,
+            @RequestParam(value = "status", required = false) String status) {
+        return Result.buildSuc(
+                seatunnelClientService.checkpointHistory(
+                        clientId,
+                        jobId,
+                        pipelineId,
+                        limit,
+                        status
+                )
+        );
     }
 }

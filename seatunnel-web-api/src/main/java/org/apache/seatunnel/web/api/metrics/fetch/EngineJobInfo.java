@@ -10,7 +10,7 @@ public class EngineJobInfo {
 
     private Long clientId;
 
-    private Long engineJobId;
+    private String engineJobId;
 
     private String jobName;
 

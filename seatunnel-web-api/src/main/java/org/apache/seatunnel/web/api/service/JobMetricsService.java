@@ -16,7 +16,7 @@ public interface JobMetricsService {
      * Fetch and parse metrics from SeaTunnel Engine.
      */
     ParsedJobMetrics getJobMetricsFromEngine(@NonNull Long clientId,
-                                             @NonNull Long jobEngineId);
+                                             @NonNull String jobEngineId);
 
     /**
      * Save pipeline level metrics.

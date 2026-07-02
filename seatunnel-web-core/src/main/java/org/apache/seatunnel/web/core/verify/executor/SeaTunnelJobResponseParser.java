@@ -13,7 +13,7 @@ import java.util.Map;
 @SuppressWarnings("rawtypes")
 public class SeaTunnelJobResponseParser {
 
-    public Long extractJobId(Map submitResponse) {
+    public String extractJobId(Map submitResponse) {
         if (submitResponse == null || submitResponse.isEmpty()) {
             return null;
         }
@@ -23,7 +23,7 @@ public class SeaTunnelJobResponseParser {
                 submitResponse.get("job_id"),
                 submitResponse.get("id")
         );
-        Long parsedDirect = toLong(direct);
+        String parsedDirect = direct.toString();
         if (parsedDirect != null) {
             return parsedDirect;
         }
@@ -36,7 +36,7 @@ public class SeaTunnelJobResponseParser {
                     dataMap.get("job_id"),
                     dataMap.get("id")
             );
-            return toLong(nested);
+            return nested.toString();
         }
 
         return null;
@@ -71,7 +71,7 @@ public class SeaTunnelJobResponseParser {
         return null;
     }
 
-    public boolean containsJob(List list, Long jobId) {
+    public boolean containsJob(List list, String jobId) {
         if (list == null || list.isEmpty() || jobId == null) {
             return false;
         }
@@ -84,7 +84,7 @@ public class SeaTunnelJobResponseParser {
                         map.get("job_id"),
                         map.get("id")
                 ));
-                if (jobId.equals(id)) {
+                if (jobId.equals(id.toString())) {
                     return true;
                 }
             }

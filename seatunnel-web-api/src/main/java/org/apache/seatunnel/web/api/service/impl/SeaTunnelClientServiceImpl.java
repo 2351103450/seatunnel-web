@@ -286,6 +286,28 @@ public class SeaTunnelClientServiceImpl implements SeaTunnelClientService {
     }
 
     @Override
+    @SuppressWarnings("unchecked")
+    public Map<String, Object> checkpointOverview(Long clientId, Long jobId) {
+        return seaTunnelRestClient.checkpointOverview(clientId, jobId);
+    }
+
+    @Override
+    @SuppressWarnings("unchecked")
+    public List<Map<String, Object>> checkpointHistory(Long clientId,
+                                                       Long jobId,
+                                                       Long pipelineId,
+                                                       Integer limit,
+                                                       String status) {
+        return seaTunnelRestClient.checkpointHistory(
+                clientId,
+                jobId,
+                pipelineId,
+                limit,
+                status
+        );
+    }
+
+    @Override
     public String logsByInstanceId(Long instanceId, String jobMode) {
         if (instanceId == null) {
             throw new IllegalArgumentException("instanceId cannot be empty");
@@ -362,7 +384,7 @@ public class SeaTunnelClientServiceImpl implements SeaTunnelClientService {
 
     private String getEngineLogs(
             Long clientId,
-            Long engineJobId,
+            String engineJobId,
             String instanceType,
             Long instanceId
     ) {

@@ -26,7 +26,7 @@ public class JobRuntimeContext {
      * This ID is used to communicate with the SeaTunnel engine
      * for metrics collection and job result querying.
      */
-    private Long engineId;
+    private String engineId;
 
     private Long jobDefinitionId;
 

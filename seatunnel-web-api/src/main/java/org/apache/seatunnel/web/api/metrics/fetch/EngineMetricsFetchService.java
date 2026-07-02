@@ -4,5 +4,5 @@ import java.util.Map;
 
 public interface EngineMetricsFetchService {
 
-    EngineJobInfo fetchJobInfo(Long clientId, Long engineJobId);
+    EngineJobInfo fetchJobInfo(Long clientId, String engineJobId);
 }

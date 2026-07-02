@@ -225,7 +225,7 @@ public class JobInstanceRecoveryScheduler {
     }
 
     private boolean shouldSkipRecovery(Long instanceId,
-                                       Long engineJobId,
+                                       String engineJobId,
                                        ZetaJobStatusResolveResult result) {
         if (result == null) {
             log.warn(
@@ -282,7 +282,7 @@ public class JobInstanceRecoveryScheduler {
     }
 
     private String buildRecoveryMessage(Long instanceId,
-                                        Long engineJobId,
+                                        String engineJobId,
                                         ZetaJobStatusResolveResult result) {
         if (result == null) {
             return "SeaTunnel Web 重启后执行任务状态恢复失败，Zeta 状态解析结果为空。"

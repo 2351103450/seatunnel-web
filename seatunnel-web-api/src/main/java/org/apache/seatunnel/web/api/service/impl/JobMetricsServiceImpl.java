@@ -56,7 +56,7 @@ public class JobMetricsServiceImpl implements JobMetricsService {
 
     @Override
     public ParsedJobMetrics getJobMetricsFromEngine(@NonNull Long clientId,
-                                                    @NonNull Long jobEngineId) {
+                                                    @NonNull String jobEngineId) {
         Map<String, Object> jobInfo = engineRestClient.jobInfo(clientId, jobEngineId);
         if (jobInfo == null || jobInfo.isEmpty()) {
             return new ParsedJobMetrics();

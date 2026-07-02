@@ -39,14 +39,14 @@ public class ZetaJobStatusHandler {
     @Resource
     private SeaTunnelRestClient seaTunnelRestClient;
 
-    public ZetaJobStatusResolveResult resolve(Long clientId, Long engineJobId) {
+    public ZetaJobStatusResolveResult resolve(Long clientId, String engineJobId) {
         if (clientId == null || clientId <= 0) {
             return ZetaJobStatusResolveResult.notFound(
                     "clientId is empty, cannot reconcile Zeta job status"
             );
         }
 
-        if (engineJobId == null || engineJobId <= 0) {
+        if (engineJobId == null ) {
             return ZetaJobStatusResolveResult.notFound(
                     "engineJobId is empty, cannot reconcile Zeta job status"
             );
@@ -106,7 +106,7 @@ public class ZetaJobStatusHandler {
     }
 
     private ZetaJobStatusResolveResult resolveFromRunningJobs(Long clientId,
-                                                              Long engineJobId) {
+                                                              String engineJobId) {
         List runningJobs = seaTunnelRestClient.runningJobs(clientId);
         if (runningJobs == null || runningJobs.isEmpty()) {
             return null;
@@ -144,7 +144,7 @@ public class ZetaJobStatusHandler {
     }
 
     private ZetaJobStatusResolveResult resolveFromJobInfo(Long clientId,
-                                                          Long engineJobId) {
+                                                          String engineJobId) {
         Map jobInfo = seaTunnelRestClient.jobInfo(clientId, engineJobId);
         if (jobInfo == null || jobInfo.isEmpty()) {
             return null;
@@ -181,7 +181,7 @@ public class ZetaJobStatusHandler {
     }
 
     private ZetaJobStatusResolveResult resolveFromFinishedJobs(Long clientId,
-                                                               Long engineJobId) {
+                                                               String engineJobId) {
         for (String state : FINISHED_JOB_STATES) {
             ZetaJobStatusResolveResult result =
                     resolveFromFinishedJobsByState(clientId, engineJobId, state);
@@ -195,7 +195,7 @@ public class ZetaJobStatusHandler {
     }
 
     private ZetaJobStatusResolveResult resolveFromFinishedJobsByState(Long clientId,
-                                                                      Long engineJobId,
+                                                                      String engineJobId,
                                                                       String state) {
         List finishedJobs;
 

@@ -28,7 +28,7 @@ public interface JobInstanceDao extends IDao<JobInstance> {
 
     void updateStatusAndEngineId(Long instanceId, JobStatus status, String engineJobId);
 
-    void updateSubmitResult(Long instanceId, Long engineJobId, JobStatus submitStatus, Date submitTime);
+    void updateSubmitResult(Long instanceId, String engineJobId, JobStatus submitStatus, Date submitTime);
 
     List<JobInstanceVO> listRunningByJobType(JobMode jobMode);
 

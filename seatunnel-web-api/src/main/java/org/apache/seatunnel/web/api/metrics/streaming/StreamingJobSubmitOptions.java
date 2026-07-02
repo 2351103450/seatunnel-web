@@ -8,10 +8,10 @@ import lombok.Getter;
 @Getter
 public class StreamingJobSubmitOptions {
 
-    private final Long restoreEngineJobId;
+    private final String restoreEngineJobId;
     private final boolean startWithSavepoint;
 
-    private StreamingJobSubmitOptions(Long restoreEngineJobId, boolean startWithSavepoint) {
+    private StreamingJobSubmitOptions(String restoreEngineJobId, boolean startWithSavepoint) {
         this.restoreEngineJobId = restoreEngineJobId;
         this.startWithSavepoint = startWithSavepoint;
     }
@@ -20,8 +20,8 @@ public class StreamingJobSubmitOptions {
         return new StreamingJobSubmitOptions(null, false);
     }
 
-    public static StreamingJobSubmitOptions restoreFromSavepoint(Long restoreEngineJobId) {
-        if (restoreEngineJobId == null || restoreEngineJobId <= 0) {
+    public static StreamingJobSubmitOptions restoreFromSavepoint(String restoreEngineJobId) {
+        if (restoreEngineJobId == null) {
             throw new IllegalArgumentException("restoreEngineJobId must be positive");
         }
         return new StreamingJobSubmitOptions(restoreEngineJobId, true);

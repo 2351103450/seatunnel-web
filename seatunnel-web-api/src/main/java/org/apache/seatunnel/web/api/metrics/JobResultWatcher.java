@@ -58,7 +58,7 @@ public class JobResultWatcher {
 
         Long instanceId = context.getInstanceId();
         Long clientId = context.getClientId();
-        Long engineId = context.getEngineId();
+        String engineId = context.getEngineId();
 
         try {
             validateContext(context);
@@ -152,12 +152,12 @@ public class JobResultWatcher {
             throw new IllegalArgumentException("clientId must not be null");
         }
 
-        if (context.getEngineId() == null || context.getEngineId() <= 0) {
+        if (context.getEngineId() == null) {
             throw new IllegalArgumentException("engineId must not be null");
         }
     }
 
-    private void checkTimeout(long start, Long engineId) {
+    private void checkTimeout(long start, String engineId) {
         if (pollTimeoutMs <= 0) {
             return;
         }

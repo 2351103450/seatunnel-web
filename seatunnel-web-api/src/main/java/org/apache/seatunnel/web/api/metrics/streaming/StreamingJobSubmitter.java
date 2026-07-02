@@ -44,7 +44,7 @@ public class StreamingJobSubmitter {
         submit(instance, StreamingJobSubmitOptions.normal());
     }
 
-    public void submitFromSavepoint(JobInstanceVO instance, Long restoreEngineJobId) {
+    public void submitFromSavepoint(JobInstanceVO instance, String restoreEngineJobId) {
         submit(instance, StreamingJobSubmitOptions.restoreFromSavepoint(restoreEngineJobId));
     }
 
@@ -68,7 +68,7 @@ public class StreamingJobSubmitter {
         jobLogger.info("Restore engine job id: " + options.getRestoreEngineJobId());
 
         String configFile = null;
-        Long engineId = null;
+        String engineId = null;
         boolean submitted = false;
 
         try {
@@ -134,7 +134,7 @@ public class StreamingJobSubmitter {
 
         Long instanceId = instance.getId();
         Long clientId = instance.getClientId();
-        Long engineJobId = instance.getEngineJobId();
+        String engineJobId = instance.getEngineJobId();
 
         log.info(
                 "Stopping streaming SeaTunnel job: instanceId={}, clientId={}, engineJobId={}, stopWithSavepoint={}",
@@ -197,7 +197,7 @@ public class StreamingJobSubmitter {
     }
 
     private JobRuntimeContext buildRuntimeContext(JobInstanceVO instance,
-                                                  Long engineId,
+                                                  String engineId,
                                                   String configFile) {
         JobRuntimeContext ctx = new JobRuntimeContext();
 
@@ -229,7 +229,7 @@ public class StreamingJobSubmitter {
 
     private void handlePostSubmitFailure(JobFileLogger jobLogger,
                                          Long instanceId,
-                                         Long engineId,
+                                         String engineId,
                                          Exception e) {
         jobLogger.error(
                 "Streaming job was submitted to SeaTunnel Engine, but post-submit handling failed. " +
@@ -241,14 +241,14 @@ public class StreamingJobSubmitter {
                 instanceId, engineId, e);
     }
 
-    private Long extractJobId(Map<?, ?> resp) {
+    private String extractJobId(Map<?, ?> resp) {
         Object jobIdObj = resp == null ? null : resp.get("jobId");
 
         if (jobIdObj == null) {
             throw new IllegalStateException("REST submit response missing jobId, resp=" + resp);
         }
 
-        return Long.valueOf(jobIdObj.toString());
+        return jobIdObj.toString();
     }
 
     private void validate(JobInstanceVO instance) {
@@ -279,7 +279,7 @@ public class StreamingJobSubmitter {
         }
 
         if (options.isStartWithSavepoint()
-                && (options.getRestoreEngineJobId() == null || options.getRestoreEngineJobId() <= 0)) {
+                && (options.getRestoreEngineJobId() == null)) {
             throw new IllegalArgumentException("restoreEngineJobId must be positive when startWithSavepoint is true");
         }
     }
@@ -293,7 +293,7 @@ public class StreamingJobSubmitter {
             throw new ServiceException(Status.REQUEST_PARAMS_NOT_VALID_ERROR, "clientId");
         }
 
-        if (instance.getEngineJobId() == null || instance.getEngineJobId() <= 0) {
+        if (instance.getEngineJobId() == null) {
             throw new ServiceException(Status.REQUEST_PARAMS_NOT_VALID_ERROR, "engineJobId");
         }
     }
