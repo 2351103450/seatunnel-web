@@ -1,6 +1,8 @@
-import { Empty, Table, Tooltip } from "antd";
+import { Empty, message, Table, Tooltip } from "antd";
 import type { ColumnsType, TablePaginationConfig } from "antd/es/table";
 import React from "react";
+
+import { CopyOutlined } from "@ant-design/icons";
 
 import ExecutionStatus from "./ExecutionStatus";
 import RealtimeMetricsTrend from "./RealtimeMetricsTrend";
@@ -59,6 +61,30 @@ const RealtimeTaskTable: React.FC<RealtimeTaskTableProps> = ({
   onLog,
   onCheckpoint,
 }) => {
+  const copyToClipboard = async (text: string | number) => {
+    const value = String(text);
+
+    try {
+      if (navigator.clipboard && window.isSecureContext) {
+        await navigator.clipboard.writeText(value);
+      } else {
+        const textarea = document.createElement("textarea");
+        textarea.value = value;
+        textarea.style.position = "fixed";
+        textarea.style.opacity = "0";
+        document.body.appendChild(textarea);
+        textarea.focus();
+        textarea.select();
+        document.execCommand("copy");
+        document.body.removeChild(textarea);
+      }
+
+      message.success("ID 已复制");
+    } catch {
+      message.error("复制失败，请手动复制");
+    }
+  };
+
   const columns: ColumnsType<StreamingJobDefinitionVO> = [
     {
       title: "名称/ID",
@@ -66,22 +92,34 @@ const RealtimeTaskTable: React.FC<RealtimeTaskTableProps> = ({
       width: 220,
       render: (_, record) => (
         <div>
-          <div className="max-w-[190px] truncate font-bold leading-6 text-slate-950">
+          <div className="flex items-center gap-1 text-xs leading-6">
+            <em className="font-medium not-italic text-slate-700">任务名称</em>
+            <span className="text-slate-400">:</span>
+
             <Tooltip title={record.jobName || record.id}>
-              <span>{record.jobName || "未命名实时任务"}</span>
+              <span className="max-w-[150px] truncate text-slate-950">
+                {record.jobName || "未命名实时任务"}
+              </span>
             </Tooltip>
           </div>
+          <div className="flex items-center gap-1 text-xs leading-6">
+            <em className="font-medium not-italic text-slate-700">任务ID</em>
+            <span className="text-slate-400">:</span>
+            <span className="text-slate-400">{record.id}</span>
 
-          <div className="mt-0.5 flex items-center gap-1 text-xs text-slate-400">
-            <span>ID: {record.id}</span>
-            <span className="text-slate-300">⧉</span>
+            <Tooltip title="复制 ID">
+              <button
+                type="button"
+                className="ml-1 inline-flex h-[18px] w-[18px] items-center justify-center rounded border-none bg-transparent text-slate-400 transition hover:bg-slate-100 hover:text-blue-600"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  copyToClipboard(record.id);
+                }}
+              >
+                <CopyOutlined className="text-[12px]" />
+              </button>
+            </Tooltip>
           </div>
-
-          {record.jobDesc ? (
-            <div className="mt-1 max-w-[200px] truncate text-xs text-slate-400">
-              {record.jobDesc}
-            </div>
-          ) : null}
         </div>
       ),
     },
