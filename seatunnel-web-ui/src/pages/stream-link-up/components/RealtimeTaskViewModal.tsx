@@ -629,7 +629,7 @@ const LightPanel: React.FC<{
   return (
     <section
       className={[
-        "rounded-xl border border-slate-200 bg-white shadow-sm",
+        "rounded-xl border border-slate-200 bg-white ",
         className,
       ].join(" ")}
     >
@@ -670,7 +670,7 @@ const LightStatPanel: React.FC<{
   return (
     <section
       className={[
-        "rounded-xl border border-slate-200 bg-white p-4 shadow-sm",
+        "rounded-xl border border-slate-200 bg-white p-4 ",
         className,
       ].join(" ")}
     >

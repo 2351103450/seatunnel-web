@@ -1,11 +1,14 @@
 package org.apache.seatunnel.web.dao.entity;
 
+import com.baomidou.mybatisplus.annotation.TableField;
 import com.baomidou.mybatisplus.annotation.TableName;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import org.apache.seatunnel.web.spi.bean.dto.SeaTunnelClientEndpointDTO;
 
 import java.util.Date;
+import java.util.List;
 
 @Data
 @AllArgsConstructor
@@ -19,7 +22,13 @@ public class SeaTunnelClient {
 
     private String engineType;
 
+    private String deployMode;
+
+    private String protocol;
+
     private String baseUrl;
+
+    private Long activeMasterNodeId;
 
     private Integer healthStatus;
 
@@ -39,7 +48,15 @@ public class SeaTunnelClient {
 
     private String remark;
 
+    private String lastError;
+
     private Date createTime;
 
     private Date updateTime;
+
+    @TableField(exist = false)
+    private List<SeaTunnelClientEndpointDTO> masterEndpoints;
+
+    @TableField(exist = false)
+    private List<SeaTunnelClientEndpointDTO> workerEndpoints;
 }

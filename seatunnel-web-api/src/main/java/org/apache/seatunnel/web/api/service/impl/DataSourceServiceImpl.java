@@ -314,9 +314,7 @@ public class DataSourceServiceImpl extends BaseServiceImpl implements DataSource
         boolean usedByStreamingJob = streamingJobDefinitionDao.existsByDatasourceId(datasourceId);
 
         if (usedByBatchJob || usedByStreamingJob) {
-            throw new ServiceException(
-                    Status.REQUEST_PARAMS_NOT_VALID_ERROR,
-                    "Data source is used by batch or streaming job definition and cannot be deleted. datasourceId=" + datasourceId
+            throw new ServiceException("The data source is currently used by a job and cannot be deleted."
             );
         }
     }

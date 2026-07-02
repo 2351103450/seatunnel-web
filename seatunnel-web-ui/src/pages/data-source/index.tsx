@@ -152,13 +152,7 @@ const DataSourcePage: React.FC = () => {
           message.success(response.message || "Delete success");
           handleRefresh();
         } catch (error: any) {
-          message.error(
-            error?.message ||
-              intl.formatMessage({
-                id: "pages.datasource.message.deleteFailed",
-                defaultMessage: "Delete failed",
-              })
-          );
+          
         }
       },
     });
