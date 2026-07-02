@@ -6,14 +6,12 @@ import {
   EditOutlined,
   EyeOutlined,
   FileSearchOutlined,
-  FileTextOutlined,
   PauseCircleOutlined,
   PlayCircleOutlined,
   SaveOutlined,
   SyncOutlined,
 } from "@ant-design/icons";
 import { Dropdown, Popconfirm, Space, message } from "antd";
-import { FileSearchIcon } from "lucide-react";
 import React, { useState } from "react";
 
 export interface StreamingJobDefinitionVO {
@@ -48,8 +46,12 @@ interface RealtimeTaskActionColumnProps {
   onEdit?: (record: StreamingJobDefinitionVO) => void;
   onRun?: (record: StreamingJobDefinitionVO) => Promise<void> | void;
   onStop?: (record: StreamingJobDefinitionVO) => Promise<void> | void;
-  onStopWithSavepoint?: (record: StreamingJobDefinitionVO) => Promise<void> | void;
-  onResumeFromSavepoint?: (record: StreamingJobDefinitionVO) => Promise<void> | void;
+  onStopWithSavepoint?: (
+    record: StreamingJobDefinitionVO
+  ) => Promise<void> | void;
+  onResumeFromSavepoint?: (
+    record: StreamingJobDefinitionVO
+  ) => Promise<void> | void;
   onOnline?: (record: StreamingJobDefinitionVO) => Promise<void> | void;
   onOffline?: (record: StreamingJobDefinitionVO) => Promise<void> | void;
   onDelete?: (record: StreamingJobDefinitionVO) => Promise<void> | void;
@@ -109,7 +111,8 @@ const RealtimeTaskActionColumn: React.FC<RealtimeTaskActionColumnProps> = ({
   const canRun = isOnline && !isRunning;
   const canOffline = isOnline && !isRunning;
   const canStopWithSavepoint = isRunning && hasInstance;
-  const canResumeFromSavepoint = isOnline && !isRunning && hasInstance && hasSavepoint;
+  const canResumeFromSavepoint =
+    isOnline && !isRunning && hasInstance && hasSavepoint;
 
   const disableEditOrDelete = isOnline || isRunning;
 
@@ -383,6 +386,11 @@ const RealtimeTaskActionColumn: React.FC<RealtimeTaskActionColumnProps> = ({
               key: "log",
               icon: <FileSearchOutlined />,
               label: "查看日志",
+            },
+            {
+              key: "checkpoint",
+              icon: <SaveOutlined />,
+              label: "查看检查点",
             },
             {
               type: "divider",

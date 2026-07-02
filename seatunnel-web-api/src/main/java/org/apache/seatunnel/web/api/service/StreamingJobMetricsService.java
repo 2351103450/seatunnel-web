@@ -10,12 +10,12 @@ import java.util.List;
 
 public interface StreamingJobMetricsService {
 
-    StreamingParsedJobMetrics getRealtimeMetricsFromEngine(Long clientId, Long engineJobId);
+    StreamingParsedJobMetrics getRealtimeMetricsFromEngine(Long clientId, String engineJobId);
 
     void saveSnapshot(Long jobInstanceId,
                       Long jobDefinitionId,
                       Long clientId,
-                      Long engineJobId,
+                      String engineJobId,
                       StreamingParsedJobMetrics parsed);
 
     StreamingMetricsSnapshotVO latest(Long instanceId);

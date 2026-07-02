@@ -120,6 +120,16 @@ const RealtimeTaskTable: React.FC<RealtimeTaskTableProps> = ({
               </button>
             </Tooltip>
           </div>
+          <div className="flex items-center gap-1 text-xs leading-6">
+            <em className="font-medium not-italic text-slate-700">zetaId</em>
+            <span className="text-slate-400">:</span>
+
+            <Tooltip title={record.engineJobId}>
+              <span className="max-w-[150px] truncate text-slate-950">
+                {record.engineJobId || "未启动"}
+              </span>
+            </Tooltip>
+          </div>
         </div>
       ),
     },

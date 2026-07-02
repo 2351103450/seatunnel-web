@@ -8,6 +8,7 @@ import org.apache.seatunnel.web.spi.bean.dto.SeaTunnelClientPageDTO;
 import org.apache.seatunnel.web.spi.bean.vo.*;
 
 import java.util.List;
+import java.util.Map;
 
 public interface SeaTunnelClientService {
 
@@ -24,4 +25,14 @@ public interface SeaTunnelClientService {
     void deleteById(Long id);
 
     String logsByInstanceId(Long instanceId, String jobMode);
+
+    Map<String, Object> checkpointOverview(Long clientId, Long jobId);
+
+    List<Map<String, Object>> checkpointHistory(
+            Long clientId,
+            Long jobId,
+            Long pipelineId,
+            Integer limit,
+            String status
+    );
 }

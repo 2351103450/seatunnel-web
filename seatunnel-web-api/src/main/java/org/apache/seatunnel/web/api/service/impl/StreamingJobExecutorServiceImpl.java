@@ -123,8 +123,8 @@ public class StreamingJobExecutorServiceImpl implements StreamingJobExecutorServ
             );
         }
 
-        Long engineJobId = instance.getEngineJobId();
-        if (engineJobId == null || engineJobId <= 0) {
+        String engineJobId = instance.getEngineJobId();
+        if (engineJobId == null) {
             throw new ServiceException(Status.REQUEST_PARAMS_NOT_VALID_ERROR, "engineJobId");
         }
 
@@ -192,7 +192,7 @@ public class StreamingJobExecutorServiceImpl implements StreamingJobExecutorServ
             );
         }
 
-        Long restoreEngineJobId = resolveRestoreEngineJobId(sourceInstance);
+        String restoreEngineJobId = resolveRestoreEngineJobId(sourceInstance);
 
         JobInstanceVO newInstance =
                 streamingJobInstanceService.create(jobDefineId, runMode, JobMode.STREAMING);
@@ -289,11 +289,11 @@ public class StreamingJobExecutorServiceImpl implements StreamingJobExecutorServ
         return instance != null && StringUtils.isNotBlank(instance.getSavepointPath());
     }
 
-    private String buildSavepointToken(Long engineJobId) {
+    private String buildSavepointToken(String engineJobId) {
         return ZETA_SAVEPOINT_TOKEN_PREFIX + engineJobId;
     }
 
-    private Long resolveRestoreEngineJobId(JobInstanceVO sourceInstance) {
+    private String resolveRestoreEngineJobId(JobInstanceVO sourceInstance) {
         if (sourceInstance == null) {
             throw new ServiceException(Status.REQUEST_PARAMS_NOT_VALID_ERROR, "sourceJobInstance");
         }
@@ -312,17 +312,6 @@ public class StreamingJobExecutorServiceImpl implements StreamingJobExecutorServ
             engineJobIdText = engineJobIdText.substring(ZETA_SAVEPOINT_TOKEN_PREFIX.length());
         }
 
-        try {
-            Long restoreEngineJobId = Long.valueOf(engineJobIdText);
-            if (restoreEngineJobId <= 0) {
-                throw new IllegalArgumentException("restoreEngineJobId must be positive");
-            }
-            return restoreEngineJobId;
-        } catch (Exception e) {
-            throw new ServiceException(
-                    Status.JOB_DEFINITION_EXECUTE_ERROR,
-                    "invalid savepoint token: " + savepointPath
-            );
-        }
+        return engineJobIdText;
     }
 }

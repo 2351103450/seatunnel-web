@@ -256,6 +256,46 @@ export const seatunnelStreamingJobExecuteApi = {
   },
 };
 
+export const seatunnelCheckpointApi = {
+  overview: (clientId: any, jobId: any) => {
+    return HttpUtils.get(
+      `/api/v1/devops/client/${clientId}/jobs/checkpoints/${jobId}`,
+    );
+  },
+
+  history: (
+    clientId: any,
+    jobId: any,
+    params?: {
+      pipelineId?: string | number;
+      limit?: number;
+      status?: string;
+    },
+  ) => {
+    const query = new URLSearchParams();
+
+    if (params?.pipelineId !== undefined && params?.pipelineId !== null) {
+      query.set("pipelineId", String(params.pipelineId));
+    }
+
+    if (params?.limit !== undefined && params?.limit !== null) {
+      query.set("limit", String(params.limit));
+    }
+
+    if (params?.status) {
+      query.set("status", params.status);
+    }
+
+    const queryString = query.toString();
+
+    return HttpUtils.get(
+      `/api/v1/devops/client/${clientId}/jobs/checkpoints/history/${jobId}${
+        queryString ? `?${queryString}` : ""
+      }`,
+    );
+  },
+};
+
 const instanceApiPrefix = '/api/v1/job/batch-instance';
 
 export const seatunnelJobInstanceApi = {

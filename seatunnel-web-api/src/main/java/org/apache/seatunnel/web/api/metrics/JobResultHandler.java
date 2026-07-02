@@ -166,7 +166,7 @@ public class JobResultHandler {
      * @param instanceId job instance id
      * @param engineId   engine job id
      */
-    public void updateEngineId(Long instanceId, Long engineId) {
+    public void updateEngineId(Long instanceId, String engineId) {
         if (instanceId == null || instanceId <= 0) {
             log.warn("Skip updating engineId because instanceId is invalid, instanceId={}", instanceId);
             return;

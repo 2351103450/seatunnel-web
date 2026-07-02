@@ -278,7 +278,7 @@ public class StreamingJobMetricsMonitor {
         logger.info("Streaming Metrics Snapshot: " + parsed);
     }
 
-    private void sendFinalEvent(Long instanceId, Long engineId, String status) {
+    private void sendFinalEvent(Long instanceId, String engineId, String status) {
         Map<String, Object> message = new HashMap<>();
         message.put("type", "JOB_STATUS");
         message.put("instanceId", instanceId);
@@ -290,7 +290,7 @@ public class StreamingJobMetricsMonitor {
     }
 
     private Map<String, Object> buildPayload(Long instanceId,
-                                             Long engineId,
+                                             String engineId,
                                              StreamingParsedJobMetrics parsed) {
         Map<String, Object> message = new HashMap<>();
         message.put("type", "STREAMING_METRICS");
@@ -303,7 +303,7 @@ public class StreamingJobMetricsMonitor {
         return message;
     }
 
-    private String buildChannel(Long instanceId, Long engineId) {
+    private String buildChannel(Long instanceId, String engineId) {
         return "streaming-job-" + instanceId + "-" + engineId;
     }
 

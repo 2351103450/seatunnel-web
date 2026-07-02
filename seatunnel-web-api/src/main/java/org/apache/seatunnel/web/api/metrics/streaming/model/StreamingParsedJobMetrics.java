@@ -12,7 +12,7 @@ public class StreamingParsedJobMetrics {
 
     private Long clientId;
 
-    private Long engineJobId;
+    private String engineJobId;
 
     private String jobName;
 

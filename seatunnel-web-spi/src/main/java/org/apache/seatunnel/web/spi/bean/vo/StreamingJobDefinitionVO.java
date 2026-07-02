@@ -58,7 +58,7 @@ public class StreamingJobDefinitionVO {
     /**
      * 引擎侧 Job ID。
      */
-    private Long engineJobId;
+    private String engineJobId;
 
     /**
      * 最近一次提交时间。

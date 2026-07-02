@@ -281,7 +281,7 @@ public class SeaTunnelRestClient {
         );
     }
 
-    public Map jobInfo(Long clientId, long jobId) {
+    public Map jobInfo(Long clientId, String jobId) {
         return get(
                 clientId,
                 url(clientId, "/job-info/" + jobId),
@@ -312,7 +312,7 @@ public class SeaTunnelRestClient {
         );
     }
 
-    public String logs(Long clientId, Long jobIdOrNull, String formatOrNull) {
+    public String logs(Long clientId, String jobIdOrNull, String formatOrNull) {
         try {
             String fullPath = String.format("job-%s.log", jobIdOrNull);
             String path = jobIdOrNull == null ? "/log" : "/log/" + fullPath;
@@ -333,7 +333,7 @@ public class SeaTunnelRestClient {
         }
     }
 
-    public String jobLogs(Long clientId, Long engineJobId, String formatOrNull) {
+    public String jobLogs(Long clientId, String engineJobId, String formatOrNull) {
         if (clientId == null) {
             throw new IllegalArgumentException("clientId cannot be empty");
         }
@@ -476,7 +476,7 @@ public class SeaTunnelRestClient {
         );
     }
 
-    public Map stopJob(Long clientId, long jobId, boolean isStopWithSavePoint) {
+    public Map stopJob(Long clientId, String jobId, boolean isStopWithSavePoint) {
         Map<String, Object> body = new java.util.LinkedHashMap<>();
         body.put("jobId", jobId);
         body.put("isStopWithSavePoint", isStopWithSavePoint);
@@ -488,6 +488,60 @@ public class SeaTunnelRestClient {
                 jsonHeaders(clientId),
                 Map.class,
                 "POST /stop-job failed"
+        );
+    }
+
+    public Map checkpointOverview(Long clientId, Long jobId) {
+        if (clientId == null) {
+            throw new IllegalArgumentException("clientId cannot be empty");
+        }
+
+        if (jobId == null) {
+            throw new IllegalArgumentException("jobId cannot be empty");
+        }
+
+        return get(
+                clientId,
+                url(clientId, "/jobs/checkpoints/" + jobId),
+                Map.class,
+                "GET /jobs/checkpoints/{jobId} failed"
+        );
+    }
+
+    public List checkpointHistory(Long clientId,
+                                  Long jobId,
+                                  Long pipelineId,
+                                  Integer limit,
+                                  String status) {
+        if (clientId == null) {
+            throw new IllegalArgumentException("clientId cannot be empty");
+        }
+
+        if (jobId == null) {
+            throw new IllegalArgumentException("jobId cannot be empty");
+        }
+
+        UriComponentsBuilder builder = UriComponentsBuilder.fromHttpUrl(
+                url(clientId, "/jobs/checkpoints/history/" + jobId)
+        );
+
+        if (pipelineId != null) {
+            builder.queryParam("pipelineId", pipelineId);
+        }
+
+        if (limit != null) {
+            builder.queryParam("limit", limit);
+        }
+
+        if (!isBlank(status)) {
+            builder.queryParam("status", status.trim());
+        }
+
+        return get(
+                clientId,
+                builder.build(true).toUriString(),
+                List.class,
+                "GET /jobs/checkpoints/history/{jobId} failed"
         );
     }
 

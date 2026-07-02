@@ -83,7 +83,7 @@ public class StreamingJobResultHandler {
         );
     }
 
-    public void updateEngineId(Long instanceId, Long engineId) {
+    public void updateEngineId(Long instanceId, String engineId) {
         StreamingJobInstance po = new StreamingJobInstance();
         po.setId(instanceId);
         po.setEngineJobId(engineId);

@@ -139,7 +139,7 @@ public class StreamingJobInstanceDaoImpl
     }
 
     @Override
-    public void updateStatusAndEngineId(Long instanceId, JobStatus status, Long engineJobId) {
+    public void updateStatusAndEngineId(Long instanceId, JobStatus status, String engineJobId) {
         boolean endState = status.isEndState();
         Date now = new Date();
 
@@ -160,7 +160,7 @@ public class StreamingJobInstanceDaoImpl
     }
 
     @Override
-    public void updateSubmitResult(Long instanceId, Long engineJobId, JobStatus submitStatus, Date submitTime) {
+    public void updateSubmitResult(Long instanceId, String engineJobId, JobStatus submitStatus, Date submitTime) {
         StreamingJobInstance update = new StreamingJobInstance();
         update.setId(instanceId);
         update.setEngineJobId(engineJobId);

@@ -156,7 +156,7 @@ public class JobMetricsMonitor {
             return;
         }
 
-        if (context.getEngineId() == null || context.getEngineId() <= 0) {
+        if (context.getEngineId() == null ) {
             log.warn("Skip finalizing metrics because engineId is invalid, instanceId={}", instanceId);
             cleanup(instanceId);
             return;
@@ -540,7 +540,7 @@ public class JobMetricsMonitor {
     }
 
     private Map<String, Object> buildPayload(Long instanceId,
-                                             Long engineId,
+                                             String engineId,
                                              ParsedJobMetrics parsed) {
         Map<String, Object> message = new HashMap<>();
         message.put("type", "METRICS");
@@ -552,7 +552,7 @@ public class JobMetricsMonitor {
         return message;
     }
 
-    private void sendFinalEvent(Long instanceId, Long engineId, String status) {
+    private void sendFinalEvent(Long instanceId, String engineId, String status) {
         Map<String, Object> message = new HashMap<>();
         message.put("type", "JOB_STATUS");
         message.put("instanceId", instanceId);
@@ -563,7 +563,7 @@ public class JobMetricsMonitor {
         webSocketService.sendMessage(buildChannel(instanceId, engineId), message);
     }
 
-    private String buildChannel(Long instanceId, Long engineId) {
+    private String buildChannel(Long instanceId, String engineId) {
         return "job-" + instanceId + "-" + engineId;
     }
 
