@@ -45,7 +45,7 @@ import java.util.stream.Collectors;
 public class SeaTunnelClientServiceImpl implements SeaTunnelClientService {
 
     private static final Set<String> SUPPORTED_CLIENT_VERSIONS =
-            new HashSet<>(Arrays.asList("2.3.12", "2.3.13"));
+            new HashSet<>(Arrays.asList( "2.3.13"));
 
     private static final long DEFAULT_DATASOURCE_VERIFY_TIMEOUT_MS = 15000L;
 

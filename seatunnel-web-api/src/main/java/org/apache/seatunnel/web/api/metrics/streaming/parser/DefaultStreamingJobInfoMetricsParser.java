@@ -8,6 +8,7 @@ import org.apache.seatunnel.web.api.metrics.streaming.model.StreamingTableMetric
 import org.springframework.stereotype.Component;
 
 import java.math.BigDecimal;
+
 import java.util.*;
 
 @Component
@@ -87,14 +88,16 @@ public class DefaultStreamingJobInfoMetricsParser implements StreamingJobInfoMet
                 "ReadQps",
                 "SourceReceivedQPS",
                 "SourceReceivedQps",
-                "sourceReceivedQPS"));
+                "sourceReceivedQPS",
+                "sourceReceivedQps"));
 
         item.setWriteQps(getDecimal(block,
                 "writeQps",
                 "WriteQps",
                 "SinkWriteQPS",
                 "SinkWriteQps",
-                "sinkWriteQPS"));
+                "sinkWriteQPS",
+                "sinkWriteQps"));
 
         item.setReadBytes(getLong(block,
                 "readBytes",
@@ -167,17 +170,17 @@ public class DefaultStreamingJobInfoMetricsParser implements StreamingJobInfoMet
             item.setSinkTable(pair.getSinkTable());
             item.setTableKey(buildTableKey(pair.getSourceTable(), pair.getSinkTable()));
 
-            item.setReadRowCount(getLongByKey(sourceCountMap, pair.getSourceTable()));
-            item.setWriteRowCount(getLongByKey(sinkCountMap, pair.getSinkTable()));
+            item.setReadRowCount(toLong(getMetricValueByTable(sourceCountMap, pair.getSourceTable())));
+            item.setWriteRowCount(toLong(getMetricValueByTable(sinkCountMap, pair.getSinkTable())));
 
-            item.setReadQps(toDecimal(sourceQpsMap.get(pair.getSourceTable())));
-            item.setWriteQps(toDecimal(sinkQpsMap.get(pair.getSinkTable())));
+            item.setReadQps(toDecimal(getMetricValueByTable(sourceQpsMap, pair.getSourceTable())));
+            item.setWriteQps(toDecimal(getMetricValueByTable(sinkQpsMap, pair.getSinkTable())));
 
-            item.setReadBytes(getLongByKey(sourceBytesMap, pair.getSourceTable()));
-            item.setWriteBytes(getLongByKey(sinkBytesMap, pair.getSinkTable()));
+            item.setReadBytes(toLong(getMetricValueByTable(sourceBytesMap, pair.getSourceTable())));
+            item.setWriteBytes(toLong(getMetricValueByTable(sinkBytesMap, pair.getSinkTable())));
 
-            item.setReadBps(toDecimal(sourceBpsMap.get(pair.getSourceTable())));
-            item.setWriteBps(toDecimal(sinkBpsMap.get(pair.getSinkTable())));
+            item.setReadBps(toDecimal(getMetricValueByTable(sourceBpsMap, pair.getSourceTable())));
+            item.setWriteBps(toDecimal(getMetricValueByTable(sinkBpsMap, pair.getSinkTable())));
 
             item.setStatus(resolveTableStatus(item));
 
@@ -274,6 +277,7 @@ public class DefaultStreamingJobInfoMetricsParser implements StreamingJobInfoMet
         if (pipelineMetrics == null || pipelineMetrics.isEmpty()) {
             return;
         }
+
         if (tableMetrics == null || tableMetrics.isEmpty()) {
             return;
         }
@@ -299,12 +303,15 @@ public class DefaultStreamingJobInfoMetricsParser implements StreamingJobInfoMet
             if (isZero(item.getReadQps())) {
                 item.setReadQps(readQps.getOrDefault(pipelineId, BigDecimal.ZERO));
             }
+
             if (isZero(item.getWriteQps())) {
                 item.setWriteQps(writeQps.getOrDefault(pipelineId, BigDecimal.ZERO));
             }
+
             if (isZero(item.getReadBps())) {
                 item.setReadBps(readBps.getOrDefault(pipelineId, BigDecimal.ZERO));
             }
+
             if (isZero(item.getWriteBps())) {
                 item.setWriteBps(writeBps.getOrDefault(pipelineId, BigDecimal.ZERO));
             }
@@ -318,12 +325,15 @@ public class DefaultStreamingJobInfoMetricsParser implements StreamingJobInfoMet
         if (read == 0 && write == 0) {
             return "IDLE";
         }
+
         if (read == write) {
             return "NORMAL";
         }
+
         if (write < read) {
             return "LAGGING";
         }
+
         return "UNKNOWN";
     }
 
@@ -361,19 +371,50 @@ public class DefaultStreamingJobInfoMetricsParser implements StreamingJobInfoMet
         return null;
     }
 
+    /**
+     * Compatible with metric keys like:
+     *
+     * 1. test1.t_test_20w
+     * 2. Source[0].test1.t_test_20w
+     * 3. Sink[0].test1.ggahg123
+     */
+    private Object getMetricValueByTable(Map<String, Object> map, String tableName) {
+        if (map == null || map.isEmpty() || tableName == null || tableName.trim().isEmpty()) {
+            return null;
+        }
+
+        String normalizedTableName = tableName.trim();
+
+        if (map.containsKey(normalizedTableName)) {
+            return map.get(normalizedTableName);
+        }
+
+        for (Map.Entry<String, Object> entry : map.entrySet()) {
+            String metricKey = entry.getKey();
+            if (metricKey == null || metricKey.trim().isEmpty()) {
+                continue;
+            }
+
+            String normalizedMetricKey = metricKey.trim();
+
+            if (normalizedMetricKey.equals(normalizedTableName)) {
+                return entry.getValue();
+            }
+
+            if (normalizedMetricKey.endsWith("." + normalizedTableName)) {
+                return entry.getValue();
+            }
+        }
+
+        return null;
+    }
+
     private Long getLong(Map<?, ?> map, String... keys) {
         return toLong(getValueIgnoreCase(map, keys));
     }
 
     private BigDecimal getDecimal(Map<?, ?> map, String... keys) {
         return toDecimal(getValueIgnoreCase(map, keys));
-    }
-
-    private Long getLongByKey(Map<String, Object> map, String key) {
-        if (map == null || key == null) {
-            return 0L;
-        }
-        return toLong(map.get(key));
     }
 
     private Long toLong(Object value) {
@@ -408,7 +449,7 @@ public class DefaultStreamingJobInfoMetricsParser implements StreamingJobInfoMet
             if (value instanceof BigDecimal) {
                 decimal = (BigDecimal) value;
             } else if (value instanceof Number) {
-                decimal = BigDecimal.valueOf(((Number) value).doubleValue());
+                decimal = new BigDecimal(String.valueOf(value));
             } else {
                 String str = String.valueOf(value).trim();
                 if (str.isEmpty() || "null".equalsIgnoreCase(str)) {
@@ -417,11 +458,13 @@ public class DefaultStreamingJobInfoMetricsParser implements StreamingJobInfoMet
                 decimal = new BigDecimal(str);
             }
 
-            return decimal.setScale(4);
+            return decimal.setScale(4, BigDecimal.ROUND_HALF_UP);
         } catch (Exception e) {
             return BigDecimal.ZERO;
         }
     }
+
+
 
     private Map<String, Object> asStringObjectMap(Object obj) {
         if (!(obj instanceof Map)) {
@@ -441,29 +484,69 @@ public class DefaultStreamingJobInfoMetricsParser implements StreamingJobInfoMet
     }
 
     private void fillDefaultPipelineMetrics(StreamingPipelineMetrics item) {
-        if (item.getReadRowCount() == null) item.setReadRowCount(0L);
-        if (item.getWriteRowCount() == null) item.setWriteRowCount(0L);
-        if (item.getReadQps() == null) item.setReadQps(BigDecimal.ZERO);
-        if (item.getWriteQps() == null) item.setWriteQps(BigDecimal.ZERO);
-        if (item.getReadBytes() == null) item.setReadBytes(0L);
-        if (item.getWriteBytes() == null) item.setWriteBytes(0L);
-        if (item.getReadBps() == null) item.setReadBps(BigDecimal.ZERO);
-        if (item.getWriteBps() == null) item.setWriteBps(BigDecimal.ZERO);
-        if (item.getIntermediateQueueSize() == null) item.setIntermediateQueueSize(0L);
-        if (item.getLagCount() == null) item.setLagCount(0L);
-        if (item.getRecordDelay() == null) item.setRecordDelay(0L);
+        if (item.getReadRowCount() == null) {
+            item.setReadRowCount(0L);
+        }
+        if (item.getWriteRowCount() == null) {
+            item.setWriteRowCount(0L);
+        }
+        if (item.getReadQps() == null) {
+            item.setReadQps(BigDecimal.ZERO);
+        }
+        if (item.getWriteQps() == null) {
+            item.setWriteQps(BigDecimal.ZERO);
+        }
+        if (item.getReadBytes() == null) {
+            item.setReadBytes(0L);
+        }
+        if (item.getWriteBytes() == null) {
+            item.setWriteBytes(0L);
+        }
+        if (item.getReadBps() == null) {
+            item.setReadBps(BigDecimal.ZERO);
+        }
+        if (item.getWriteBps() == null) {
+            item.setWriteBps(BigDecimal.ZERO);
+        }
+        if (item.getIntermediateQueueSize() == null) {
+            item.setIntermediateQueueSize(0L);
+        }
+        if (item.getLagCount() == null) {
+            item.setLagCount(0L);
+        }
+        if (item.getRecordDelay() == null) {
+            item.setRecordDelay(0L);
+        }
     }
 
     private void fillDefaultTableMetrics(StreamingTableMetrics item) {
-        if (item.getReadRowCount() == null) item.setReadRowCount(0L);
-        if (item.getWriteRowCount() == null) item.setWriteRowCount(0L);
-        if (item.getReadQps() == null) item.setReadQps(BigDecimal.ZERO);
-        if (item.getWriteQps() == null) item.setWriteQps(BigDecimal.ZERO);
-        if (item.getReadBytes() == null) item.setReadBytes(0L);
-        if (item.getWriteBytes() == null) item.setWriteBytes(0L);
-        if (item.getReadBps() == null) item.setReadBps(BigDecimal.ZERO);
-        if (item.getWriteBps() == null) item.setWriteBps(BigDecimal.ZERO);
-        if (item.getStatus() == null) item.setStatus("UNKNOWN");
+        if (item.getReadRowCount() == null) {
+            item.setReadRowCount(0L);
+        }
+        if (item.getWriteRowCount() == null) {
+            item.setWriteRowCount(0L);
+        }
+        if (item.getReadQps() == null) {
+            item.setReadQps(BigDecimal.ZERO);
+        }
+        if (item.getWriteQps() == null) {
+            item.setWriteQps(BigDecimal.ZERO);
+        }
+        if (item.getReadBytes() == null) {
+            item.setReadBytes(0L);
+        }
+        if (item.getWriteBytes() == null) {
+            item.setWriteBytes(0L);
+        }
+        if (item.getReadBps() == null) {
+            item.setReadBps(BigDecimal.ZERO);
+        }
+        if (item.getWriteBps() == null) {
+            item.setWriteBps(BigDecimal.ZERO);
+        }
+        if (item.getStatus() == null) {
+            item.setStatus("UNKNOWN");
+        }
         if (item.getTableKey() == null) {
             item.setTableKey(buildTableKey(item.getSourceTable(), item.getSinkTable()));
         }
