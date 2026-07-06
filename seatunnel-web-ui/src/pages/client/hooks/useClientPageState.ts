@@ -78,6 +78,10 @@ export const useClientPageState = () => {
     try {
       const res = await seatunnelClientApi.metrics(targetId);
       setMetrics(res?.data || res);
+    } catch (e){
+      // 产生异常都认为client存在问题
+      setMetrics(-1);
+      console.error(e);
     } finally {
       setMetricsLoading(false);
     }

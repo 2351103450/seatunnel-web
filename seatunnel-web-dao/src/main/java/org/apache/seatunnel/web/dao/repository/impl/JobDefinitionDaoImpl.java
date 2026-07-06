@@ -94,6 +94,8 @@ public class JobDefinitionDaoImpl
 
         LambdaQueryWrapper<JobDefinitionEntity> wrapper = new LambdaQueryWrapper<>();
         wrapper.select(JobDefinitionEntity::getId)
+                // 只有运行状态的任务存在时不允许操作
+                .eq(JobDefinitionEntity::getReleaseState, ReleaseState.ONLINE)
                 .and(w -> w
                         .eq(JobDefinitionEntity::getSourceDatasourceId, datasourceId)
                         .or()
@@ -143,5 +145,19 @@ public class JobDefinitionDaoImpl
                 .filter(id -> id != null && validIds.contains(id))
                 .distinct()
                 .collect(Collectors.toList());
+    }
+
+    @Override
+    public boolean existsByClientId(Long clientId) {
+        if (clientId == null || clientId <= 0) {
+            return false;
+        }
+
+        LambdaQueryWrapper<JobDefinitionEntity> wrapper = new LambdaQueryWrapper<>();
+        wrapper.select(JobDefinitionEntity::getId)
+                .eq(JobDefinitionEntity::getClientId, clientId)
+                .last("LIMIT 1");
+
+        return jobDefinitionMapper.selectOne(wrapper) != null;
     }
 }
