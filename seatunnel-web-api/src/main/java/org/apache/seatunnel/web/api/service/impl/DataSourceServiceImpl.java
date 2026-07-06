@@ -101,6 +101,9 @@ public class DataSourceServiceImpl extends BaseServiceImpl implements DataSource
                     DataSourceUtils.buildConnectionParams(dto.getDbType(), dto.getConnectionParams());
             DataSourceUtils.checkDatasourceParam(connectionParam);
 
+            // 修改也需要限制，离线任务下次运行时会导致任务被变更
+            checkDataSourceNotUsed(id);
+
             DataSource entity = ConvertUtil.sourceToTarget(dto, DataSource.class);
             entity.setId(id);
             entity.setName(dto.getName().trim());

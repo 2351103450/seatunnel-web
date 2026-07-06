@@ -61,7 +61,7 @@ export default function useDetailPage() {
       jobName:
         data?.jobName ||
         `${data?.sourceType?.dbType?.toLowerCase()}2${data?.targetType?.dbType?.toLowerCase()}`,
-      description: data?.description || "",
+      jobDesc: data?.jobDesc || "",
       mode: currentMode,
     });
 

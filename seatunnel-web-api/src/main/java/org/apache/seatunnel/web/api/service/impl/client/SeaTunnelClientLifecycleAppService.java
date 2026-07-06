@@ -16,8 +16,10 @@ import org.apache.seatunnel.web.core.client.service.SeaTunnelClientTopologyBuild
 import org.apache.seatunnel.web.core.exceptions.ServiceException;
 import org.apache.seatunnel.web.dao.entity.SeaTunnelClient;
 import org.apache.seatunnel.web.dao.entity.SeaTunnelClientNode;
+import org.apache.seatunnel.web.dao.repository.JobDefinitionDao;
 import org.apache.seatunnel.web.dao.repository.SeaTunnelClientDao;
 import org.apache.seatunnel.web.dao.repository.SeaTunnelClientNodeDao;
+import org.apache.seatunnel.web.dao.repository.StreamingJobDefinitionDao;
 import org.apache.seatunnel.web.engine.client.modal.SeaTunnelClientAuth;
 import org.apache.seatunnel.web.engine.client.rest.SeaTunnelRestClient;
 import org.apache.seatunnel.web.spi.bean.dto.SeaTunnelClientDTO;
@@ -55,6 +57,22 @@ public class SeaTunnelClientLifecycleAppService {
     @Resource
     private SeaTunnelClientAssembler assembler;
 
+    @Resource
+    private JobDefinitionDao jobDefinitionDao;
+
+    @Resource
+    private StreamingJobDefinitionDao streamingJobDefinitionDao;
+
+    private void checkClientNotUsed(Long clientId) {
+        boolean usedByBatchJob = jobDefinitionDao.existsByClientId(clientId);
+        boolean usedByStreamingJob = streamingJobDefinitionDao.existsByClientId(clientId);
+
+        if (usedByBatchJob || usedByStreamingJob) {
+            throw new ServiceException("The data client is currently used by a job and cannot be deleted."
+            );
+        }
+    }
+
     @Transactional(rollbackFor = Exception.class)
     public void saveOrUpdate(SeaTunnelClientDTO dto) {
         validateSaveOrUpdateRequest(dto);
@@ -84,6 +102,8 @@ public class SeaTunnelClientLifecycleAppService {
     @Transactional(rollbackFor = Exception.class)
     public void deleteById(Long id) {
         SeaTunnelClient entity = getEntity(id);
+
+        checkClientNotUsed(id);
 
         seaTunnelClientNodeDao.deleteByClientId(entity.getId());
         seaTunnelClientDao.deleteById(entity.getId());
@@ -154,6 +174,8 @@ public class SeaTunnelClientLifecycleAppService {
             Date now
     ) {
         SeaTunnelClient entity = getEntity(dto.getId());
+
+        checkClientNotUsed(dto.getId());
 
         BeanUtils.copyProperties(dto, entity);
 

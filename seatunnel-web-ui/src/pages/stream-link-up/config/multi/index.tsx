@@ -49,7 +49,7 @@ const defaultScheduleConfig: ScheduleConfig = {
 
 const defaultBasicConfig: BasicConfig = {
   jobName: "",
-  description: "",
+  jobDesc: "",
   clientId: "",
   mode: "GUIDE_MULTI",
   sourceType: "SOURCE",
@@ -111,7 +111,7 @@ const buildInitialBasicConfigForCreate = (rawData?: any): BasicConfig => {
   return {
     ...defaultBasicConfig,
     jobName: rawData?.jobName || "",
-    description: rawData?.description || "",
+    jobDesc: rawData?.jobDesc || "",
     clientId: rawData?.clientId || "",
     mode: rawData?.mode || "GUIDE_MULTI",
     sourceType: rawData?.sourceType?.dbType || "SOURCE",
@@ -132,7 +132,7 @@ const buildInitialBasicConfigForEdit = (editData?: any): BasicConfig => {
   return {
     ...defaultBasicConfig,
     jobName: basic?.jobName || "",
-    description: basic?.jobDesc || basic?.description || "",
+    jobDesc: basic?.jobDesc || "",
     clientId: basic?.clientId ? String(basic.clientId) : "",
     mode: basic?.mode || editData?.mode || "GUIDE_MULTI",
 
@@ -195,7 +195,7 @@ const buildPageParamsForEdit = (editData?: any) => {
     id: editData?.id,
     mode: editData?.mode || basic?.mode || "GUIDE_MULTI",
     jobName: basic?.jobName || "",
-    description: basic?.jobDesc || basic?.description || "",
+    jobDesc: basic?.jobDesc || "",
     clientId: basic?.clientId || "",
 
     state: normalizeJobDefinitionState(editData?.state),

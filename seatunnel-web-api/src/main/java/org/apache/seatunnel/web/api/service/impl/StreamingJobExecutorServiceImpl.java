@@ -12,6 +12,8 @@ import org.apache.seatunnel.web.common.enums.RunMode;
 import org.apache.seatunnel.web.core.exceptions.ServiceException;
 import org.apache.seatunnel.web.dao.entity.StreamingJobDefinitionEntity;
 import org.apache.seatunnel.web.dao.entity.StreamingJobInstance;
+import org.apache.seatunnel.web.engine.client.handler.ZetaJobStatusHandler;
+import org.apache.seatunnel.web.engine.client.modal.ZetaJobStatusResolveResult;
 import org.apache.seatunnel.web.spi.bean.vo.JobInstanceVO;
 import org.apache.seatunnel.web.spi.enums.Status;
 import org.springframework.stereotype.Service;
@@ -28,13 +30,16 @@ public class StreamingJobExecutorServiceImpl implements StreamingJobExecutorServ
     private final StreamingJobInstanceService streamingJobInstanceService;
     private final StreamingJobDefinitionQueryService streamingJobDefinitionQueryService;
     private final StreamingJobSubmitter streamingJobSubmitter;
+    private final ZetaJobStatusHandler zetaJobStatusHandler;
 
     public StreamingJobExecutorServiceImpl(StreamingJobInstanceService streamingJobInstanceService,
                                            StreamingJobDefinitionQueryService streamingJobDefinitionQueryService,
-                                           StreamingJobSubmitter streamingJobSubmitter) {
+                                           StreamingJobSubmitter streamingJobSubmitter,
+                                           ZetaJobStatusHandler zetaJobStatusHandler) {
         this.streamingJobInstanceService = streamingJobInstanceService;
         this.streamingJobDefinitionQueryService = streamingJobDefinitionQueryService;
         this.streamingJobSubmitter = streamingJobSubmitter;
+        this.zetaJobStatusHandler = zetaJobStatusHandler;
     }
 
     @Override
@@ -47,6 +52,70 @@ public class StreamingJobExecutorServiceImpl implements StreamingJobExecutorServ
                     Status.JOB_DEFINITION_EXECUTE_ERROR,
                     "streaming job already has a running instance"
             );
+        }
+
+        /*
+            异常场景停止，重启逻辑
+            1：服务启动时有定时任务，将可恢复的SeaTunnel任务重新关联
+            2：其他情况，SeaTunnel任务正常运行，但管理功能是失败（触发一次运行后进行关联）
+        */
+        // 最后一次运行任务实例进行重试
+        StreamingJobInstance lastInstance = streamingJobInstanceService.lastInstance(jobDefineId);
+        if (lastInstance != null) {
+            try {
+
+                ZetaJobStatusResolveResult result = zetaJobStatusHandler.resolve(
+                        lastInstance.getClientId(),
+                        lastInstance.getEngineJobId()
+                );
+
+                if (result != null && result.isRunning()) {
+                    log.debug(
+                            "recovering job instance because Zeta job is still running, instanceId={}, engineJobId={}, engineStatus={}",
+                            lastInstance.getClientId(),
+                            lastInstance.getEngineJobId(),
+                            result.getEngineStatus()
+                    );
+
+                    JobStatus targetStatus = result.getLocalStatus();
+
+                    String errorMessage = "SeaTunnel Web 重启后执行任务状态恢复失败，Zeta 状态解析结果为空。"
+                            + " instanceId=" + lastInstance.getId()
+                            + ", engineJobId=" + lastInstance.getEngineJobId()
+                            + ", recoveryTime=" + new Date();
+
+                    log.warn(
+                            "Recover streaming job instance final status, instanceId={}, engineJobId={}, targetStatus={}, engineStatus={}, message={}",
+                            lastInstance.getId(),
+                            lastInstance.getEngineJobId(),
+                            targetStatus,
+                            result.getEngineStatus(),
+                            result.getMessage()
+                    );
+
+                    streamingJobInstanceService.updateStatus(
+                            lastInstance.getId(),
+                            targetStatus,
+                            errorMessage
+                    );
+
+                    throw new ServiceException(
+                            Status.JOB_DEFINITION_EXECUTE_RECOVERY,
+                            "streaming job already has a recovery instance"
+                    );
+
+                }
+
+            } catch (ServiceException e){
+                throw e;
+            } catch (Exception e) {
+                log.warn(
+                        "Recover streaming job instance failed, instanceId={}, engineJobId={}",
+                        lastInstance == null ? null : lastInstance.getId(),
+                        lastInstance == null ? null : lastInstance.getEngineJobId(),
+                        e
+                );
+            }
         }
 
         JobInstanceVO instance = streamingJobInstanceService.create(jobDefineId, runMode, JobMode.STREAMING);

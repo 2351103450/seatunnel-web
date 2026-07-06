@@ -294,6 +294,35 @@ public class StreamingJobInstanceServiceImpl implements StreamingJobInstanceServ
         }
     }
 
+    @Override
+    public StreamingJobInstance lastInstance(Long definitionId) {
+        if (definitionId == null || definitionId <= 0) {
+            return null;
+        }
+
+        try {
+            return streamingJobInstanceDao.lastInstance(definitionId);
+        } catch (Exception e) {
+            log.error("Get streaming job last instance failed, definitionId={}", definitionId, e);
+            throw new ServiceException(Status.QUERY_BATCH_JOB_INSTANCE_ERROR);
+        }
+    }
+
+    @Override
+    public void updateStatus(Long instanceId, JobStatus targetStatus, String errorMessage) {
+        if (instanceId == null || instanceId <= 0) {
+            return;
+        }
+        if (targetStatus == null) {
+            return;
+        }
+        streamingJobInstanceDao.updateStatus(
+                instanceId,
+                targetStatus,
+                errorMessage
+        );
+    }
+
     private long resolveStartTimeMs(String range, long endTimeMs) {
         if (StringUtils.isBlank(range)) {
             return endTimeMs - 15 * 60 * 1000L;

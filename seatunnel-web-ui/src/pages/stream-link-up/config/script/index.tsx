@@ -54,7 +54,7 @@ const defaultScheduleConfig: ScheduleConfig = {
 
 const defaultBasicConfig: CustomBasicConfig = {
   jobName: "",
-  description: "",
+  jobDesc: "",
   clientId: "",
   mode: "SCRIPT",
   sourceType: "SOURCE",
@@ -120,7 +120,7 @@ const buildInitialBasicConfigForCreate = (
   return {
     ...defaultBasicConfig,
     jobName: rawData?.jobName || "",
-    description: rawData?.description || "",
+    jobDesc: rawData?.jobDesc || "",
     clientId: rawData?.clientId ? String(rawData.clientId) : "",
     mode: "SCRIPT",
 
@@ -148,7 +148,7 @@ const buildInitialBasicConfigForEdit = (
   return {
     ...defaultBasicConfig,
     jobName: basic?.jobName || "",
-    description: basic?.jobDesc || basic?.description || "",
+    jobDesc: basic?.jobDesc || "",
     clientId: basic?.clientId ? String(basic.clientId) : "",
     mode: "SCRIPT",
 
@@ -236,7 +236,7 @@ const buildPageParamsForEdit = (editData?: any) => {
     id: editData?.id,
     mode: editData?.mode || basic?.mode || "SCRIPT",
     jobName: basic?.jobName || "",
-    description: basic?.jobDesc || basic?.description || "",
+    jobDesc: basic?.jobDesc || "",
     clientId: basic?.clientId || "",
 
     state: normalizeJobDefinitionState(editData?.state),

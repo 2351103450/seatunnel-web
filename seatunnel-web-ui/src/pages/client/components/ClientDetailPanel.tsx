@@ -130,7 +130,7 @@ const ClientDetailPanel: React.FC<Props> = ({
               "
                       style={{ backgroundColor: "#FAFBFC" }}
                     >
-                      <span className="inline-block h-2 w-2 shrink-0 rounded-full bg-[#98A2B3]" />
+                      <span className={`inline-block h-2 w-2 shrink-0 rounded-full ${healthMeta.dot}`} />
                       <span className="break-all">{displayBaseUrl}</span>
                     </div>
                   </div>
