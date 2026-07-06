@@ -9,6 +9,7 @@ import {
   ScheduleConfig,
 } from "../../workflow/components/ScheduleConfigContent/types";
 import MultiWorkflow from "./MultiWorkflow";
+import { buildUnpublishedJobDefinitionState, normalizeJobDefinitionState } from "./jobDefinitionState";
 
 const defaultScheduleConfig: ScheduleConfig = {
   paramsList: [],
@@ -158,6 +159,24 @@ const buildInitialBasicConfigForEdit = (editData?: any): BasicConfig => {
   };
 };
 
+const buildPageParamsForCreate = (rawData?: any) => {
+  return {
+    ...(rawData || {}),
+    mode: rawData?.mode || "GUIDE_MULTI",
+    state: normalizeJobDefinitionState(
+      rawData?.state || buildUnpublishedJobDefinitionState()
+    ),
+    workflow: {
+      ...(rawData?.workflow || {}),
+    },
+    basic: {
+      ...(rawData?.basic || {}),
+    },
+    schedule: rawData?.schedule || rawData?.scheduleConfig,
+    env: rawData?.env || rawData?.envConfig,
+  };
+};
+
 const buildPageParamsForEdit = (editData?: any) => {
   const basic = editData?.basic || {};
   const workflow = editData?.workflow || {};
@@ -174,6 +193,8 @@ const buildPageParamsForEdit = (editData?: any) => {
     jobName: basic?.jobName || "",
     description: basic?.jobDesc || basic?.description || "",
     clientId: basic?.clientId || "",
+
+    state: normalizeJobDefinitionState(editData?.state),
 
     sourceType:
       workflow?.sourceType ||
@@ -243,8 +264,9 @@ export default function MultiConfigPage() {
 
       try {
         const data = JSON.parse(cache);
+        const pageParams = buildPageParamsForCreate(data);
 
-        setParams(data);
+        setParams(pageParams);
         setBasicConfig(buildInitialBasicConfigForCreate(data));
         setScheduleConfig(buildInitialScheduleConfigForCreate(data));
         setEnvConfig(buildInitialEnvConfigForCreate(data));

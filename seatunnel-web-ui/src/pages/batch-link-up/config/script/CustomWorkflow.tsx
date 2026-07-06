@@ -9,6 +9,12 @@ import RightConfigPanel from "../../workflow/RightConfigPanel";
 import { useResizablePanel } from "../multi/hooks/useResizablePanel";
 import HoconEditorPanel from "./HoconEditorPanel";
 import { useCustomWorkflowState } from "./hooks/useCustomWorkflowState";
+import {
+  canRunByDefinitionState,
+  getRunDisabledReasonByState,
+  markJobDefinitionDirty,
+  normalizeJobDefinitionState,
+} from "./jobDefinitionState";
 
 interface CustomWorkflowProps {
   params: any;
@@ -64,6 +70,78 @@ export default function CustomWorkflow({
     envConfig,
   });
 
+  const jobState = normalizeJobDefinitionState(params?.state);
+
+  const canRunByState = canRunByDefinitionState(jobState);
+  const finalCanRun = canRun && canRunByState;
+
+  const finalRunDisabledReason = !canRunByState
+    ? getRunDisabledReasonByState(jobState)
+    : runDisabledReason;
+
+  const publishStatusView = {
+    UNPUBLISHED: {
+      text: "未发布",
+      tooltip: "当前任务还没有发布到数据库，暂时不能运行",
+      className: "border-amber-200 bg-amber-50 text-amber-600",
+    },
+    SYNCED: {
+      text: "已发布",
+      tooltip: "当前内容已同步到数据库，可以运行",
+      className: "border-emerald-200 bg-emerald-50 text-emerald-600",
+    },
+    DIRTY: {
+      text: "已修改，未发布",
+      tooltip: "当前页面内容已变更，需要重新发布后才能运行",
+      className: "border-blue-200 bg-blue-50 text-blue-600",
+    },
+  }[jobState.editorSyncState];
+
+  const markCurrentDefinitionDirty = () => {
+    setParams((prev: any) => {
+      return {
+        ...prev,
+        state: markJobDefinitionDirty(prev?.state),
+      };
+    });
+  };
+
+  const handleHoconContentChange = (value: string) => {
+    setHoconContent(value);
+
+    if (value === hoconContent) {
+      return;
+    }
+
+    markCurrentDefinitionDirty();
+  };
+
+  const handleReloadTemplateWithDirty = async () => {
+    await handleReloadTemplate();
+    markCurrentDefinitionDirty();
+  };
+
+  const handleBasicConfigChange: React.Dispatch<React.SetStateAction<any>> = (
+    next
+  ) => {
+    setBasicConfig(next);
+    markCurrentDefinitionDirty();
+  };
+
+  const handleScheduleConfigChange: React.Dispatch<React.SetStateAction<any>> = (
+    next
+  ) => {
+    setScheduleConfig(next);
+    markCurrentDefinitionDirty();
+  };
+
+  const handleEnvConfigChange: React.Dispatch<React.SetStateAction<EnvConfig>> = (
+    next
+  ) => {
+    setEnvConfig(next);
+    markCurrentDefinitionDirty();
+  };
+
   const actionButtonClass =
     "!inline-flex !h-[34px] !items-center !justify-center !rounded-full !border !border-slate-200 !bg-slate-50 !px-3.5 !text-[13px] !font-medium !text-slate-500 transition-colors duration-200 hover:!border-slate-300 hover:!bg-white/80 hover:!text-slate-700 hover:!shadow-[0_4px_12px_rgba(15,23,42,0.05)] disabled:!cursor-not-allowed disabled:!border-slate-200 disabled:!bg-slate-100 disabled:!text-slate-400 disabled:!shadow-none";
 
@@ -112,33 +190,26 @@ export default function CustomWorkflow({
                     <div className="text-[15px] font-semibold text-slate-800">
                       HOCON 编排
                     </div>
+
                     <div className="mt-0.5 text-[12px] text-slate-400">
                       自定义脚本模式，适合复杂链路与高级参数配置
                     </div>
                   </div>
 
                   <Space size={10}>
-                    <Tooltip title={runDisabledReason}>
-                      <Button
-                        type="default"
-                        icon={<PlayCircle size={15} strokeWidth={1.9} />}
-                        onClick={handleRun}
-                        disabled={!canRun}
-                        className={actionButtonClass}
-                      >
-                        运行
-                      </Button>
+                    <Tooltip title={finalRunDisabledReason || undefined}>
+                      <span className="inline-flex">
+                        <Button
+                          type="default"
+                          icon={<PlayCircle size={15} strokeWidth={1.9} />}
+                          onClick={handleRun}
+                          disabled={!finalCanRun}
+                          className={actionButtonClass}
+                        >
+                          运行
+                        </Button>
+                      </span>
                     </Tooltip>
-
-                    <Button
-                      type="default"
-                      icon={<SendOutlined />}
-                      onClick={handleSave}
-                      loading={publishLoading}
-                      className={actionButtonClass}
-                    >
-                      发布
-                    </Button>
 
                     <Popover
                       open={previewOpen}
@@ -178,7 +249,7 @@ export default function CustomWorkflow({
                         okText="覆盖"
                         cancelText="取消"
                         placement="bottomRight"
-                        onConfirm={handleReloadTemplate}
+                        onConfirm={handleReloadTemplateWithDirty}
                       >
                         <div
                           className={actionChipClass}
@@ -196,7 +267,7 @@ export default function CustomWorkflow({
                     ) : (
                       <div
                         className={actionChipClass}
-                        onClick={handleReloadTemplate}
+                        onClick={handleReloadTemplateWithDirty}
                         role="button"
                         tabIndex={0}
                       >
@@ -208,14 +279,35 @@ export default function CustomWorkflow({
                         <span className="ml-1">模板</span>
                       </div>
                     )}
+
+                    <Tooltip title={publishStatusView.tooltip}>
+                      <span
+                        className={[
+                          "inline-flex h-[34px] select-none items-center justify-center rounded-full border px-3 text-[13px] font-medium leading-none",
+                          publishStatusView.className,
+                        ].join(" ")}
+                      >
+                        {publishStatusView.text}
+                      </span>
+                    </Tooltip>
+
+                    <Button
+                      type="default"
+                      icon={<SendOutlined />}
+                      onClick={handleSave}
+                      loading={publishLoading}
+                      className={actionButtonClass}
+                    >
+                      发布
+                    </Button>
                   </Space>
                 </div>
 
-                <div className="min-h-0 flex-1  p-[18px] ">
-                  <div className="h-full overflow-hidden rounded-2xl  bg-white shadow-[inset_0_1px_0_rgba(255,255,255,0.8)]">
+                <div className="min-h-0 flex-1 p-[18px]">
+                  <div className="h-full overflow-hidden rounded-2xl bg-white shadow-[inset_0_1px_0_rgba(255,255,255,0.8)]">
                     <HoconEditorPanel
                       value={hoconContent}
-                      onChange={setHoconContent}
+                      onChange={handleHoconContentChange}
                       sourceDbType={basicConfig?.sourceType}
                       sinkDbType={basicConfig?.targetType}
                     />
@@ -249,11 +341,11 @@ export default function CustomWorkflow({
                 onTabChange={setActiveTab}
                 params={params}
                 basicConfig={basicConfig}
-                setBasicConfig={setBasicConfig}
+                setBasicConfig={handleBasicConfigChange}
                 scheduleConfig={scheduleConfig}
-                setScheduleConfig={setScheduleConfig}
+                setScheduleConfig={handleScheduleConfigChange}
                 envConfig={envConfig}
-                setEnvConfig={setEnvConfig}
+                setEnvConfig={handleEnvConfigChange}
               />
             </div>
           </div>

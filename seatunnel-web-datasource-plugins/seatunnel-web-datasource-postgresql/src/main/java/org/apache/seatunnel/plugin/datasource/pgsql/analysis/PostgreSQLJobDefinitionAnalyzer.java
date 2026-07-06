@@ -1,20 +1,21 @@
-package org.apache.seatunnel.plugin.datasource.mysql.analysis;
+package org.apache.seatunnel.plugin.datasource.pgsql.analysis;
+
 
 import org.apache.seatunnel.plugin.datasource.api.analysis.jdbc.AbstractJdbcJobDefinitionAnalyzer;
 import org.apache.seatunnel.web.spi.enums.DbType;
 
-public class MySQLJobDefinitionAnalyzer extends AbstractJdbcJobDefinitionAnalyzer {
+public class PostgreSQLJobDefinitionAnalyzer extends AbstractJdbcJobDefinitionAnalyzer {
 
     @Override
     protected DbType dbType() {
-        return DbType.MYSQL;
+        return DbType.POSTGRE_SQL;
     }
 
     @Override
     protected String[] guideSingleSourceTableKeys() {
         return new String[]{
-                "table",
                 "table_path",
+                "table",
                 "table_name"
         };
     }
@@ -24,7 +25,8 @@ public class MySQLJobDefinitionAnalyzer extends AbstractJdbcJobDefinitionAnalyze
         return new String[]{
                 "targetTableName",
                 "table",
-                "table_path"
+                "table_path",
+                "table_name"
         };
     }
 }

@@ -8,8 +8,8 @@ import org.apache.commons.lang3.StringUtils;
 import org.apache.seatunnel.web.api.service.BatchJobDefinitionService;
 import org.apache.seatunnel.web.api.service.BatchJobInstanceService;
 import org.apache.seatunnel.web.api.service.JobScheduleService;
-import org.apache.seatunnel.web.api.service.cdc.CdcServerIdAllocationService;
 import org.apache.seatunnel.web.api.service.application.JobScheduleApplicationService;
+import org.apache.seatunnel.web.api.service.cdc.CdcServerIdAllocationService;
 import org.apache.seatunnel.web.common.enums.ReleaseState;
 import org.apache.seatunnel.web.common.modal.JobDefinitionAnalysisResult;
 import org.apache.seatunnel.web.common.utils.JSONUtils;
@@ -131,7 +131,7 @@ public class BatchJobDefinitionServiceImpl extends BaseServiceImpl implements Ba
             throw e;
         } catch (Exception e) {
             log.error("Save or update batch job definition failed, command={}", command, e);
-            throw new ServiceException(Status.SAVE_OR_UPDATE_BATCH_JOB_DEFINITION_ERROR);
+            throw new ServiceException(e.getMessage());
         }
     }
 
@@ -162,7 +162,7 @@ public class BatchJobDefinitionServiceImpl extends BaseServiceImpl implements Ba
             throw e;
         } catch (Exception e) {
             log.error("Build batch hocon config failed, command={}", command, e);
-            throw new ServiceException(Status.BUILD_BATCH_JOB_HOCON_CONFIG_ERROR);
+            throw new ServiceException(e.getMessage());
         }
     }
 
