@@ -55,6 +55,23 @@ public class SeaTunnelClientLifecycleAppService {
     @Resource
     private SeaTunnelClientAssembler assembler;
 
+    @Resource
+    private JobDefinitionDao jobDefinitionDao;
+
+    @Resource
+    private StreamingJobDefinitionDao streamingJobDefinitionDao;
+
+    private void checkClientNotUsed(Long clientId) {
+        boolean usedByBatchJob = jobDefinitionDao.existsByClientId(clientId);
+        boolean usedByStreamingJob = streamingJobDefinitionDao.existsByClientId(clientId);
+
+        if (usedByBatchJob || usedByStreamingJob) {
+            throw new ServiceException("The data client is currently used by a job and cannot be deleted."
+            );
+        }
+    }
+
+
     @Transactional(rollbackFor = Exception.class)
     public void saveOrUpdate(SeaTunnelClientDTO dto) {
         validateSaveOrUpdateRequest(dto);
@@ -84,6 +101,9 @@ public class SeaTunnelClientLifecycleAppService {
     @Transactional(rollbackFor = Exception.class)
     public void deleteById(Long id) {
         SeaTunnelClient entity = getEntity(id);
+
+
+        checkClientNotUsed(id);
 
         seaTunnelClientNodeDao.deleteByClientId(entity.getId());
         seaTunnelClientDao.deleteById(entity.getId());
@@ -154,6 +174,8 @@ public class SeaTunnelClientLifecycleAppService {
             Date now
     ) {
         SeaTunnelClient entity = getEntity(dto.getId());
+
+        checkClientNotUsed(dto.getId());
 
         BeanUtils.copyProperties(dto, entity);
 

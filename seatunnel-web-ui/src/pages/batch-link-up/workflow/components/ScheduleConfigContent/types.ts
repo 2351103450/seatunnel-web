@@ -6,7 +6,7 @@ export interface ParamRow {
 
 export interface BasicConfig {
     jobName: string;
-    description: string;
+    jobDesc: string;
     clientId: string;
     mode: string;
     sourceType: string;

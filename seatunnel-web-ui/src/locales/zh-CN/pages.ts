@@ -168,7 +168,7 @@ export default {
   // actions: run/stop
   'pages.job.action.run': '运行',
   'pages.job.action.run.title': '运行任务',
-  'pages.job.action.run.desc': '确认运行该任务吗？',
+  'pages.job.action.run.desc': '确认触发该离线任务？任务将立即执行一次，并按既定周期持续运行。',
 
   'pages.job.action.stop': '停止',
   'pages.job.action.stop.title': '停止任务',

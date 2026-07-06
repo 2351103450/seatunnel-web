@@ -1,6 +1,7 @@
 package org.apache.seatunnel.web.api.service;
 
 import org.apache.seatunnel.web.common.enums.JobMode;
+import org.apache.seatunnel.web.common.enums.JobStatus;
 import org.apache.seatunnel.web.common.enums.RunMode;
 import org.apache.seatunnel.web.dao.entity.StreamingJobInstance;
 import org.apache.seatunnel.web.spi.bean.dto.SeaTunnelJobInstanceDTO;
@@ -32,4 +33,8 @@ public interface StreamingJobInstanceService {
     List<JobInstanceVO> listRunningStreamingInstances();
 
     StreamingInstanceMetricsDashboardVO getMetricsDashboard(Long instanceId, String range);
+
+    StreamingJobInstance lastInstance(Long definitionId);
+
+    void updateStatus(Long instanceId, JobStatus status, String errorMessage);
 }

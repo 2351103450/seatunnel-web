@@ -107,6 +107,8 @@ public class StreamingJobDefinitionDaoImpl
 
         LambdaQueryWrapper<StreamingJobDefinitionEntity> wrapper = new LambdaQueryWrapper<>();
         wrapper.select(StreamingJobDefinitionEntity::getId)
+                // 只有运行状态的任务存在时不允许操作
+                .eq(StreamingJobDefinitionEntity::getReleaseState, ReleaseState.ONLINE)
                 .and(w -> w
                         .eq(StreamingJobDefinitionEntity::getSourceDatasourceId, datasourceId)
                         .or()
@@ -156,5 +158,19 @@ public class StreamingJobDefinitionDaoImpl
                 .filter(id -> id != null && validIds.contains(id))
                 .distinct()
                 .collect(Collectors.toList());
+    }
+
+    @Override
+    public boolean existsByClientId(Long clientId) {
+        if (clientId == null || clientId <= 0) {
+            return false;
+        }
+
+        LambdaQueryWrapper<StreamingJobDefinitionEntity> wrapper = new LambdaQueryWrapper<>();
+        wrapper.select(StreamingJobDefinitionEntity::getId)
+                .eq(StreamingJobDefinitionEntity::getClientId, clientId)
+                .last("LIMIT 1");
+
+        return streamingJobDefinitionMapper.selectOne(wrapper) != null;
     }
 }
