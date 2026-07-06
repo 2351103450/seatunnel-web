@@ -1,5 +1,6 @@
 package org.apache.seatunnel.web.api.service.impl;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.annotation.Resource;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.ObjectUtils;
@@ -30,6 +31,9 @@ import org.apache.seatunnel.web.spi.bean.dto.command.JobDefinitionSaveCommand;
 import org.apache.seatunnel.web.spi.bean.dto.config.JobScheduleConfig;
 import org.apache.seatunnel.web.spi.bean.entity.PaginationResult;
 import org.apache.seatunnel.web.spi.bean.vo.BatchJobDefinitionVO;
+import org.apache.seatunnel.web.spi.bean.vo.JobDefinitionEditDetailVO;
+import org.apache.seatunnel.web.spi.bean.vo.JobDefinitionSaveResultVO;
+import org.apache.seatunnel.web.spi.bean.vo.JobDefinitionStateVO;
 import org.apache.seatunnel.web.spi.enums.Status;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -68,11 +72,14 @@ public class BatchJobDefinitionServiceImpl extends BaseServiceImpl implements Ba
     @Resource
     private CdcServerIdAllocationService cdcServerIdAllocationService;
 
+    @Resource
+    private ObjectMapper objectMapper;
+
     /**
      * Save or update batch job definition.
      */
     @Transactional(rollbackFor = Exception.class)
-    protected Long doSaveOrUpdate(BatchJobSaveCommand command) {
+    protected JobDefinitionSaveResultVO doSaveOrUpdate(BatchJobSaveCommand command) {
         validateBase(command);
 
         try {
@@ -80,6 +87,7 @@ public class BatchJobDefinitionServiceImpl extends BaseServiceImpl implements Ba
 
             JobDefinitionModeHandler handler = getAndValidateHandler(command);
             JobDefinitionAnalysisResult analysis = handler.analyze(command);
+
             JobDefinitionEntity existing = command.getId() == null
                     ? null
                     : jobDefinitionDao.queryById(command.getId());
@@ -96,9 +104,12 @@ public class BatchJobDefinitionServiceImpl extends BaseServiceImpl implements Ba
                 jobDefinitionAssembler.update(entity, command, analysis, now, nextVersion);
             }
 
+            normalizePersistState(entity, nextVersion);
+
             jobDefinitionDao.saveOrUpdate(entity);
 
             cdcServerIdAllocationService.prepare(command, entity.getId());
+
             String definitionContent = handler.serializeDefinition(command);
 
             JobDefinitionContentEntity contentEntity = JobDefinitionContentEntity.builder()
@@ -115,7 +126,7 @@ public class BatchJobDefinitionServiceImpl extends BaseServiceImpl implements Ba
 
             scheduleApplicationService.saveOrUpdateSchedule(entity.getId(), command);
 
-            return entity.getId();
+            return buildSaveResult(entity, nextVersion);
         } catch (ServiceException e) {
             throw e;
         } catch (Exception e) {
@@ -125,17 +136,17 @@ public class BatchJobDefinitionServiceImpl extends BaseServiceImpl implements Ba
     }
 
     @Override
-    public Long saveOrUpdate(BatchScriptJobSaveCommand command) {
+    public JobDefinitionSaveResultVO saveOrUpdate(BatchScriptJobSaveCommand command) {
         return doSaveOrUpdate(command);
     }
 
     @Override
-    public Long saveOrUpdate(BatchGuideSingleJobSaveCommand command) {
+    public JobDefinitionSaveResultVO saveOrUpdate(BatchGuideSingleJobSaveCommand command) {
         return doSaveOrUpdate(command);
     }
 
     @Override
-    public Long saveOrUpdate(BatchGuideMultiJobSaveCommand command) {
+    public JobDefinitionSaveResultVO saveOrUpdate(BatchGuideMultiJobSaveCommand command) {
         return doSaveOrUpdate(command);
     }
 
@@ -223,7 +234,7 @@ public class BatchJobDefinitionServiceImpl extends BaseServiceImpl implements Ba
     }
 
     @Override
-    public JobDefinitionSaveCommand selectEditDetail(Long id) {
+    public JobDefinitionEditDetailVO selectEditDetail(Long id) {
         validateId(id);
 
         try {
@@ -241,11 +252,13 @@ public class BatchJobDefinitionServiceImpl extends BaseServiceImpl implements Ba
                 );
             }
 
-            return definitionQueryService.buildEditCommand(
+            JobDefinitionSaveCommand command = definitionQueryService.buildEditCommand(
                     definition,
                     latestContent,
                     buildScheduleConfig(id)
             );
+
+            return buildEditDetail(command, definition, latestContent);
         } catch (ServiceException e) {
             throw e;
         } catch (Exception e) {
@@ -270,13 +283,11 @@ public class BatchJobDefinitionServiceImpl extends BaseServiceImpl implements Ba
 
         ReleaseState currentState = entity.getReleaseState();
 
-
         if (releaseState == currentState) {
             syncScheduleState(id, releaseState);
             log.info("Batch job definition release state already synced, id={}, state={}", id, releaseState);
             return true;
         }
-
 
         if (releaseState.isOffline()) {
             syncScheduleState(id, ReleaseState.OFFLINE);
@@ -285,7 +296,6 @@ public class BatchJobDefinitionServiceImpl extends BaseServiceImpl implements Ba
             log.info("Batch job definition offline completed, id={}", id);
             return true;
         }
-
 
         if (releaseState.isOnline()) {
             updateJobReleaseState(id, ReleaseState.ONLINE);
@@ -348,6 +358,62 @@ public class BatchJobDefinitionServiceImpl extends BaseServiceImpl implements Ba
             log.error("List batch job definitions by ids failed, ids={}", validIds, e);
             throw new ServiceException(Status.QUERY_BATCH_JOB_DEFINITION_ERROR);
         }
+    }
+
+    /**
+     * Normalize persisted job definition state before saving.
+     */
+    private void normalizePersistState(JobDefinitionEntity entity, Integer nextVersion) {
+        if (entity == null) {
+            return;
+        }
+
+        entity.setJobVersion(nextVersion);
+
+        if (entity.getReleaseState() == null) {
+            entity.setReleaseState(ReleaseState.OFFLINE);
+        }
+    }
+
+    /**
+     * Build save result after job definition has been persisted.
+     */
+    private JobDefinitionSaveResultVO buildSaveResult(JobDefinitionEntity entity, Integer contentVersion) {
+        JobDefinitionStateVO state = JobDefinitionStateVO.synced(
+                resolveReleaseState(entity.getReleaseState()),
+                entity.getJobVersion(),
+                contentVersion
+        );
+
+        return JobDefinitionSaveResultVO.builder()
+                .id(entity.getId())
+                .state(state)
+                .build();
+    }
+
+    /**
+     * Build edit detail response with editor state.
+     */
+    private JobDefinitionEditDetailVO buildEditDetail(
+            JobDefinitionSaveCommand command,
+            JobDefinitionEntity definition,
+            JobDefinitionContentEntity latestContent) {
+        JobDefinitionEditDetailVO detail = objectMapper.convertValue(
+                command,
+                JobDefinitionEditDetailVO.class
+        );
+
+        detail.setState(JobDefinitionStateVO.synced(
+                resolveReleaseState(definition.getReleaseState()),
+                definition.getJobVersion(),
+                latestContent.getVersion()
+        ));
+
+        return detail;
+    }
+
+    private ReleaseState resolveReleaseState(ReleaseState releaseState) {
+        return releaseState == null ? ReleaseState.OFFLINE : releaseState;
     }
 
     /**
@@ -415,6 +481,7 @@ public class BatchJobDefinitionServiceImpl extends BaseServiceImpl implements Ba
                     "hocon config is empty"
             );
         }
+
         return hocon;
     }
 

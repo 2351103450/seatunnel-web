@@ -1,30 +1,24 @@
 package org.apache.seatunnel.web.api.service;
 
-
 import org.apache.seatunnel.web.common.enums.ReleaseState;
-import org.apache.seatunnel.web.spi.bean.dto.*;
+import org.apache.seatunnel.web.spi.bean.dto.BatchJobDefinitionQueryDTO;
 import org.apache.seatunnel.web.spi.bean.dto.batch.BatchGuideMultiJobSaveCommand;
 import org.apache.seatunnel.web.spi.bean.dto.batch.BatchGuideSingleJobSaveCommand;
 import org.apache.seatunnel.web.spi.bean.dto.batch.BatchScriptJobSaveCommand;
-import org.apache.seatunnel.web.spi.bean.dto.command.JobDefinitionSaveCommand;
 import org.apache.seatunnel.web.spi.bean.entity.PaginationResult;
 import org.apache.seatunnel.web.spi.bean.vo.BatchJobDefinitionVO;
+import org.apache.seatunnel.web.spi.bean.vo.JobDefinitionEditDetailVO;
+import org.apache.seatunnel.web.spi.bean.vo.JobDefinitionSaveResultVO;
 
 import java.util.List;
 
 public interface BatchJobDefinitionService {
 
-    Long saveOrUpdate(BatchScriptJobSaveCommand command);
+    JobDefinitionSaveResultVO saveOrUpdate(BatchScriptJobSaveCommand command);
 
-    Long saveOrUpdate(BatchGuideSingleJobSaveCommand command);
+    JobDefinitionSaveResultVO saveOrUpdate(BatchGuideSingleJobSaveCommand command);
 
-    Long saveOrUpdate(BatchGuideMultiJobSaveCommand command);
-
-    BatchJobDefinitionVO selectById(Long id);
-
-    PaginationResult<BatchJobDefinitionVO> paging(BatchJobDefinitionQueryDTO dto);
-
-    Boolean delete(Long id);
+    JobDefinitionSaveResultVO saveOrUpdate(BatchGuideMultiJobSaveCommand command);
 
     String buildHoconConfig(BatchScriptJobSaveCommand command);
 
@@ -32,9 +26,15 @@ public interface BatchJobDefinitionService {
 
     String buildHoconConfig(BatchGuideMultiJobSaveCommand command);
 
-    JobDefinitionSaveCommand selectEditDetail(Long id);
+    BatchJobDefinitionVO selectById(Long id);
+
+    PaginationResult<BatchJobDefinitionVO> paging(BatchJobDefinitionQueryDTO dto);
+
+    Boolean delete(Long jobDefinitionId);
+
+    JobDefinitionEditDetailVO selectEditDetail(Long id);
 
     Boolean updateReleaseState(Long id, ReleaseState releaseState);
 
-    List<BatchJobDefinitionVO> listByIds(List<Long> jobDefinitionIds);
+    List<BatchJobDefinitionVO> listByIds(List<Long> ids);
 }
