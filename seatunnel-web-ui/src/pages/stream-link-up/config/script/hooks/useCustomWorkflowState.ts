@@ -1,7 +1,19 @@
-import { message, Modal } from "antd";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { message } from "antd";
+import {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
+
 import { seatunnelStremJobDefinitionApi } from "@/pages/stream-link-up/api";
 import { hoconTemplateApi } from "../hoconTemplateApi";
+import {
+  markJobDefinitionSynced,
+  normalizeJobDefinitionState,
+  type JobDefinitionState,
+} from "../jobDefinitionState";
 
 interface UseCustomWorkflowStateProps {
   params: any;
@@ -11,11 +23,65 @@ interface UseCustomWorkflowStateProps {
   envConfig: any;
 }
 
+type SaveResponseData = {
+  id?: number | string;
+  state?: JobDefinitionState;
+};
+
 const stableStringify = (value: any) => {
   try {
     return JSON.stringify(value ?? {});
   } catch (error) {
     return "";
+  }
+};
+
+const getSaveResponseData = (res: any): SaveResponseData => {
+  const data = res?.data;
+
+  /**
+   * 兼容新版返回：
+   * data = {
+   *   id: 123,
+   *   state: {
+   *     editorSyncState: "SYNCED",
+   *     releaseState: "OFFLINE",
+   *     jobVersion: 1,
+   *     contentVersion: 1
+   *   }
+   * }
+   */
+  if (data && typeof data === "object") {
+    return {
+      id:
+        data.id ??
+        data.jobDefineId ??
+        data.jobDefinitionId ??
+        data.definitionId,
+      state: data.state,
+    };
+  }
+
+  /**
+   * 兼容旧版返回：
+   * data = 123
+   */
+  return {
+    id: data,
+    state: undefined,
+  };
+};
+
+const syncStreamSessionCache = (id: number | string | undefined, data: any) => {
+  if (!id) return;
+
+  try {
+    sessionStorage.setItem(
+      `stream-link-up-detail-${id}`,
+      JSON.stringify(data)
+    );
+  } catch (error) {
+    console.warn("Update stream custom workflow session cache failed", error);
   }
 };
 
@@ -120,23 +186,33 @@ export function useCustomWorkflowState({
   const buildFinalPayload = useCallback(() => {
     return {
       id: params?.id ?? publishedJobDefineId,
+
       basic: {
         ...basicConfig,
         mode: "SCRIPT",
       },
+
       content: {
         scriptType: "HOCON",
         hoconContent,
       },
+
+      workflow: {
+        ...(params?.workflow || {}),
+        hoconContent,
+      },
+
       schedule: {
         ...scheduleConfig,
       },
+
       env: {
         ...envConfig,
       },
     };
   }, [
     params?.id,
+    params?.workflow,
     publishedJobDefineId,
     basicConfig,
     hoconContent,
@@ -223,39 +299,71 @@ export function useCustomWorkflowState({
       setPublishLoading(true);
 
       const finalPayload = buildFinalPayload();
+
       const res = await seatunnelStremJobDefinitionApi.saveOrUpdateScript(
         finalPayload
       );
 
-      const jobDefineId = res?.data?.id ?? res?.data ?? finalPayload.id;
+      if (res?.code !== 0) {
+        return;
+      }
 
-      if (jobDefineId) {
-        setPublishedJobDefineId(jobDefineId);
+      const saveData = getSaveResponseData(res);
+      const jobDefineId = saveData.id ?? finalPayload.id;
 
-        setParams((prev: any) => ({
+      if (!jobDefineId) {
+        message.error("发布成功但未返回任务 ID");
+        return;
+      }
+
+      /**
+       * 关键点：
+       * 发布成功后必须把 editorSyncState 改成 SYNCED。
+       * 如果后端返回了 state，优先用后端 state。
+       * 如果后端没有返回 state，就基于当前 state 前端兜底标记为 SYNCED。
+       */
+      const syncedState = saveData.state
+        ? normalizeJobDefinitionState(saveData.state)
+        : markJobDefinitionSynced(params?.state);
+
+      setPublishedJobDefineId(jobDefineId);
+
+      setParams((prev: any) => {
+        const nextParams = {
           ...(prev || {}),
           id: jobDefineId,
+          state: syncedState,
+
           workflow: {
             ...(prev?.workflow || {}),
             hoconContent,
           },
+
           content: {
             ...(prev?.content || {}),
             scriptType: "HOCON",
             hoconContent,
           },
+
           hoconContent,
           scheduleConfig,
           env: envConfig,
-        }));
+        };
 
-        resetBaseline();
-      }
+        /**
+         * create 场景是从 sessionStorage 初始化的。
+         * 发布成功后同步缓存，避免刷新后又显示未发布。
+         */
+        syncStreamSessionCache(prev?.id, nextParams);
+        syncStreamSessionCache(jobDefineId, nextParams);
+
+        return nextParams;
+      });
+
+      resetBaseline();
 
       message.success("发布成功");
     } catch (error: any) {
-      console.error(error);
-      message.error(error?.message || "发布失败");
     } finally {
       setPublishLoading(false);
     }
@@ -269,6 +377,7 @@ export function useCustomWorkflowState({
       setPreviewLoading(true);
 
       const finalPayload = buildFinalPayload();
+
       const res = await seatunnelStremJobDefinitionApi.buildScriptConfig(
         finalPayload
       );
@@ -289,8 +398,8 @@ export function useCustomWorkflowState({
   const runDisabledReason = !publishedJobDefineId
     ? "请先发布任务，再执行"
     : isDirty
-      ? "当前内容已变更，请重新发布后再执行"
-      : "";
+    ? "当前内容已变更，请重新发布后再执行"
+    : "";
 
   const handleRun = async () => {
     const pass = await validateBeforeSubmit();
@@ -309,8 +418,12 @@ export function useCustomWorkflowState({
     try {
       setRunLoading(true);
 
-      // TODO: 后续接入真正执行接口 / RunLog。
-      // await seatunnelJobDefinitionApi.execute(publishedJobDefineId);
+      /**
+       * TODO:
+       * 后续这里接入实时任务执行接口。
+       * 例如：
+       * await seatunnelStremJobDefinitionApi.execute(publishedJobDefineId);
+       */
 
       message.success("运行校验通过，可继续接入执行逻辑");
     } catch (error: any) {
