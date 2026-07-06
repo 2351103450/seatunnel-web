@@ -16,6 +16,8 @@ import org.apache.seatunnel.web.spi.bean.dto.streaming.StreamingGuideSingleJobSa
 import org.apache.seatunnel.web.spi.bean.dto.streaming.StreamingScriptJobSaveCommand;
 import org.apache.seatunnel.web.spi.bean.entity.PaginationResult;
 import org.apache.seatunnel.web.spi.bean.entity.Result;
+import org.apache.seatunnel.web.spi.bean.vo.JobDefinitionEditDetailVO;
+import org.apache.seatunnel.web.spi.bean.vo.JobDefinitionSaveResultVO;
 import org.apache.seatunnel.web.spi.bean.vo.StreamingJobDefinitionVO;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
@@ -41,7 +43,7 @@ public class StreamingJobDefinitionController {
     @PostMapping("/script/saveOrUpdate")
     @Operation(summary = "saveOrUpdateStreamingScriptJobDefinition", description = "保存或更新 SCRIPT 模式实时任务")
     @ApiException(SAVE_OR_UPDATE_BATCH_JOB_DEFINITION_ERROR)
-    public Result<Long> saveScript(@RequestBody StreamingScriptJobSaveCommand command) {
+    public Result<JobDefinitionSaveResultVO> saveScript(@RequestBody StreamingScriptJobSaveCommand command) {
         return Result.buildSuc(streamingJobDefinitionService.saveOrUpdate(command));
     }
 
@@ -61,7 +63,7 @@ public class StreamingJobDefinitionController {
     @PostMapping("/guide-single/saveOrUpdate")
     @Operation(summary = "saveOrUpdateStreamingGuideSingleJobDefinition", description = "保存或更新 GUIDE_SINGLE 模式实时任务")
     @ApiException(SAVE_OR_UPDATE_BATCH_JOB_DEFINITION_ERROR)
-    public Result<Long> saveGuideSingle(@RequestBody StreamingGuideSingleJobSaveCommand command) {
+    public Result<JobDefinitionSaveResultVO> saveGuideSingle(@RequestBody StreamingGuideSingleJobSaveCommand command) {
         return Result.buildSuc(streamingJobDefinitionService.saveOrUpdate(command));
     }
 
@@ -81,7 +83,7 @@ public class StreamingJobDefinitionController {
     @PostMapping("/guide-multi/saveOrUpdate")
     @Operation(summary = "saveOrUpdateStreamingGuideMultiJobDefinition", description = "保存或更新 GUIDE_MULTI 模式实时任务")
     @ApiException(SAVE_OR_UPDATE_BATCH_JOB_DEFINITION_ERROR)
-    public Result<Long> saveGuideMulti(@RequestBody StreamingGuideMultiJobSaveCommand command) {
+    public Result<JobDefinitionSaveResultVO> saveGuideMulti(@RequestBody StreamingGuideMultiJobSaveCommand command) {
         return Result.buildSuc(streamingJobDefinitionService.saveOrUpdate(command));
     }
 
@@ -147,7 +149,7 @@ public class StreamingJobDefinitionController {
     @GetMapping("/{id}/edit-detail")
     @Operation(summary = "selectStreamingJobEditDetail", description = "查询实时任务编辑详情")
     @ApiException(QUERY_BATCH_JOB_DEFINITION_ERROR)
-    public Result<?> selectEditDetail(@PathVariable("id") Long id) {
+    public Result<JobDefinitionEditDetailVO> selectEditDetail(@PathVariable("id") Long id) {
         return Result.buildSuc(streamingJobDefinitionService.selectEditDetail(id));
     }
 
