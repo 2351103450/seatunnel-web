@@ -234,7 +234,6 @@ export default function SingleConfigPage() {
       return;
     }
 
-    
     const cache = sessionStorage.getItem(cacheKey);
     if (cache) {
       initCreate();
