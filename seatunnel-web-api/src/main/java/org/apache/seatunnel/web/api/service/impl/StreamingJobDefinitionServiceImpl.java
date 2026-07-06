@@ -1,5 +1,6 @@
 package org.apache.seatunnel.web.api.service.impl;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.annotation.Resource;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
@@ -27,6 +28,9 @@ import org.apache.seatunnel.web.spi.bean.dto.streaming.StreamingGuideMultiJobSav
 import org.apache.seatunnel.web.spi.bean.dto.streaming.StreamingGuideSingleJobSaveCommand;
 import org.apache.seatunnel.web.spi.bean.dto.streaming.StreamingScriptJobSaveCommand;
 import org.apache.seatunnel.web.spi.bean.entity.PaginationResult;
+import org.apache.seatunnel.web.spi.bean.vo.JobDefinitionEditDetailVO;
+import org.apache.seatunnel.web.spi.bean.vo.JobDefinitionSaveResultVO;
+import org.apache.seatunnel.web.spi.bean.vo.JobDefinitionStateVO;
 import org.apache.seatunnel.web.spi.bean.vo.StreamingJobDefinitionVO;
 import org.apache.seatunnel.web.spi.bean.vo.StreamingMetricsSnapshotVO;
 import org.apache.seatunnel.web.spi.bean.vo.StreamingMetricsTrendItemVO;
@@ -67,23 +71,26 @@ public class StreamingJobDefinitionServiceImpl extends BaseServiceImpl implement
     @Resource
     private StreamingJobMetricsService streamingJobMetricsService;
 
+    @Resource
+    private ObjectMapper objectMapper;
+
     @Override
-    public Long saveOrUpdate(StreamingScriptJobSaveCommand command) {
+    public JobDefinitionSaveResultVO saveOrUpdate(StreamingScriptJobSaveCommand command) {
         return doSaveOrUpdate(command);
     }
 
     @Override
-    public Long saveOrUpdate(StreamingGuideSingleJobSaveCommand command) {
+    public JobDefinitionSaveResultVO saveOrUpdate(StreamingGuideSingleJobSaveCommand command) {
         return doSaveOrUpdate(command);
     }
 
     @Override
-    public Long saveOrUpdate(StreamingGuideMultiJobSaveCommand command) {
+    public JobDefinitionSaveResultVO saveOrUpdate(StreamingGuideMultiJobSaveCommand command) {
         return doSaveOrUpdate(command);
     }
 
     @Transactional(rollbackFor = Exception.class)
-    protected Long doSaveOrUpdate(StreamingJobSaveCommand command) {
+    protected JobDefinitionSaveResultVO doSaveOrUpdate(StreamingJobSaveCommand command) {
         validatePersistCommand(command);
         validateStreaming(command);
 
@@ -91,11 +98,12 @@ public class StreamingJobDefinitionServiceImpl extends BaseServiceImpl implement
             SaveContext context = prepareSaveContext(command);
 
             StreamingJobDefinitionEntity entity = saveDefinition(command, context);
+
             cdcServerIdAllocationService.prepare(command, entity.getId());
-            context.setDefinitionContent(context.getHandler().serializeDefinition(command));
+
             saveDefinitionContent(command, context, entity);
 
-            return entity.getId();
+            return buildSaveResult(entity, context.getNextVersion());
         } catch (ServiceException e) {
             throw e;
         } catch (Exception e) {
@@ -232,7 +240,7 @@ public class StreamingJobDefinitionServiceImpl extends BaseServiceImpl implement
     }
 
     @Override
-    public JobDefinitionSaveCommand selectEditDetail(Long id) {
+    public JobDefinitionEditDetailVO selectEditDetail(Long id) {
         validateId(id);
 
         try {
@@ -241,7 +249,9 @@ public class StreamingJobDefinitionServiceImpl extends BaseServiceImpl implement
 
             StreamingJobDefinitionContentEntity latestContent = getLatestContentOrThrow(id);
 
-            return definitionQueryService.buildEditCommand(definition, latestContent);
+            JobDefinitionSaveCommand command = definitionQueryService.buildEditCommand(definition, latestContent);
+
+            return buildEditDetail(command, definition, latestContent);
         } catch (ServiceException e) {
             throw e;
         } catch (Exception e) {
@@ -337,6 +347,8 @@ public class StreamingJobDefinitionServiceImpl extends BaseServiceImpl implement
             );
         }
 
+        normalizePersistState(entity, context.getNextVersion());
+
         streamingJobDefinitionDao.saveOrUpdate(entity);
         return entity;
     }
@@ -364,6 +376,55 @@ public class StreamingJobDefinitionServiceImpl extends BaseServiceImpl implement
 
         contentEntity.initInsert();
         streamingJobDefinitionContentDao.save(contentEntity);
+    }
+
+    private JobDefinitionSaveResultVO buildSaveResult(
+            StreamingJobDefinitionEntity entity,
+            Integer contentVersion) {
+        JobDefinitionStateVO state = JobDefinitionStateVO.synced(
+                resolveReleaseState(entity.getReleaseState()),
+                entity.getJobVersion(),
+                contentVersion
+        );
+
+        return JobDefinitionSaveResultVO.builder()
+                .id(entity.getId())
+                .state(state)
+                .build();
+    }
+
+    private JobDefinitionEditDetailVO buildEditDetail(
+            JobDefinitionSaveCommand command,
+            StreamingJobDefinitionEntity definition,
+            StreamingJobDefinitionContentEntity latestContent) {
+        JobDefinitionEditDetailVO detail = objectMapper.convertValue(
+                command,
+                JobDefinitionEditDetailVO.class
+        );
+
+        detail.setState(JobDefinitionStateVO.synced(
+                resolveReleaseState(definition.getReleaseState()),
+                definition.getJobVersion(),
+                latestContent.getVersion()
+        ));
+
+        return detail;
+    }
+
+    private void normalizePersistState(StreamingJobDefinitionEntity entity, Integer nextVersion) {
+        if (entity == null) {
+            return;
+        }
+
+        entity.setJobVersion(nextVersion);
+
+        if (entity.getReleaseState() == null) {
+            entity.setReleaseState(ReleaseState.OFFLINE);
+        }
+    }
+
+    private ReleaseState resolveReleaseState(ReleaseState releaseState) {
+        return releaseState == null ? ReleaseState.OFFLINE : releaseState;
     }
 
     private int resolveNextVersion(StreamingJobDefinitionEntity existing) {

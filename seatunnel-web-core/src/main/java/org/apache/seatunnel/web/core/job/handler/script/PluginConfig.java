@@ -1,8 +1,9 @@
 package org.apache.seatunnel.web.core.job.handler.script;
 
 import com.typesafe.config.Config;
+import lombok.ToString;
 
-
+@ToString
 public class PluginConfig {
     private final String pluginName;
     private final Config config;

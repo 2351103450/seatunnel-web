@@ -8,7 +8,14 @@ import {
   PlayCircle,
   Upload,
 } from "lucide-react";
-import { useEffect, useMemo, useRef, useState } from "react";
+import {
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  type Dispatch,
+  type SetStateAction,
+} from "react";
 import { ReactFlowProvider } from "reactflow";
 import { seatunnelJobDefinitionApi } from "../api";
 import FlowCanvas from "./FlowCanvas";
@@ -24,7 +31,21 @@ import "./index.less";
 import CodeBlockWithCopy from "./operator/CodeBlockWithCopy";
 import RunLog from "./run";
 
+type PageScene = "create" | "edit";
+
+type EditorSyncState = "UNPUBLISHED" | "SYNCED" | "DIRTY";
+
+type JobDefinitionState = {
+  editorSyncState?: EditorSyncState | string;
+  releaseState?: "ONLINE" | "OFFLINE" | string;
+  jobVersion?: number | null;
+  contentVersion?: number | null;
+};
+
 interface WorkflowProps {
+  pageScene: PageScene;
+  contextKey: string;
+
   params: any;
   goBack: () => void;
   sourceType: any;
@@ -32,12 +53,12 @@ interface WorkflowProps {
   targetType: any;
   setTargetType: (value: any) => void;
   basicConfig: BasicConfig;
-  setBasicConfig: React.Dispatch<React.SetStateAction<BasicConfig>>;
+  setBasicConfig: Dispatch<SetStateAction<BasicConfig>>;
   scheduleConfig: ScheduleConfig;
   setScheduleConfig: (value: any) => void;
-  setParams: React.Dispatch<React.SetStateAction<any>>;
+  setParams: Dispatch<SetStateAction<any>>;
   envConfig: EnvConfig;
-  setEnvConfig: React.Dispatch<React.SetStateAction<EnvConfig>>;
+  setEnvConfig: Dispatch<SetStateAction<EnvConfig>>;
 }
 
 const getInitialWorkflowGraph = (params?: any) => {
@@ -69,7 +90,63 @@ const buildDirtySignature = (data: {
   });
 };
 
+const normalizeInitialState = (
+  state: JobDefinitionState | undefined,
+  pageScene: PageScene
+): JobDefinitionState => {
+  if (pageScene === "create") {
+    return {
+      editorSyncState: "UNPUBLISHED",
+      releaseState: "OFFLINE",
+      jobVersion: null,
+      contentVersion: null,
+    };
+  }
+
+  return {
+    editorSyncState: "SYNCED",
+    releaseState: state?.releaseState || "OFFLINE",
+    jobVersion: state?.jobVersion ?? null,
+    contentVersion: state?.contentVersion ?? null,
+  };
+};
+
+const normalizeSavedState = (
+  state: JobDefinitionState | undefined,
+  currentState: JobDefinitionState
+): JobDefinitionState => {
+  return {
+    editorSyncState: "SYNCED",
+    releaseState: state?.releaseState || currentState?.releaseState || "OFFLINE",
+    jobVersion: state?.jobVersion ?? currentState?.jobVersion ?? null,
+    contentVersion: state?.contentVersion ?? currentState?.contentVersion ?? null,
+  };
+};
+
+const getSaveResponseData = (res: any) => {
+  const data = res?.data;
+
+  /**
+   * 兼容两种后端返回：
+   * 1. 新版：data = { id, state }
+   * 2. 旧版：data = id
+   */
+  if (data && typeof data === "object") {
+    return {
+      id: data?.id,
+      state: data?.state,
+    };
+  }
+
+  return {
+    id: data,
+    state: undefined,
+  };
+};
+
 export default function Workflow({
+  pageScene,
+  contextKey,
   params,
   goBack,
   sourceType,
@@ -90,6 +167,7 @@ export default function Workflow({
   >(null);
 
   const draggingRef = useRef(false);
+  const contextRef = useRef<string>("");
 
   const [workflowGraph, setWorkflowGraph] = useState<{
     nodes: any[];
@@ -102,9 +180,11 @@ export default function Workflow({
 
   const [runVisible, setRunVisible] = useState(false);
 
-  const [publishedJobDefineId, setPublishedJobDefineId] = useState<
-    number | undefined
-  >(params?.id);
+  const [definitionState, setDefinitionState] = useState<JobDefinitionState>(() =>
+    normalizeInitialState(params?.state, pageScene)
+  );
+
+  const [baselineSignature, setBaselineSignature] = useState<string>("");
 
   const [publishLoading, setPublishLoading] = useState(false);
   const [runLoading, setRunLoading] = useState(false);
@@ -119,46 +199,97 @@ export default function Workflow({
   }, [basicConfig, scheduleConfig, envConfig, workflowGraph]);
 
   /**
-   * baselineSignature 表示“已发布版本”的配置快照。
+   * 任务定义 ID 只代表“任务标识”。
    *
-   * 编辑页首次进入：
-   * baseline = 当前回显数据
-   * current = 当前回显数据
-   * 所以 isDirty = false，运行按钮可用。
-   *
-   * 用户修改后：
-   * current !== baseline
-   * 所以 isDirty = true，需要重新发布。
+   * 新建场景下也可能有预生成 ID，但这不代表任务已经发布。
+   * 是否可运行，必须看 editorSyncState 和 baseline 是否一致。
    */
-  const [baselineSignature, setBaselineSignature] =
-    useState<string>(currentSignature);
+  const jobDefinitionId = params?.id;
 
-  const baselineJobIdRef = useRef<any>(null);
-
+  /**
+   * 进入新的页面上下文时，初始化：
+   * 1. 画布
+   * 2. 后端返回的状态
+   * 3. 当前已同步版本的 baseline
+   *
+   * 这里不要监听 currentSignature 后反复重置 baseline，
+   * 否则用户修改画布后，dirty 状态会被抹掉。
+   */
   useEffect(() => {
-    if (!params?.id) return;
+    if (!contextKey) return;
 
-    if (baselineJobIdRef.current === params.id) {
+    if (contextRef.current === contextKey) {
       return;
     }
 
-    baselineJobIdRef.current = params.id;
-    setBaselineSignature(currentSignature);
-  }, [params?.id, currentSignature]);
+    contextRef.current = contextKey;
+
+    const nextWorkflowGraph = getInitialWorkflowGraph(params);
+    const nextState = normalizeInitialState(params?.state, pageScene);
+
+    setWorkflowGraph(nextWorkflowGraph);
+    setDefinitionState(nextState);
+
+    setBaselineSignature(
+      buildDirtySignature({
+        basicConfig,
+        scheduleConfig,
+        envConfig,
+        workflowGraph: nextWorkflowGraph,
+      })
+    );
+  }, [
+    contextKey,
+    params,
+    pageScene,
+    basicConfig,
+    scheduleConfig,
+    envConfig,
+  ]);
+
+  const hasPersistedDefinition =
+    !!jobDefinitionId && definitionState?.editorSyncState === "SYNCED";
 
   const isDirty =
-    !!publishedJobDefineId && currentSignature !== baselineSignature;
+    hasPersistedDefinition &&
+    !!baselineSignature &&
+    currentSignature !== baselineSignature;
+
+  const editorSyncState: EditorSyncState = !hasPersistedDefinition
+    ? "UNPUBLISHED"
+    : isDirty
+    ? "DIRTY"
+    : "SYNCED";
 
   const { checkStat, checkGroups } = useFlowChecks(workflowGraph.nodes || []);
 
   const canRun =
-    !!publishedJobDefineId && !isDirty && !publishLoading && !runLoading;
+    editorSyncState === "SYNCED" && !publishLoading && !runLoading;
 
-  const runDisabledReason = !publishedJobDefineId
-    ? "请先发布任务，再执行"
-    : isDirty
-    ? "当前内容已变更，请重新发布后再执行"
-    : "";
+  const runDisabledReason =
+    editorSyncState === "UNPUBLISHED"
+      ? "请先发布任务，再执行"
+      : editorSyncState === "DIRTY"
+      ? "当前内容已修改，请发布后再执行"
+      : "";
+
+  const publishStatusView = {
+    UNPUBLISHED: {
+      text: "未发布",
+      tooltip: "当前任务还没有发布到数据库，暂时不能运行",
+      className: "border-amber-200 bg-amber-50 text-amber-600",
+    },
+    SYNCED: {
+      text: "已发布",
+      tooltip: "当前内容已同步到数据库，可以运行",
+      className: "border-emerald-200 bg-emerald-50 text-emerald-600",
+    },
+    DIRTY: {
+      text: "已修改，未发布",
+      tooltip: "当前页面内容已变更，需要重新发布后才能运行",
+      className: "border-blue-200 bg-blue-50 text-blue-600",
+    },
+  }[editorSyncState];
 
   const validateChecklistBeforeAction = () => {
     const total =
@@ -201,33 +332,6 @@ export default function Workflow({
     };
   }, []);
 
-  /**
-   * params.id 变化时，说明进入了一个新的任务上下文。
-   * 这里只同步发布 id 和 workflow 初始数据。
-   */
-  useEffect(() => {
-    if (!params?.id) return;
-
-    setPublishedJobDefineId(params.id);
-
-    const nextWorkflowGraph = getInitialWorkflowGraph(params);
-    setWorkflowGraph(nextWorkflowGraph);
-  }, [params?.id]);
-
-  /**
-   * 关键点：
-   * 编辑页刚进来时，等当前 props + workflowGraph 形成当前快照后，
-   * 把这份快照作为 baseline。
-   *
-   * 不使用 requestAnimationFrame，不做延迟归位，
-   * 避免视觉上的“多渲染一层 / 闪一下”。
-   */
-  useEffect(() => {
-    if (!params?.id) return;
-
-    setBaselineSignature(currentSignature);
-  }, [params?.id, currentSignature]);
-
   const buildEnvData = () => {
     return {
       ...envConfig,
@@ -261,7 +365,14 @@ export default function Workflow({
 
   const buildFinalPayload = () => {
     return {
-      id: params?.id ?? publishedJobDefineId,
+      /**
+       * 这里仍然传 jobDefinitionId。
+       *
+       * 注意：
+       * id 是任务定义标识，不是发布状态。
+       * 新建场景下也可能存在预生成 id，后端用它保存任务。
+       */
+      id: jobDefinitionId,
       basic: buildBasicData(),
       workflow: buildWorkflowData(),
       schedule: buildScheduleData(),
@@ -285,6 +396,7 @@ export default function Workflow({
       setPreviewContent(res?.data || "");
       setPreviewOpen(true);
     } catch (error: any) {
+      message.error(error?.message || "预览失败");
     } finally {
       setPreviewLoading(false);
     }
@@ -304,7 +416,7 @@ export default function Workflow({
       const nextEnv = buildEnvData();
 
       const finalPayload = {
-        id: params?.id ?? publishedJobDefineId,
+        id: jobDefinitionId,
         basic: nextBasic,
         workflow: nextWorkflow,
         schedule: nextSchedule,
@@ -315,43 +427,48 @@ export default function Workflow({
         finalPayload
       );
 
-      const jobDefineId = res?.data?.id ?? res?.data ?? finalPayload.id;
+      const saveData = getSaveResponseData(res);
+      const nextJobDefinitionId = saveData.id ?? finalPayload.id;
 
-      if (jobDefineId) {
-        setPublishedJobDefineId(jobDefineId);
-
-        const nextSignature = buildDirtySignature({
-          basicConfig: nextBasic,
-          scheduleConfig: nextSchedule,
-          envConfig: nextEnv,
-          workflowGraph: nextWorkflow,
-        });
-
-        setBaselineSignature(nextSignature);
-
-        /**
-         * 关键点：
-         * 发布成功后，要把当前页面最新内容同步回 params。
-         * 否则 useFlowBuilder 监听 params 变化后，会拿旧的 params.workflow 重置画布。
-         */
-        setParams((prev: any) => ({
-          ...prev,
-          id: jobDefineId,
-
-          // 保持当前最新画布内容
-          workflow: nextWorkflow,
-
-          // 保持当前最新配置内容
-          basic: nextBasic,
-          schedule: nextSchedule,
-          env: nextEnv,
-
-          // 兼容你 useFlowBuilder 里面用的扁平字段
-          jobName: nextBasic?.jobName ?? prev?.jobName,
-          jobDesc: nextBasic?.jobDesc ?? prev?.jobDesc,
-          clientId: nextBasic?.clientId ?? prev?.clientId,
-        }));
+      if (!nextJobDefinitionId) {
+        message.error("发布失败：未获取到任务 ID");
+        return;
       }
+
+      const nextState = normalizeSavedState(saveData.state, definitionState);
+
+      const nextSignature = buildDirtySignature({
+        basicConfig: nextBasic,
+        scheduleConfig: nextSchedule,
+        envConfig: nextEnv,
+        workflowGraph: nextWorkflow,
+      });
+
+      setDefinitionState(nextState);
+      setBaselineSignature(nextSignature);
+
+      /**
+       * 发布成功后，把当前页面最新内容同步回 params。
+       *
+       * 这样 useFlowBuilder 如果监听 params，也不会拿旧 workflow 重置画布。
+       */
+      setParams((prev: any) => ({
+        ...prev,
+        id: nextJobDefinitionId,
+
+        __pageScene: "edit",
+        state: nextState,
+
+        workflow: nextWorkflow,
+        basic: nextBasic,
+        schedule: nextSchedule,
+        env: nextEnv,
+
+        jobName: nextBasic?.jobName ?? prev?.jobName,
+        jobDesc: (nextBasic as any)?.jobDesc ?? prev?.jobDesc,
+        description: (nextBasic as any)?.description ?? prev?.description,
+        clientId: nextBasic?.clientId ?? prev?.clientId,
+      }));
 
       message.success("发布成功");
     } catch (error: any) {
@@ -366,13 +483,13 @@ export default function Workflow({
       return;
     }
 
-    if (!publishedJobDefineId) {
+    if (editorSyncState === "UNPUBLISHED") {
       message.warning("请先发布任务，再执行");
       return;
     }
 
-    if (isDirty) {
-      message.warning("当前内容已变更，请重新发布后再执行");
+    if (editorSyncState === "DIRTY") {
+      message.warning("当前内容已修改，请发布后再执行");
       return;
     }
 
@@ -448,17 +565,19 @@ export default function Workflow({
                   </div>
 
                   <Space size={10}>
-                    <Tooltip title={runDisabledReason}>
-                      <Button
-                        type="default"
-                        icon={<PlayCircle size={15} strokeWidth={1.9} />}
-                        onClick={handleRun}
-                        loading={runLoading}
-                        disabled={!canRun}
-                        className="!inline-flex !h-[34px] !items-center !justify-center !rounded-full !border !border-slate-200 !bg-slate-50 !px-3.5 !text-[13px] !font-medium !text-slate-500 transition-colors duration-200 hover:!border-slate-300 hover:!bg-white/80 hover:!text-slate-700 hover:!shadow-[0_4px_12px_rgba(15,23,42,0.05)] disabled:!cursor-not-allowed disabled:!border-slate-200 disabled:!bg-slate-100 disabled:!text-slate-400 disabled:!shadow-none"
-                      >
-                        运行
-                      </Button>
+                    <Tooltip title={runDisabledReason || undefined}>
+                      <span className="inline-flex">
+                        <Button
+                          type="default"
+                          icon={<PlayCircle size={15} strokeWidth={1.9} />}
+                          onClick={handleRun}
+                          loading={runLoading}
+                          disabled={!canRun}
+                          className="!inline-flex !h-[34px] !items-center !justify-center !rounded-full !border !border-slate-200 !bg-slate-50 !px-3.5 !text-[13px] !font-medium !text-slate-500 transition-colors duration-200 hover:!border-slate-300 hover:!bg-white/80 hover:!text-slate-700 hover:!shadow-[0_4px_12px_rgba(15,23,42,0.05)] disabled:!cursor-not-allowed disabled:!border-slate-200 disabled:!bg-slate-100 disabled:!text-slate-400 disabled:!shadow-none"
+                        >
+                          运行
+                        </Button>
+                      </span>
                     </Tooltip>
 
                     <CheckListPopover
@@ -497,6 +616,17 @@ export default function Workflow({
                         <span className="ml-1">预览</span>
                       </div>
                     </Popover>
+
+                    <Tooltip title={publishStatusView.tooltip}>
+                      <span
+                        className={[
+                          "inline-flex h-[34px] select-none items-center justify-center rounded-full border px-3 text-[13px] font-medium leading-none",
+                          publishStatusView.className,
+                        ].join(" ")}
+                      >
+                        {publishStatusView.text}
+                      </span>
+                    </Tooltip>
 
                     <Button
                       type="default"

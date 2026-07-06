@@ -10,6 +10,17 @@ import {
   ScheduleConfig,
 } from "../../workflow/components/ScheduleConfigContent/types";
 
+type PageScene = "create" | "edit";
+
+type EditorSyncState = "UNPUBLISHED" | "SYNCED" | "DIRTY";
+
+type JobDefinitionState = {
+  editorSyncState: EditorSyncState;
+  releaseState?: "ONLINE" | "OFFLINE" | string;
+  jobVersion?: number | null;
+  contentVersion?: number | null;
+};
+
 const defaultScheduleConfig: ScheduleConfig = {
   paramsList: [],
   instanceGenerateMode: "nextDay",
@@ -52,6 +63,24 @@ const defaultBasicConfig: BasicConfig = {
   targetType: "SINK",
   sourceDataSourceId: "",
   targetDataSourceId: "",
+};
+
+const buildUnpublishedState = (): JobDefinitionState => {
+  return {
+    editorSyncState: "UNPUBLISHED",
+    releaseState: "OFFLINE",
+    jobVersion: null,
+    contentVersion: null,
+  };
+};
+
+const buildSyncedState = (rawState?: any): JobDefinitionState => {
+  return {
+    editorSyncState: "SYNCED",
+    releaseState: rawState?.releaseState || "OFFLINE",
+    jobVersion: rawState?.jobVersion ?? null,
+    contentVersion: rawState?.contentVersion ?? null,
+  };
 };
 
 const buildInitialScheduleConfigForCreate = (rawData?: any): ScheduleConfig => {
@@ -135,26 +164,51 @@ const buildInitialBasicConfigForEdit = (editData?: any): BasicConfig => {
   };
 };
 
+const buildPageParamsForCreate = (rawData: any, routeId?: string) => {
+  return {
+    ...rawData,
+    id: rawData?.id || routeId,
+    __pageScene: "create",
+    state: buildUnpublishedState(),
+  };
+};
+
 const buildPageParamsForEdit = (editData?: any) => {
   const basic = editData?.basic || {};
   const workflow = editData?.workflow || {};
   const schedule = editData?.schedule || {};
+  const env = editData?.env || {};
 
   return {
     id: editData?.id,
     mode: editData?.mode,
+    runtimeType: editData?.runtimeType,
+
     jobName: basic?.jobName || "",
     jobDesc: basic?.jobDesc || "",
     clientId: basic?.clientId || "",
+
     sourceType: workflow?.sourceType || null,
     targetType: workflow?.targetType || null,
     sourceDataSourceId:
       workflow?.sourceDataSourceId || workflow?.sourceId || "",
     targetDataSourceId:
       workflow?.targetDataSourceId || workflow?.targetId || "",
+
     scheduleConfig: schedule,
     workflow,
     basic,
+    schedule,
+    env,
+
+    __pageScene: "edit",
+    state: editData?.state
+      ? buildSyncedState(editData.state)
+      : buildSyncedState({
+          releaseState: editData?.releaseState,
+          jobVersion: editData?.jobVersion,
+          contentVersion: editData?.contentVersion,
+        }),
   };
 };
 
@@ -162,6 +216,7 @@ export default function SingleConfigPage() {
   const { id } = useParams<{ id: string }>();
   const location = useLocation();
 
+  const [pageScene, setPageScene] = useState<PageScene>("create");
   const [params, setParams] = useState<any>(null);
   const [sourceType, setSourceType] = useState<any>(null);
   const [targetType, setTargetType] = useState<any>(null);
@@ -195,24 +250,34 @@ export default function SingleConfigPage() {
     const cacheKey = `batch-link-up-detail-${id}`;
 
     const initCreate = () => {
+      setPageScene("create");
+
       const cache = sessionStorage.getItem(cacheKey);
       if (!cache) {
         setParams(null);
         return;
       }
 
-      const data = JSON.parse(cache);
-      setParams(data);
-      setSourceType(data?.sourceType || null);
-      setTargetType(data?.targetType || null);
-      setBasicConfig(buildInitialBasicConfigForCreate(data));
-      setScheduleConfig(buildInitialScheduleConfigForCreate(data));
-      setEnvConfig(buildInitialEnvConfigForCreate(data));
+      try {
+        const data = JSON.parse(cache);
+        const pageParams = buildPageParamsForCreate(data, id);
+
+        setParams(pageParams);
+        setSourceType(data?.sourceType || null);
+        setTargetType(data?.targetType || null);
+        setBasicConfig(buildInitialBasicConfigForCreate(data));
+        setScheduleConfig(buildInitialScheduleConfigForCreate(data));
+        setEnvConfig(buildInitialEnvConfigForCreate(data));
+      } catch (error) {
+        message.error("读取配置缓存失败，请返回重新选择数据源");
+        setParams(null);
+      }
     };
 
     const initEdit = async () => {
       try {
         setLoading(true);
+        setPageScene("edit");
 
         const res = await seatunnelJobDefinitionApi.selectEditDetail(id);
         if (res?.code !== 0 || !res?.data) {
@@ -222,8 +287,9 @@ export default function SingleConfigPage() {
         }
 
         const data = res.data;
+        const pageParams = buildPageParamsForEdit(data);
 
-        setParams(buildPageParamsForEdit(data));
+        setParams(pageParams);
         setSourceType(data?.workflow?.sourceType || null);
         setTargetType(data?.workflow?.targetType || null);
         setBasicConfig(buildInitialBasicConfigForEdit(data));
@@ -247,7 +313,6 @@ export default function SingleConfigPage() {
       return;
     }
 
-    // 兜底逻辑：有缓存优先视为新建，否则按编辑处理
     const cache = sessionStorage.getItem(cacheKey);
     if (cache) {
       initCreate();
@@ -284,9 +349,18 @@ export default function SingleConfigPage() {
     );
   }
 
+  const workflowContextKey = [
+    pageScene,
+    params?.id || id || "unknown",
+    params?.state?.jobVersion ?? "none",
+    params?.state?.contentVersion ?? "none",
+  ].join("-");
+
   return (
     <div className="min-h-screen bg-[#ffffff]">
       <Workflow
+        pageScene={pageScene}
+        contextKey={workflowContextKey}
         params={params}
         goBack={goBack}
         sourceType={sourceType}
