@@ -138,6 +138,17 @@ public class MySqlDriverResolver {
             return false;
         }
 
+        // Mandatory Parameters in Defensive Programming
+        if(StringUtils.isBlank(param.getUrl())){
+            return false;
+        }
+        if(StringUtils.isBlank(param.getUser())){
+            return false;
+        }
+        if(StringUtils.isBlank(param.getPassword())){
+            return false;
+        }
+
         try {
             Driver driver = loadDriver(driverJar, driverClassName);
             DriverManager.registerDriver(new MySqlDriverShim(driver));
