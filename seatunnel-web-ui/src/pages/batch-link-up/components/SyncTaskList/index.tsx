@@ -245,18 +245,21 @@ const App: React.FC<Props> = ({ goDetail }) => {
         <DataSourceSyncPlan record={record} />
       ),
     },
+
     {
       title: intl.formatMessage({
         id: "pages.job.table.col.status",
         defaultMessage: "Status",
       }),
       dataIndex: "taskParams",
-      width: "10%",
+      width: 106,
       render: (_content: any, record: any) => (
-        <TaskStatus
-          status={record?.lastJobStatus}
-          errorMessage={record?.errorMessage}
-        />
+        <div className="flex w-full justify-center">
+          <TaskStatus
+            status={record?.lastJobStatus}
+            errorMessage={record?.lastErrorMessage}
+          />
+        </div>
       ),
     },
     {

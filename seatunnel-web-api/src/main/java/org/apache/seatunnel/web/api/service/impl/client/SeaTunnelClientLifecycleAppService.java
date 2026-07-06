@@ -16,8 +16,10 @@ import org.apache.seatunnel.web.core.client.service.SeaTunnelClientTopologyBuild
 import org.apache.seatunnel.web.core.exceptions.ServiceException;
 import org.apache.seatunnel.web.dao.entity.SeaTunnelClient;
 import org.apache.seatunnel.web.dao.entity.SeaTunnelClientNode;
+import org.apache.seatunnel.web.dao.repository.JobDefinitionDao;
 import org.apache.seatunnel.web.dao.repository.SeaTunnelClientDao;
 import org.apache.seatunnel.web.dao.repository.SeaTunnelClientNodeDao;
+import org.apache.seatunnel.web.dao.repository.StreamingJobDefinitionDao;
 import org.apache.seatunnel.web.engine.client.modal.SeaTunnelClientAuth;
 import org.apache.seatunnel.web.engine.client.rest.SeaTunnelRestClient;
 import org.apache.seatunnel.web.spi.bean.dto.SeaTunnelClientDTO;
