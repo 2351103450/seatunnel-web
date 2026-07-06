@@ -5,6 +5,7 @@ import com.typesafe.config.ConfigException;
 import com.typesafe.config.ConfigFactory;
 import com.typesafe.config.ConfigValue;
 import com.typesafe.config.ConfigValueType;
+import jakarta.annotation.Resource;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.seatunnel.plugin.datasource.api.analysis.DatasourceAnalysisContext;
@@ -27,6 +28,9 @@ import java.util.Set;
 @Slf4j
 @Component
 public class ScriptJobDefinitionParser {
+
+    @Resource
+    private DataSourceMetadataResolver dataSourceMetadataResolver;
 
     public Config parseAndValidate(String hoconContent) {
         if (StringUtils.isBlank(hoconContent)) {
@@ -100,9 +104,15 @@ public class ScriptJobDefinitionParser {
             return JobDefinitionAnalysisResult.builder().build();
         }
 
-        DbType dbType = resolveDbType(plugin);
+        Long datasourceId = resolveDatasourceId(plugin.getConfig());
+        DbType dbType = resolveDbType(plugin, datasourceId);
+
         if (dbType == null) {
-            log.debug("Can not resolve dbType for script plugin, pluginName={}", plugin.getPluginName());
+            log.debug(
+                    "Can not resolve dbType for script plugin, pluginName={}, datasourceId={}",
+                    plugin.getPluginName(),
+                    datasourceId
+            );
             return JobDefinitionAnalysisResult.builder().build();
         }
 
@@ -119,7 +129,7 @@ public class ScriptJobDefinitionParser {
                 .role(role)
                 .dbType(dbType)
                 .pluginName(plugin.getPluginName())
-                .datasourceId(resolveDatasourceId(plugin.getConfig()))
+                .datasourceId(datasourceId)
                 .pluginConfig(plugin.getConfig())
                 .rawContent(hoconContent)
                 .build();
@@ -127,7 +137,12 @@ public class ScriptJobDefinitionParser {
         return analyzer.analyze(context);
     }
 
-    private DbType resolveDbType(PluginConfig plugin) {
+    private DbType resolveDbType(PluginConfig plugin, Long datasourceId) {
+        DbType datasourceDbType = dataSourceMetadataResolver.resolveDbType(datasourceId);
+        if (datasourceDbType != null) {
+            return datasourceDbType;
+        }
+
         Config config = plugin.getConfig();
 
         String dbTypeText = firstNonBlank(
