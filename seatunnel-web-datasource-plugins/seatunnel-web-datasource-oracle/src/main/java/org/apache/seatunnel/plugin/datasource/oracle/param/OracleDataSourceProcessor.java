@@ -58,4 +58,9 @@ public class OracleDataSourceProcessor extends AbstractDataSourceProcessor {
         return null;
     }
 
+    @Override
+    public String connectivityCheckSql() {
+        return "select 1 as connectivity_check from dual";
+    }
+
 }

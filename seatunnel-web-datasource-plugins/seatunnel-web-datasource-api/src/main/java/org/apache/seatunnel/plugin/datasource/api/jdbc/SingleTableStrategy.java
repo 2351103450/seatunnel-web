@@ -10,7 +10,8 @@ public class SingleTableStrategy implements QueryStrategy {
         if (tablePath == null || StringUtils.isBlank(tablePath.getTableName())) {
             throw new IllegalArgumentException("table is null");
         }
-        String baseSql = "SELECT * FROM " + tablePath.getTableName();
+
+        String baseSql = "SELECT * FROM " + catalog.buildTableReference(tablePath);
         return catalog.applyLimit(baseSql, request.getLimit());
     }
 
@@ -20,6 +21,7 @@ public class SingleTableStrategy implements QueryStrategy {
         if (tablePath == null || StringUtils.isBlank(tablePath.getTableName())) {
             throw new IllegalArgumentException("table is null");
         }
+
         return catalog.buildCountQuery(tablePath.getTableName());
     }
 
@@ -29,6 +31,7 @@ public class SingleTableStrategy implements QueryStrategy {
         if (tablePath == null || StringUtils.isBlank(tablePath.getTableName())) {
             throw new IllegalArgumentException("table is null");
         }
+
         return catalog.getSelectColumnsSql(tablePath);
     }
 }
