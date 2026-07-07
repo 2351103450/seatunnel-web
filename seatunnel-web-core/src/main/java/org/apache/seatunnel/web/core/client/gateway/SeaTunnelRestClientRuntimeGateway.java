@@ -1,4 +1,4 @@
-package org.apache.seatunnel.web.engine.client.gateway;
+package org.apache.seatunnel.web.core.client.gateway;
 
 import jakarta.annotation.Resource;
 import org.apache.seatunnel.web.core.client.port.SeaTunnelClientRuntimeGateway;
