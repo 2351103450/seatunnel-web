@@ -795,3 +795,11 @@ CREATE TABLE t_seatunnel_web_client_node
     KEY                 idx_client_role (client_id, node_role),
     KEY                 idx_health_status (health_status)
 ) COMMENT='SeaTunnel Client 节点表';
+
+
+--
+ALTER TABLE `t_seatunnel_web_client_node`
+    ADD COLUMN `hostname` varchar(255) NULL COMMENT '节点名称' AFTER `host`;
+
+ALTER TABLE `t_seatunnel_web_client`
+    ADD COLUMN `context_path` varchar(255) NULL COMMENT '上下文路径' AFTER `base_url`;

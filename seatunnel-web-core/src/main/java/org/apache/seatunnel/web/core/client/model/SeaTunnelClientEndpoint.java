@@ -16,11 +16,15 @@ public class SeaTunnelClientEndpoint {
 
     private String host;
 
+    private String hostname;
+
     private Integer port;
 
     private String protocol;
 
     private String baseUrl;
+
+    private String contextPath;
 
     private Boolean activeMaster;
 

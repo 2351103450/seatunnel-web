@@ -30,6 +30,8 @@ public class SeaTunnelClientSpec {
      */
     private String host;
 
+    private String hostname;
+
     private Integer port;
 
     /**
@@ -40,4 +42,6 @@ public class SeaTunnelClientSpec {
     private List<SeaTunnelClientEndpoint> workerEndpoints;
 
     private SeaTunnelClientAuthInfo auth;
+
+    private String contextPath;
 }

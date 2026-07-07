@@ -32,6 +32,8 @@ public class SeaTunnelClientDTO {
      */
     private String clientAddress;
 
+    private String clientHostname;
+
     private String clientPort;
 
     /**
@@ -46,6 +48,8 @@ public class SeaTunnelClientDTO {
     private List<SeaTunnelClientEndpointDTO> workerEndpoints;
 
     private String remark;
+
+    private String contextPath;
 
     private Boolean authEnabled;
 

@@ -337,7 +337,8 @@ public class SeaTunnelClientLifecycleAppService {
 
             try {
                 Map<String, Object> overview = seaTunnelRestClient.overview(
-                        buildOverviewUrl(worker.getBaseUrl()),
+                        worker.getBaseUrl(),
+                        null, // TODO 暂时不设置
                         null,
                         buildAuth(client)
                 );
@@ -585,10 +586,6 @@ public class SeaTunnelClientLifecycleAppService {
         }
 
         return String.valueOf(projectVersion).trim();
-    }
-
-    private String buildOverviewUrl(String baseUrl) {
-        return StringUtils.removeEnd(baseUrl, "/") + "/overview";
     }
 
     private <T> List<T> safeList(List<T> list) {
