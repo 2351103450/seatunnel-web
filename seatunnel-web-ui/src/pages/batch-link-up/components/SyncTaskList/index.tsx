@@ -98,7 +98,7 @@ const App: React.FC<Props> = ({ goDetail }) => {
         document.body.removeChild(textarea);
       }
 
-      message.success("JobId 已复制");
+      message.success("任务定义ID已复制");
     } catch {
       message.error("复制失败，请手动复制");
     }
@@ -203,14 +203,14 @@ const App: React.FC<Props> = ({ goDetail }) => {
             <em style={{ fontWeight: 500 }}>
               {intl.formatMessage({
                 id: "pages.job.table.label.jobId",
-                defaultMessage: "JobId",
+                defaultMessage: "Job Definition ID",
               })}
             </em>
             :{" "}
             <span style={{ fontSize: "12px", color: "gray" }}>
               {record?.id}
             </span>{" "}
-            <Tooltip title="复制 JobId">
+            <Tooltip title="复制任务定义ID">
               <button
                 type="button"
                 style={{

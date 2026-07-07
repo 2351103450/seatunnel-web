@@ -394,7 +394,7 @@ export default function Workflow({
       const nextJobDefinitionId = saveData.id ?? finalPayload.id;
 
       if (!nextJobDefinitionId) {
-        message.error("发布失败：未获取到任务 ID");
+        message.error("发布失败：未获取到任务定义ID");
         return;
       }
 

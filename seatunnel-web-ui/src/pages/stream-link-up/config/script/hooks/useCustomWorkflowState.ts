@@ -312,7 +312,7 @@ export function useCustomWorkflowState({
       const jobDefineId = saveData.id ?? finalPayload.id;
 
       if (!jobDefineId) {
-        message.error("发布成功但未返回任务 ID");
+        message.error("发布成功但未返回任务定义ID");
         return;
       }
 
