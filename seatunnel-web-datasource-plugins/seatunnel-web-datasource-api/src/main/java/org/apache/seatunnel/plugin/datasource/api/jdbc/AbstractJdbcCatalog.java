@@ -46,6 +46,10 @@ public abstract class AbstractJdbcCatalog implements JdbcCatalog {
         this.connectionManager = connectionManager;
     }
 
+    protected BaseConnectionParam getParam() {
+        return param;
+    }
+
     protected QueryRequest preprocessRequest(Map<String, Object> requestBody) {
         QueryRequest request = QueryRequest.from(requestBody, param);
         if (StringUtils.isNotBlank(request.getQuery())) {
@@ -116,6 +120,83 @@ public abstract class AbstractJdbcCatalog implements JdbcCatalog {
     }
 
     @Override
+    public String buildSelectAllColumnsSql(String tablePath, List<DataSourceTableColumn> columns) {
+        return buildSelectAllColumnsSql(resolveTablePath(tablePath), columns);
+    }
+
+    @Override
+    public String buildSelectAllColumnsSql(TablePath tablePath, List<DataSourceTableColumn> columns) {
+        if (tablePath == null || StringUtils.isBlank(tablePath.getTableName())) {
+            throw new IllegalArgumentException("tablePath must not be blank");
+        }
+        if (columns == null || columns.isEmpty()) {
+            throw new IllegalArgumentException("columns must not be empty");
+        }
+
+        String columnSql = columns.stream()
+                .map(DataSourceTableColumn::getColumnName)
+                .filter(StringUtils::isNotBlank)
+                .map(this::quoteIdentifier)
+                .collect(Collectors.joining(", "));
+
+        return "SELECT " + columnSql + "\nFROM " + buildTableReference(tablePath);
+    }
+
+    protected TablePath resolveTablePath(String tablePath) {
+        if (StringUtils.isBlank(tablePath)) {
+            throw new IllegalArgumentException("tablePath must not be blank");
+        }
+
+        String[] parts = Arrays.stream(tablePath.split("\\."))
+                .map(String::trim)
+                .filter(StringUtils::isNotBlank)
+                .toArray(String[]::new);
+
+        if (parts.length == 1) {
+            return TablePath.of(
+                    getParam().getDatabase(),
+                    getParam().getSchemaName(),
+                    parts[0]
+            );
+        }
+
+        if (parts.length == 2) {
+            return TablePath.of(
+                    getParam().getDatabase(),
+                    parts[0],
+                    parts[1]
+            );
+        }
+
+        if (parts.length == 3) {
+            return TablePath.of(
+                    parts[0],
+                    parts[1],
+                    parts[2]
+            );
+        }
+
+        throw new IllegalArgumentException("Invalid tablePath: " + tablePath);
+    }
+
+
+    public String buildTableReference(TablePath tablePath) {
+        if (tablePath == null || StringUtils.isBlank(tablePath.getTableName())) {
+            throw new IllegalArgumentException("table is null");
+        }
+
+        String schemaName = tablePath.getSchemaName();
+        if (StringUtils.isBlank(schemaName)) {
+            schemaName = getParam().getSchemaName();
+        }
+        if (StringUtils.isBlank(schemaName)) {
+            schemaName = "public";
+        }
+
+        return quoteIdentifier(schemaName) + "." + quoteIdentifier(tablePath.getTableName());
+    }
+
+    @Override
     public QueryResult getTop20Data(Map<String, Object> requestBody) throws Exception{
         QueryRequest request = preprocessRequest(requestBody);
         String sql = request.getTaskExecuteType()
@@ -153,24 +234,6 @@ public abstract class AbstractJdbcCatalog implements JdbcCatalog {
                 .filter(StringUtils::isNotBlank)
                 .map(this::quoteIdentifier)
                 .collect(Collectors.joining("."));
-    }
-
-    @Override
-    public String buildSelectAllColumnsSql(String tablePath, List<DataSourceTableColumn> columns) {
-        if (StringUtils.isBlank(tablePath)) {
-            throw new IllegalArgumentException("tablePath must not be blank");
-        }
-        if (columns == null || columns.isEmpty()) {
-            throw new IllegalArgumentException("columns must not be empty");
-        }
-
-        String columnSql = columns.stream()
-                .map(DataSourceTableColumn::getColumnName)
-                .filter(StringUtils::isNotBlank)
-                .map(this::quoteIdentifier)
-                .collect(Collectors.joining(", "));
-
-        return "SELECT " + columnSql + "\nFROM " + quoteTablePath(tablePath);
     }
 
     /**
