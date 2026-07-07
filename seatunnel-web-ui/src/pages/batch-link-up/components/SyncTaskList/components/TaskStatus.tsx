@@ -402,7 +402,8 @@ const TaskStatus: React.FC<TaskStatusProps> = ({ status, errorMessage }) => {
   const config = status ? statusConfig[status] : undefined;
   const [copied, setCopied] = useState(false);
   const timerRef = useRef<number | null>(null);
-
+  console.log(status);
+  console.log(errorMessage)
   useEffect(() => {
     return () => {
       if (timerRef.current) {

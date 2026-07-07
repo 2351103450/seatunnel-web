@@ -6,6 +6,7 @@ import org.apache.seatunnel.plugin.datasource.api.analysis.JobDefinitionAnalyzer
 import org.apache.seatunnel.plugin.datasource.api.hocon.DataSourceHoconBuilder;
 import org.apache.seatunnel.plugin.datasource.api.hocon.DataSourceHoconBuilderFactory;
 import org.apache.seatunnel.plugin.datasource.api.jdbc.*;
+import org.apache.seatunnel.plugin.datasource.pgsql.analysis.PostgreSQLJobDefinitionAnalyzer;
 import org.apache.seatunnel.plugin.datasource.pgsql.connection.PgSQLConnectionProvider;
 import org.apache.seatunnel.plugin.datasource.pgsql.metadata.PgSQLCatalog;
 import org.apache.seatunnel.web.spi.datasource.BaseConnectionParam;
@@ -17,6 +18,7 @@ public class PgSQLDataSourceProcessor extends AbstractDataSourceProcessor {
 
     private final JdbcConnectionProvider connectionManager = new PgSQLConnectionProvider();
     private final JdbcParamConverter paramConverter = new PgSQLParamConverter();
+    private final JobDefinitionAnalyzer jobDefinitionAnalyzer = new PostgreSQLJobDefinitionAnalyzer();
 
     @Override
     public DataSourceHoconBuilder getQueryBuilder(String pluginName) {
@@ -55,6 +57,6 @@ public class PgSQLDataSourceProcessor extends AbstractDataSourceProcessor {
 
     @Override
     public JobDefinitionAnalyzer getJobDefinitionAnalyzer() {
-        return null;
+        return jobDefinitionAnalyzer;
     }
 }
