@@ -57,6 +57,7 @@
         <module>seatunnel-web-spi</module>
         <module>seatunnel-web-core</module>
         <module>seatunnel-web-engine-client</module>
+        <module>seatunnel-web-dist</module>
     </modules>
 
     <dependencyManagement>
