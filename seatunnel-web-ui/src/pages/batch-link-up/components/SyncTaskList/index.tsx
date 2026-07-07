@@ -252,7 +252,7 @@ const App: React.FC<Props> = ({ goDetail }) => {
         defaultMessage: "Status",
       }),
       dataIndex: "taskParams",
-      width: 106,
+      width: "7%",
       render: (_content: any, record: any) => (
         <div className="flex w-full justify-center">
           <TaskStatus
@@ -296,7 +296,7 @@ const App: React.FC<Props> = ({ goDetail }) => {
         defaultMessage: "Operate",
       }),
       dataIndex: "",
-      width: "16%",
+      width: "14%",
       fixed: "right" as const,
       render: (record: any) => (
         <ActionColumn record={record} cbk={fetchTaskList} goDetail={goDetail} />
@@ -496,7 +496,7 @@ const App: React.FC<Props> = ({ goDetail }) => {
         setSelectedRowKeys([]);
         fetchTaskList();
       } else {
-        message.error(data?.message || data?.msg || "Start all failed");
+        
       }
     } catch (error: any) {
       message.error(getErrorMessage(error, "Start all failed"));
