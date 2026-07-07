@@ -63,7 +63,7 @@ const BasicInfoSection: React.FC<TaskDetailPanelProps> = ({ item }) => {
         <Descriptions.Item
           label={intl.formatMessage({
             id: "pages.job.detail.jobCode",
-            defaultMessage: "Job Code",
+            defaultMessage: "Job Instance ID",
           })}
         >
           <span className="pl-3 text-black">{item?.id || "-"}</span>

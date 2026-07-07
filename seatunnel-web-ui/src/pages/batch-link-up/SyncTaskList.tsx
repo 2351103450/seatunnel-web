@@ -196,7 +196,7 @@
 //           <em style={{ fontWeight: 500 }}>
 //             {intl.formatMessage({
 //               id: "pages.job.table.label.jobId",
-//               defaultMessage: "JobId",
+//               defaultMessage: "Job Definition ID",
 //             })}
 //           </em>
 //           :{" "}
