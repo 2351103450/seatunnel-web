@@ -119,7 +119,7 @@ export default {
   'pages.job.table.col.operate': '操作',
 
   // labels inside Name column
-  'pages.job.table.label.jobId': '任务ID',
+  'pages.job.table.label.jobId': '任务定义ID',
   'pages.job.table.label.jobName': '任务名',
 
   // batch actions
@@ -191,7 +191,7 @@ export default {
   // search form labels
   'pages.job.search.jobName': '任务名',
   'pages.job.search.createTime': '创建时间',
-  'pages.job.search.jobId': '任务ID',
+  'pages.job.search.jobId': '任务定义ID',
   'pages.job.search.status': '状态',
   'pages.job.search.source': '源端',
   'pages.job.search.sink': '目的端',
@@ -200,7 +200,7 @@ export default {
 
   // placeholders
   'pages.job.search.jobName.placeholder': '请输入任务名',
-  'pages.job.search.jobId.placeholder': '请输入任务ID',
+  'pages.job.search.jobId.placeholder': '请输入任务定义ID',
   'pages.job.search.selectPlaceholder': '请选择...',
   'pages.job.search.fuzzyPlaceholder': '模糊匹配...',
 
@@ -333,7 +333,7 @@ export default {
   "pages.job.summary.unit.label": "单位",
 
   "pages.job.detail.basicInfo": "基本信息",
-  "pages.job.detail.jobCode": "任务编号",
+  "pages.job.detail.jobCode": "任务实例ID",
   "pages.job.detail.syncPlan": "同步方案",
   "pages.job.detail.startTime": "开始时间",
   "pages.job.detail.endTime": "结束时间",

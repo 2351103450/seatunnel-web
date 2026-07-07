@@ -59,6 +59,9 @@ public class BatchJobInstanceServiceImpl implements BatchJobInstanceService {
     @Value("${seatunnel.job.log-dir:logs}")
     private String baseLogDir;
 
+    @Value("${seatunnel.job.max-log-query-bytes:52428800}")
+    private long maxLogQueryBytes;
+
     @Resource
     private JobTableMetricsDao jobTableMetricsDao;
 
@@ -161,6 +164,22 @@ public class BatchJobInstanceServiceImpl implements BatchJobInstanceService {
             Path path = Paths.get(logPath);
             if (!Files.exists(path)) {
                 throw new ServiceException(Status.BATCH_JOB_INSTANCE_LOG_NOT_EXIST);
+            }
+
+            long fileSize = Files.size(path);
+            if (fileSize > maxLogQueryBytes) {
+                log.warn(
+                        "Batch job log file is too large, instanceId={}, path={}, fileSize={}, maxLogQueryBytes={}",
+                        instanceId,
+                        path,
+                        fileSize,
+                        maxLogQueryBytes
+                );
+
+                throw new ServiceException(
+                        Status.QUERY_BATCH_JOB_INSTANCE_LOG_ERROR.getCode(),
+                        "当前日志文件过大（>50MB)，请在服务器上查看"
+                );
             }
 
             byte[] bytes = Files.readAllBytes(path);

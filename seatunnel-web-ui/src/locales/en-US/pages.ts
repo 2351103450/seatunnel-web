@@ -121,7 +121,7 @@ export default {
   'pages.job.table.col.operate': 'Operate',
 
   // labels inside Name column
-  'pages.job.table.label.jobId': 'JobId',
+  'pages.job.table.label.jobId': 'Job Definition ID',
   'pages.job.table.label.jobName': 'JobName',
 
   // batch actions
@@ -193,7 +193,7 @@ export default {
   // search form labels
   'pages.job.search.jobName': 'Job Name',
   'pages.job.search.createTime': 'Create Time',
-  'pages.job.search.jobId': 'Job ID',
+  'pages.job.search.jobId': 'Job Definition ID',
   'pages.job.search.status': 'Status',
   'pages.job.search.source': 'Source',
   'pages.job.search.sink': 'Sink',
@@ -202,7 +202,7 @@ export default {
 
   // placeholders
   'pages.job.search.jobName.placeholder': 'Enter job name',
-  'pages.job.search.jobId.placeholder': 'Enter job id',
+  'pages.job.search.jobId.placeholder': 'Enter job definition ID',
   'pages.job.search.selectPlaceholder': 'Select...',
   'pages.job.search.fuzzyPlaceholder': 'Fuzzy match...',
 
@@ -336,7 +336,7 @@ export default {
   "pages.job.summary.unit.label": "Unit",
 
   "pages.job.detail.basicInfo": "Basic Info",
-  "pages.job.detail.jobCode": "Job Code",
+  "pages.job.detail.jobCode": "Job Instance ID",
   "pages.job.detail.syncPlan": "Sync Plan",
   "pages.job.detail.startTime": "Start Time",
   "pages.job.detail.endTime": "End Time",

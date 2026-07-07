@@ -118,6 +118,11 @@ seatunnel:
       unhealthy-threshold: 3
 
   job:
+    log-dir: logs
+
+    # Maximum file size allowed for a single log query: 50MB
+    max-log-query-bytes: 52428800
+
     recovery:
       enabled: true
       initial-delay-ms: 60000

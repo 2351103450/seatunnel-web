@@ -103,7 +103,7 @@ const RealtimeTaskTable: React.FC<RealtimeTaskTableProps> = ({
             </Tooltip>
           </div>
           <div className="flex items-center gap-1 text-xs leading-6">
-            <em className="font-medium not-italic text-slate-700">任务ID</em>
+            <em className="font-medium not-italic text-slate-700">任务定义ID</em>
             <span className="text-slate-400">:</span>
             <span className="text-slate-400">{record.id}</span>
 
