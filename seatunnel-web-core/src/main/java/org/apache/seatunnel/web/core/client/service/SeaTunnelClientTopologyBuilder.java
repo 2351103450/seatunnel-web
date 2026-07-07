@@ -14,9 +14,25 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
+/**
+ * Domain service used to build a normalized SeaTunnel client topology.
+ *
+ * <p>This service converts a client specification into a runtime topology that can
+ * be used for client activation, node probing, and runtime routing.</p>
+ *
+ * <p>It supports both SINGLE mode and SEPARATED_CLUSTER mode. In SINGLE mode, the
+ * configured host and port are treated as one master endpoint. In cluster mode,
+ * master and worker endpoints are normalized separately.</p>
+ */
 @Component
 public class SeaTunnelClientTopologyBuilder {
 
+    /**
+     * Builds a normalized SeaTunnel client topology from the given client specification.
+     *
+     * @param spec client runtime specification
+     * @return normalized client topology
+     */
     public SeaTunnelClientTopology build(SeaTunnelClientSpec spec) {
         validateBasicSpec(spec);
 
@@ -58,6 +74,9 @@ public class SeaTunnelClientTopologyBuilder {
                 .build();
     }
 
+    /**
+     * Validates required basic fields of the client specification.
+     */
     private void validateBasicSpec(SeaTunnelClientSpec spec) {
         if (spec == null) {
             throw new ServiceException(Status.INTERNAL_SERVER_ERROR_ARGS, "客户端参数不能为空");
@@ -72,6 +91,17 @@ public class SeaTunnelClientTopologyBuilder {
         }
     }
 
+    /**
+     * Normalizes endpoint list by role and protocol.
+     *
+     * <p>Invalid empty endpoints are ignored. Duplicated endpoints are removed by
+     * host and port to avoid probing or persisting the same endpoint repeatedly.</p>
+     *
+     * @param role endpoint role, such as MASTER or WORKER
+     * @param endpoints raw endpoint list
+     * @param protocol normalized protocol
+     * @return normalized endpoint list
+     */
     private List<SeaTunnelClientEndpoint> normalizeEndpoints(
             String role,
             List<SeaTunnelClientEndpoint> endpoints,
@@ -110,6 +140,12 @@ public class SeaTunnelClientTopologyBuilder {
         return new ArrayList<>(endpointMap.values());
     }
 
+    /**
+     * Builds a normalized endpoint model.
+     *
+     * <p>The endpoint base URL is generated from protocol, host, and port. The initial
+     * health status is UNKNOWN because the actual status should be resolved by probing.</p>
+     */
     private SeaTunnelClientEndpoint buildEndpoint(
             String role,
             String host,
@@ -135,6 +171,11 @@ public class SeaTunnelClientTopologyBuilder {
                 .build();
     }
 
+    /**
+     * Validates endpoint port.
+     *
+     * @param port endpoint port
+     */
     private void validatePort(Integer port) {
         if (port == null || port <= 0 || port > 65535) {
             throw new ServiceException(
@@ -144,6 +185,15 @@ public class SeaTunnelClientTopologyBuilder {
         }
     }
 
+    /**
+     * Normalizes deploy mode.
+     *
+     * <p>Only SEPARATED_CLUSTER is preserved explicitly. Other values will be treated
+     * as SINGLE mode by default.</p>
+     *
+     * @param deployMode raw deploy mode
+     * @return normalized deploy mode
+     */
     private String normalizeDeployMode(String deployMode) {
         if ("SEPARATED_CLUSTER".equalsIgnoreCase(deployMode)) {
             return "SEPARATED_CLUSTER";
@@ -152,6 +202,14 @@ public class SeaTunnelClientTopologyBuilder {
         return "SINGLE";
     }
 
+    /**
+     * Normalizes endpoint protocol.
+     *
+     * <p>Only HTTPS is preserved explicitly. Other values will be treated as HTTP.</p>
+     *
+     * @param protocol raw protocol
+     * @return normalized protocol
+     */
     private String normalizeProtocol(String protocol) {
         if ("https".equalsIgnoreCase(protocol)) {
             return "https";
@@ -160,6 +218,14 @@ public class SeaTunnelClientTopologyBuilder {
         return "http";
     }
 
+    /**
+     * Builds endpoint base URL.
+     *
+     * @param protocol endpoint protocol
+     * @param host endpoint host
+     * @param port endpoint port
+     * @return endpoint base URL
+     */
     private String buildBaseUrl(String protocol, String host, Integer port) {
         return protocol + "://" + host + ":" + port;
     }

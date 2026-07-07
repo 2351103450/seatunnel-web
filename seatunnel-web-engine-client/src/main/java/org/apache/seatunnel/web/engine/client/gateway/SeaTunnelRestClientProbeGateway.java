@@ -1,5 +1,4 @@
-package org.apache.seatunnel.web.core.client.port;
-
+package org.apache.seatunnel.web.engine.client.gateway;
 
 import jakarta.annotation.Resource;
 import lombok.extern.slf4j.Slf4j;
@@ -14,15 +13,39 @@ import org.springframework.stereotype.Component;
 
 import java.util.Map;
 
+/**
+ * REST-based implementation of {@link SeaTunnelClientProbeGateway}.
+ *
+ * <p>This gateway probes a SeaTunnel endpoint by calling the SeaTunnel REST
+ * overview API. It converts the REST response into a core probe result, including
+ * live status, client version, raw response, and error message.</p>
+ *
+ * <p>This class belongs to the engine client adapter layer. The core client module
+ * only depends on the gateway interface and does not know the REST implementation details.</p>
+ */
 @Slf4j
 @Component
 public class SeaTunnelRestClientProbeGateway implements SeaTunnelClientProbeGateway {
 
+    /**
+     * Key used to resolve SeaTunnel engine version from overview response.
+     */
     private static final String PROJECT_VERSION_KEY = "projectVersion";
 
     @Resource
     private SeaTunnelRestClient seaTunnelRestClient;
 
+    /**
+     * Probes a SeaTunnel endpoint through the REST overview API.
+     *
+     * <p>If the endpoint is reachable and the version can be resolved, a live probe
+     * result will be returned. Otherwise, a dead probe result will be returned with
+     * the corresponding error message.</p>
+     *
+     * @param endpoint SeaTunnel endpoint to be probed
+     * @param auth authentication information used when calling SeaTunnel REST API
+     * @return probe result of the endpoint
+     */
     @Override
     public SeaTunnelClientProbeResult probe(
             SeaTunnelClientEndpoint endpoint,
@@ -79,6 +102,12 @@ public class SeaTunnelRestClientProbeGateway implements SeaTunnelClientProbeGate
         }
     }
 
+    /**
+     * Converts core authentication information to engine client authentication model.
+     *
+     * @param authInfo core authentication information
+     * @return SeaTunnel REST client authentication model
+     */
     private SeaTunnelClientAuth buildAuth(SeaTunnelClientAuthInfo authInfo) {
         SeaTunnelClientAuth auth = new SeaTunnelClientAuth();
 
@@ -93,6 +122,12 @@ public class SeaTunnelRestClientProbeGateway implements SeaTunnelClientProbeGate
         return auth;
     }
 
+    /**
+     * Resolves SeaTunnel client version from overview response.
+     *
+     * @param overview overview response returned by SeaTunnel REST API
+     * @return resolved client version, or null when it cannot be resolved
+     */
     private String resolveClientVersion(Map<String, Object> overview) {
         if (overview == null || overview.isEmpty()) {
             return null;
@@ -107,6 +142,12 @@ public class SeaTunnelRestClientProbeGateway implements SeaTunnelClientProbeGate
         return StringUtils.trimToNull(String.valueOf(projectVersion));
     }
 
+    /**
+     * Builds the SeaTunnel overview API URL from endpoint base URL.
+     *
+     * @param baseUrl endpoint base URL
+     * @return overview API URL
+     */
     private String buildOverviewUrl(String baseUrl) {
         return StringUtils.removeEnd(baseUrl, "/") + "/overview";
     }

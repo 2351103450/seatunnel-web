@@ -14,6 +14,16 @@ import org.springframework.stereotype.Component;
 import java.util.ArrayList;
 import java.util.List;
 
+/**
+ * Domain service used to activate a SeaTunnel client topology.
+ *
+ * <p>This service probes configured master endpoints, validates the runtime version,
+ * selects an available master as the active runtime entry point, and returns the
+ * activation result.</p>
+ *
+ * <p>The actual probing implementation is delegated to {@link SeaTunnelClientProbeGateway},
+ * so this service does not depend on any specific communication protocol such as REST.</p>
+ */
 @Component
 public class SeaTunnelClientActivationService {
 
@@ -29,6 +39,17 @@ public class SeaTunnelClientActivationService {
         this.versionPolicy = versionPolicy;
     }
 
+    /**
+     * Activates the given SeaTunnel client topology.
+     *
+     * <p>The method probes master endpoints one by one. The first live and supported
+     * master will be selected as the active master. All probe results are preserved
+     * in the activation result for later persistence and diagnostics.</p>
+     *
+     * @param spec client runtime specification
+     * @param topology client topology built from the specification
+     * @return activation result, including active master, version, topology, and probe results
+     */
     public SeaTunnelClientActivationResult activate(
             SeaTunnelClientSpec spec,
             SeaTunnelClientTopology topology
@@ -54,6 +75,7 @@ public class SeaTunnelClientActivationService {
                 continue;
             }
 
+            // A reachable master must also use a version supported by SeaTunnel Web.
             versionPolicy.check(result.getClientVersion());
 
             activeMaster = master;

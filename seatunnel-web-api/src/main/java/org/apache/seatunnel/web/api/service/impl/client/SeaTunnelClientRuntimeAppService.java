@@ -19,6 +19,15 @@ import org.springframework.stereotype.Service;
 import java.util.List;
 import java.util.Map;
 
+/**
+ * Application service for querying SeaTunnel client runtime information.
+ *
+ * <p>This service is responsible for loading runtime metrics, job logs,
+ * checkpoint overview, and checkpoint history from the SeaTunnel engine.</p>
+ *
+ * <p>The service also resolves batch and streaming job instances before querying
+ * engine-side logs, so the frontend can use one unified log API.</p>
+ */
 @Service
 public class SeaTunnelClientRuntimeAppService {
 
@@ -34,6 +43,15 @@ public class SeaTunnelClientRuntimeAppService {
     @Resource
     private SeaTunnelRestClient seaTunnelRestClient;
 
+    /**
+     * Queries runtime metrics of a SeaTunnel client.
+     *
+     * <p>The raw metrics returned by SeaTunnel engine are parsed into frontend-friendly
+     * fields, such as CPU usage, memory usage, thread count, and running operation count.</p>
+     *
+     * @param id SeaTunnel client id
+     * @return parsed client metrics
+     */
     public SeaTunnelClientMetricsVO metrics(Long id) {
         getEntity(id);
 
@@ -64,6 +82,17 @@ public class SeaTunnelClientRuntimeAppService {
         );
     }
 
+    /**
+     * Queries engine logs by job instance id.
+     *
+     * <p>If job mode is provided, the method will query the corresponding batch or
+     * streaming instance directly. Otherwise, it will try to resolve the instance
+     * from batch jobs first, then from streaming jobs.</p>
+     *
+     * @param instanceId job instance id
+     * @param jobMode optional job mode, such as BATCH or STREAMING
+     * @return engine log content in JSON format
+     */
     public String logsByInstanceId(Long instanceId, String jobMode) {
         if (instanceId == null) {
             throw new ServiceException(
@@ -112,6 +141,13 @@ public class SeaTunnelClientRuntimeAppService {
         );
     }
 
+    /**
+     * Queries checkpoint overview of a running SeaTunnel job.
+     *
+     * @param clientId SeaTunnel client id
+     * @param jobId SeaTunnel engine job id
+     * @return checkpoint overview returned by SeaTunnel engine
+     */
     public Map<String, Object> checkpointOverview(
             Long clientId,
             Long jobId
@@ -120,6 +156,18 @@ public class SeaTunnelClientRuntimeAppService {
         return seaTunnelRestClient.checkpointOverview(clientId, jobId);
     }
 
+    /**
+     * Queries checkpoint history of a running SeaTunnel job.
+     *
+     * <p>The query limit is normalized to avoid invalid or excessively large requests.</p>
+     *
+     * @param clientId SeaTunnel client id
+     * @param jobId SeaTunnel engine job id
+     * @param pipelineId optional pipeline id
+     * @param limit max history size
+     * @param status optional checkpoint status filter
+     * @return checkpoint history list returned by SeaTunnel engine
+     */
     public List<Map<String, Object>> checkpointHistory(
             Long clientId,
             Long jobId,
@@ -140,6 +188,9 @@ public class SeaTunnelClientRuntimeAppService {
         );
     }
 
+    /**
+     * Gets engine logs for a batch job instance.
+     */
     private String getOfflineInstanceLogs(Long instanceId) {
         JobInstance instance = jobInstanceDao.queryById(instanceId);
 
@@ -158,6 +209,9 @@ public class SeaTunnelClientRuntimeAppService {
         );
     }
 
+    /**
+     * Gets engine logs for a streaming job instance.
+     */
     private String getStreamingInstanceLogs(Long instanceId) {
         StreamingJobInstance instance =
                 streamingJobInstanceDao.queryById(instanceId);
@@ -177,6 +231,12 @@ public class SeaTunnelClientRuntimeAppService {
         );
     }
 
+    /**
+     * Queries engine logs through SeaTunnel REST API.
+     *
+     * <p>The engine job id must exist because SeaTunnel logs are queried by engine-side
+     * job id instead of the local job instance id.</p>
+     */
     private String getEngineLogs(
             Long clientId,
             String engineJobId,
@@ -203,6 +263,9 @@ public class SeaTunnelClientRuntimeAppService {
         return seaTunnelRestClient.jobLogs(clientId, engineJobId, "json");
     }
 
+    /**
+     * Resolves job mode from request parameter.
+     */
     private JobMode resolveJobMode(String jobMode) {
         try {
             return JobMode.valueOf(jobMode.trim().toUpperCase());
@@ -214,6 +277,9 @@ public class SeaTunnelClientRuntimeAppService {
         }
     }
 
+    /**
+     * Validates client id and engine job id before querying checkpoint information.
+     */
     private void checkClientAndJob(
             Long clientId,
             Long jobId
@@ -235,6 +301,12 @@ public class SeaTunnelClientRuntimeAppService {
         getEntity(clientId);
     }
 
+    /**
+     * Gets an existing SeaTunnel client entity by id.
+     *
+     * @param id SeaTunnel client id
+     * @return existing SeaTunnel client entity
+     */
     private SeaTunnelClient getEntity(Long id) {
         if (id == null) {
             throw new ServiceException(
