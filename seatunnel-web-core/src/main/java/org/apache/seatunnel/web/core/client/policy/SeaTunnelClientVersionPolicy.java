@@ -9,12 +9,29 @@ import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
 
+/**
+ * Policy used to validate whether a SeaTunnel client version is supported.
+ *
+ * <p>This policy is executed after the SeaTunnel client is successfully connected
+ * and the engine version is resolved from the remote runtime.</p>
+ */
 @Component
 public class SeaTunnelClientVersionPolicy {
 
+    /**
+     * Supported SeaTunnel client versions.
+     *
+     * <p>Currently only SeaTunnel 2.3.13 is supported. More versions can be added
+     * here after compatibility verification.</p>
+     */
     private final Set<String> supportedVersions =
             new HashSet<>(Collections.singletonList("2.3.13"));
 
+    /**
+     * Checks whether the given SeaTunnel client version is supported.
+     *
+     * @param version SeaTunnel client version resolved from the engine
+     */
     public void check(String version) {
         if (StringUtils.isBlank(version)) {
             throw new ServiceException(

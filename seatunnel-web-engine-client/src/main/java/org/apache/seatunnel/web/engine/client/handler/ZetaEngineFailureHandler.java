@@ -1,4 +1,4 @@
-package org.apache.seatunnel.web.api.service.support;
+package org.apache.seatunnel.web.engine.client.handler;
 
 import jakarta.annotation.Resource;
 import lombok.extern.slf4j.Slf4j;
