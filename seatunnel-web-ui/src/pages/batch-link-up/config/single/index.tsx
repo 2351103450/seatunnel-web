@@ -349,9 +349,12 @@ export default function SingleConfigPage() {
     );
   }
 
+  const actualPageScene = (params?.__pageScene || pageScene) as PageScene;
+
   const workflowContextKey = [
-    pageScene,
+    actualPageScene,
     params?.id || id || "unknown",
+    params?.state?.editorSyncState ?? "none",
     params?.state?.jobVersion ?? "none",
     params?.state?.contentVersion ?? "none",
   ].join("-");
@@ -359,7 +362,7 @@ export default function SingleConfigPage() {
   return (
     <div className="min-h-screen bg-[#ffffff]">
       <Workflow
-        pageScene={pageScene}
+        pageScene={actualPageScene}
         contextKey={workflowContextKey}
         params={params}
         goBack={goBack}

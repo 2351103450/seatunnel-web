@@ -94,6 +94,15 @@ const normalizeInitialState = (
   state: JobDefinitionState | undefined,
   pageScene: PageScene
 ): JobDefinitionState => {
+  if (state?.editorSyncState === "SYNCED") {
+    return {
+      editorSyncState: "SYNCED",
+      releaseState: state?.releaseState || "OFFLINE",
+      jobVersion: state?.jobVersion ?? null,
+      contentVersion: state?.contentVersion ?? null,
+    };
+  }
+
   if (pageScene === "create") {
     return {
       editorSyncState: "UNPUBLISHED",
