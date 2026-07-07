@@ -51,7 +51,6 @@
         <module>seatunnel-web-datasource-connection</module>
         <module>seatunnel-web-datasource-plugins</module>
         <module>seatunnel-web-ui</module>
-        <module>seatunnel-web-copilot</module>
         <module>seatunnel-web-dao</module>
         <module>seatunnel-web-dao-plugin</module>
         <module>seatunnel-web-bom</module>
@@ -85,11 +84,6 @@
             <dependency>
                 <groupId>org.apache.seatunnel.web</groupId>
                 <artifactId>seatunnel-web-datasource-plugins</artifactId>
-                <version>${project.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>org.apache.seatunnel.web</groupId>
-                <artifactId>seatunnel-web-copilot</artifactId>
                 <version>${project.version}</version>
             </dependency>
             <dependency>
