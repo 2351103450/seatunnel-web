@@ -94,6 +94,15 @@ const normalizeInitialState = (
   state: JobDefinitionState | undefined,
   pageScene: PageScene
 ): JobDefinitionState => {
+  if (state?.editorSyncState === "SYNCED") {
+    return {
+      editorSyncState: "SYNCED",
+      releaseState: state?.releaseState || "OFFLINE",
+      jobVersion: state?.jobVersion ?? null,
+      contentVersion: state?.contentVersion ?? null,
+    };
+  }
+
   if (pageScene === "create") {
     return {
       editorSyncState: "UNPUBLISHED",
@@ -199,7 +208,7 @@ export default function Workflow({
   }, [basicConfig, scheduleConfig, envConfig, workflowGraph]);
 
   /**
-   * 任务定义 ID 只代表“任务标识”。
+   * 任务定义ID 只代表“任务标识”。
    *
    * 新建场景下也可能有预生成 ID，但这不代表任务已经发布。
    * 是否可运行，必须看 editorSyncState 和 baseline 是否一致。
@@ -431,7 +440,7 @@ export default function Workflow({
       const nextJobDefinitionId = saveData.id ?? finalPayload.id;
 
       if (!nextJobDefinitionId) {
-        message.error("发布失败：未获取到任务 ID");
+        message.error("发布失败：未获取到任务定义ID");
         return;
       }
 

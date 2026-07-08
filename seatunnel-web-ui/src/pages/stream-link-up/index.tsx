@@ -330,14 +330,14 @@ const RealtimeSyncPage: React.FC = () => {
       const data = await seatunnelStremJobDefinitionApi.getUniqueId();
 
       if (data?.code !== 0) {
-        message.error(data?.message || "获取实时任务ID失败");
+        message.error(data?.message || "获取实时任务定义ID失败");
         return;
       }
 
       const returnId = data?.data;
 
       if (!returnId) {
-        message.error("创建实时任务失败：未获取到任务ID");
+        message.error("创建实时任务失败：未获取到任务定义ID");
         return;
       }
 
@@ -400,7 +400,7 @@ const RealtimeSyncPage: React.FC = () => {
 
   const handleEdit = async (item: StreamingJobDefinitionVO) => {
     if (!item?.id) {
-      message.warning("任务ID不能为空");
+      message.warning("任务定义ID不能为空");
       return;
     }
 
@@ -427,7 +427,7 @@ const RealtimeSyncPage: React.FC = () => {
 
   const handleRun = async (record: StreamingJobDefinitionVO) => {
     if (!record?.id) {
-      message.warning("任务 ID 不存在");
+      message.warning("任务定义ID 不存在");
       return;
     }
 
@@ -479,7 +479,7 @@ const RealtimeSyncPage: React.FC = () => {
 
   const handleOnline = async (record: StreamingJobDefinitionVO) => {
     if (!record?.id) {
-      message.warning("任务 ID 不存在");
+      message.warning("任务定义ID 不存在");
       return;
     }
 
@@ -500,7 +500,7 @@ const RealtimeSyncPage: React.FC = () => {
 
   const handleOffline = async (record: StreamingJobDefinitionVO) => {
     if (!record?.id) {
-      message.warning("任务 ID 不存在");
+      message.warning("任务定义ID 不存在");
       return;
     }
 
@@ -521,7 +521,7 @@ const RealtimeSyncPage: React.FC = () => {
 
   const handleDelete = (record: StreamingJobDefinitionVO) => {
     if (!record?.id) {
-      message.warning("任务 ID 不存在");
+      message.warning("任务定义ID 不存在");
       return;
     }
 

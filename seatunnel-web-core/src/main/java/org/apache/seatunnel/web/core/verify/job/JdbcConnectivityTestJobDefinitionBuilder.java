@@ -6,7 +6,6 @@ import jakarta.annotation.Resource;
 import org.apache.seatunnel.plugin.datasource.api.hocon.DataSourceHoconBuilder;
 import org.apache.seatunnel.plugin.datasource.api.hocon.HoconBuildContext;
 import org.apache.seatunnel.plugin.datasource.api.jdbc.DataSourceProcessor;
-import org.apache.seatunnel.plugin.datasource.api.jdbc.JdbcConnectionProvider;
 import org.apache.seatunnel.plugin.datasource.api.utils.DataSourceUtils;
 import org.apache.seatunnel.web.common.enums.HoconBuildStage;
 import org.apache.seatunnel.web.dao.entity.DataSource;
@@ -54,9 +53,9 @@ public class JdbcConnectivityTestJobDefinitionBuilder implements ConnectivityTes
 
         DataSourceProcessor processor = DataSourceUtils.getDatasourceProcessor(dbType);
         DataSourceHoconBuilder sourceBuilder = processor.getQueryBuilder(builderKey);
-        JdbcConnectionProvider connectionProvider = processor.getConnectionManager();
 
-        Config sourceNodeConfig = buildMinimalSourceNodeConfig();
+        String connectivitySql = processor.connectivityCheckSql();
+        Config sourceNodeConfig = buildMinimalSourceNodeConfig(connectivitySql);
         Config connectionConfig = ConfigFactory.parseString(datasource.getConnectionParams());
         HoconBuildContext buildContext = HoconBuildContext.builder()
                 .connectionParam(datasource.getConnectionParams())
@@ -78,9 +77,9 @@ public class JdbcConnectivityTestJobDefinitionBuilder implements ConnectivityTes
         return new ConnectivityTestJob(jobName, jobConfig, "hocon", true);
     }
 
-    private Config buildMinimalSourceNodeConfig() {
-        Map<String, Object> map = new LinkedHashMap<String, Object>(4);
-        map.put("sql", "select 1 as connectivity_check");
+    private Config buildMinimalSourceNodeConfig(String connectivitySql) {
+        Map<String, Object> map = new LinkedHashMap<>(4);
+        map.put("sql", connectivitySql);
         map.put("readMode", "sql");
         return ConfigFactory.parseMap(map);
     }

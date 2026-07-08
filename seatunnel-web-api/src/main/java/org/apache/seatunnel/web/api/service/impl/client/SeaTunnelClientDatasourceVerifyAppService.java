@@ -19,11 +19,25 @@ import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
 
+/**
+ * Application service used to verify whether a datasource can be used by a specific
+ * SeaTunnel client.
+ *
+ * <p>This service is responsible for request validation, datasource/client loading,
+ * cache handling, verification context creation, and delegating the actual verification
+ * logic to the corresponding strategy.</p>
+ */
 @Service
 public class SeaTunnelClientDatasourceVerifyAppService {
 
+    /**
+     * Default timeout for datasource verification.
+     */
     private static final long DEFAULT_DATASOURCE_VERIFY_TIMEOUT_MS = 15000L;
 
+    /**
+     * Default polling interval used by remote verification strategies.
+     */
     private static final long DEFAULT_DATASOURCE_VERIFY_POLL_INTERVAL_MS = 1000L;
 
     @Resource
@@ -38,23 +52,21 @@ public class SeaTunnelClientDatasourceVerifyAppService {
     @Resource
     private DatasourceConnectivityVerificationStrategyFactory strategyFactory;
 
+    /**
+     * Verifies datasource connectivity through the specified SeaTunnel client.
+     *
+     * <p>For automatic trigger mode, successful verification results can be cached
+     * to avoid repeated remote checks during job configuration.</p>
+     *
+     * @param clientId SeaTunnel client id
+     * @param dto datasource verification request
+     * @return datasource verification result
+     */
     public ClientDatasourceVerifyVO verifyDatasource(
             Long clientId,
             ClientDatasourceVerifyDTO dto
     ) {
-        if (clientId == null) {
-            throw new ServiceException(
-                    Status.INTERNAL_SERVER_ERROR_ARGS,
-                    "clientId 不能为空"
-            );
-        }
-
-        if (dto == null || dto.getDatasourceId() == null) {
-            throw new ServiceException(
-                    Status.INTERNAL_SERVER_ERROR_ARGS,
-                    "datasourceId 不能为空"
-            );
-        }
+        validateRequest(clientId, dto);
 
         SeaTunnelClient client = getEntity(clientId);
 
@@ -94,6 +106,7 @@ public class SeaTunnelClientDatasourceVerifyAppService {
                 dto.getRole()
         );
 
+        // Reuse cached successful verification result in auto mode unless force refresh is requested.
         if (autoMode && !forceRefresh) {
             ClientDatasourceVerifyVO cached = verifyMemoryCache.get(cacheKey);
             if (cached != null) {
@@ -102,6 +115,7 @@ public class SeaTunnelClientDatasourceVerifyAppService {
             }
         }
 
+        // Select the proper verification strategy based on datasource and connector context.
         DatasourceConnectivityVerificationStrategy strategy =
                 strategyFactory.getStrategy(context);
 
@@ -110,6 +124,7 @@ public class SeaTunnelClientDatasourceVerifyAppService {
         fillBaseInfo(result, client, datasource);
         result.setFromCache(false);
 
+        // Only successful auto verification results are cached.
         if (autoMode && Boolean.TRUE.equals(result.getSuccess())) {
             verifyMemoryCache.put(cacheKey, result);
         }
@@ -117,6 +132,31 @@ public class SeaTunnelClientDatasourceVerifyAppService {
         return result;
     }
 
+    /**
+     * Validates required request parameters before executing datasource verification.
+     */
+    private void validateRequest(
+            Long clientId,
+            ClientDatasourceVerifyDTO dto
+    ) {
+        if (clientId == null) {
+            throw new ServiceException(
+                    Status.INTERNAL_SERVER_ERROR_ARGS,
+                    "clientId 不能为空"
+            );
+        }
+
+        if (dto == null || dto.getDatasourceId() == null) {
+            throw new ServiceException(
+                    Status.INTERNAL_SERVER_ERROR_ARGS,
+                    "datasourceId 不能为空"
+            );
+        }
+    }
+
+    /**
+     * Builds the verification context consumed by datasource verification strategies.
+     */
     private DatasourceVerifyContext buildContext(
             SeaTunnelClient client,
             DataSource datasource,
@@ -143,6 +183,12 @@ public class SeaTunnelClientDatasourceVerifyAppService {
                 .build();
     }
 
+    /**
+     * Fills common client and datasource information into the verification result.
+     *
+     * <p>This keeps the frontend response stable no matter whether the result comes
+     * from cache or from a newly executed verification strategy.</p>
+     */
     private void fillBaseInfo(
             ClientDatasourceVerifyVO vo,
             SeaTunnelClient client,
@@ -171,6 +217,12 @@ public class SeaTunnelClientDatasourceVerifyAppService {
         }
     }
 
+    /**
+     * Gets a SeaTunnel client entity by id.
+     *
+     * @param id SeaTunnel client id
+     * @return existing SeaTunnel client entity
+     */
     private SeaTunnelClient getEntity(Long id) {
         if (id == null) {
             throw new ServiceException(

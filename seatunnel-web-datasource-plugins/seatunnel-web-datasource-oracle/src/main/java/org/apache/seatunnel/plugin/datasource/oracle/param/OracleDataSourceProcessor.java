@@ -6,6 +6,7 @@ import org.apache.seatunnel.plugin.datasource.api.analysis.JobDefinitionAnalyzer
 import org.apache.seatunnel.plugin.datasource.api.hocon.DataSourceHoconBuilder;
 import org.apache.seatunnel.plugin.datasource.api.hocon.DataSourceHoconBuilderFactory;
 import org.apache.seatunnel.plugin.datasource.api.jdbc.*;
+import org.apache.seatunnel.plugin.datasource.oracle.analysis.OracleJobDefinitionAnalyzer;
 import org.apache.seatunnel.plugin.datasource.oracle.connection.OracleConnectionProvider;
 import org.apache.seatunnel.plugin.datasource.oracle.metadata.OracleCatalog;
 import org.apache.seatunnel.web.spi.datasource.BaseConnectionParam;
@@ -17,6 +18,7 @@ public class OracleDataSourceProcessor extends AbstractDataSourceProcessor {
 
     private final JdbcConnectionProvider connectionManager = new OracleConnectionProvider();
     private final JdbcParamConverter paramConverter = new OracleParamConverter();
+    private final JobDefinitionAnalyzer jobDefinitionAnalyzer = new OracleJobDefinitionAnalyzer();
 
     @Override
     public DataSourceHoconBuilder getQueryBuilder(String pluginName) {
@@ -55,7 +57,12 @@ public class OracleDataSourceProcessor extends AbstractDataSourceProcessor {
 
     @Override
     public JobDefinitionAnalyzer getJobDefinitionAnalyzer() {
-        return null;
+        return jobDefinitionAnalyzer;
+    }
+
+    @Override
+    public String connectivityCheckSql() {
+        return "select 1 as connectivity_check from dual";
     }
 
 }

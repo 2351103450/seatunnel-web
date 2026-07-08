@@ -26,10 +26,27 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 
+/**
+ * Assembler for converting SeaTunnel client objects between API, persistence,
+ * and core runtime models.
+ *
+ * <p>This class keeps object mapping logic in one place, such as converting client
+ * requests to runtime specs, converting persisted nodes to endpoints, and building
+ * frontend DTOs.</p>
+ */
 @Component
 @Slf4j
 public class SeaTunnelClientAssembler {
 
+    /**
+     * Converts a client request DTO to a runtime client specification.
+     *
+     * <p>The generated spec is used by the core client module to build topology and
+     * activate the SeaTunnel client.</p>
+     *
+     * @param dto client request DTO
+     * @return runtime client specification
+     */
     public SeaTunnelClientSpec toSpec(SeaTunnelClientDTO dto) {
         String deployMode = normalizeDeployMode(dto.getDeployMode());
         String protocol = normalizeProtocol(dto.getProtocol());
@@ -64,6 +81,16 @@ public class SeaTunnelClientAssembler {
                 .build();
     }
 
+    /**
+     * Converts a persisted client entity and its node records to a runtime client specification.
+     *
+     * <p>This method is mainly used when refreshing client nodes or rebuilding runtime
+     * topology from database state.</p>
+     *
+     * @param client persisted client entity
+     * @param nodes persisted client node list
+     * @return runtime client specification
+     */
     public SeaTunnelClientSpec toSpec(
             SeaTunnelClient client,
             List<SeaTunnelClientNode> nodes
@@ -110,6 +137,12 @@ public class SeaTunnelClientAssembler {
                 .build();
     }
 
+    /**
+     * Converts a persisted client node to a runtime endpoint model.
+     *
+     * @param node persisted client node
+     * @return runtime endpoint model
+     */
     public SeaTunnelClientEndpoint toEndpoint(SeaTunnelClientNode node) {
         return SeaTunnelClientEndpoint.builder()
                 .id(node.getId())
@@ -125,6 +158,12 @@ public class SeaTunnelClientAssembler {
                 .build();
     }
 
+    /**
+     * Converts a persisted client node to a frontend endpoint DTO.
+     *
+     * @param node persisted client node
+     * @return frontend endpoint DTO
+     */
     public SeaTunnelClientEndpointDTO toEndpointDTO(SeaTunnelClientNode node) {
         SeaTunnelClientEndpointDTO dto = new SeaTunnelClientEndpointDTO();
 
@@ -141,6 +180,15 @@ public class SeaTunnelClientAssembler {
         return dto;
     }
 
+    /**
+     * Converts a client entity to an option item.
+     *
+     * <p>This is mainly used by job configuration pages to select an available
+     * SeaTunnel client.</p>
+     *
+     * @param entity client entity
+     * @return option value object
+     */
     public OptionVO toOptionVO(SeaTunnelClient entity) {
         OptionVO optionVO = new OptionVO();
         optionVO.setValue(entity.getId());
@@ -149,6 +197,17 @@ public class SeaTunnelClientAssembler {
         return optionVO;
     }
 
+    /**
+     * Converts a runtime endpoint model to a persisted client node entity.
+     *
+     * <p>The node is initialized with UNKNOWN health status. The actual status will
+     * be updated later according to probe or refresh results.</p>
+     *
+     * @param clientId client id
+     * @param endpoint runtime endpoint model
+     * @param now current timestamp
+     * @return client node entity
+     */
     public SeaTunnelClientNode toNodeEntity(
             Long clientId,
             SeaTunnelClientEndpoint endpoint,
@@ -174,6 +233,14 @@ public class SeaTunnelClientAssembler {
         return node;
     }
 
+    /**
+     * Normalizes client deploy mode.
+     *
+     * <p>Unsupported or empty deploy mode will be treated as SINGLE mode by default.</p>
+     *
+     * @param deployMode raw deploy mode
+     * @return normalized deploy mode
+     */
     public String normalizeDeployMode(String deployMode) {
         if (StringUtils.equalsIgnoreCase(
                 deployMode,
@@ -185,6 +252,14 @@ public class SeaTunnelClientAssembler {
         return SeaTunnelClientDeployMode.SINGLE;
     }
 
+    /**
+     * Normalizes client protocol.
+     *
+     * <p>Only HTTPS is preserved explicitly. Other values will be treated as HTTP.</p>
+     *
+     * @param protocol raw protocol
+     * @return normalized protocol
+     */
     public String normalizeProtocol(String protocol) {
         if (StringUtils.equalsIgnoreCase(protocol, "https")) {
             return "https";
@@ -193,6 +268,12 @@ public class SeaTunnelClientAssembler {
         return "http";
     }
 
+    /**
+     * Parses and validates client port.
+     *
+     * @param port raw port string
+     * @return parsed port, or null when input is blank
+     */
     public Integer parsePort(String port) {
         if (StringUtils.isBlank(port)) {
             return null;
@@ -214,6 +295,12 @@ public class SeaTunnelClientAssembler {
         }
     }
 
+    /**
+     * Resolves health status name from stored status code.
+     *
+     * @param code stored health status code
+     * @return health status name
+     */
     public String resolveHealthStatusName(Integer code) {
         if (code == null) {
             return "UNKNOWN";
@@ -230,6 +317,17 @@ public class SeaTunnelClientAssembler {
         return "UNKNOWN";
     }
 
+    /**
+     * Converts endpoint DTOs to runtime endpoint models.
+     *
+     * <p>Duplicated endpoints are removed by host and port to avoid probing the same
+     * REST endpoint repeatedly.</p>
+     *
+     * @param endpointDTOList endpoint DTO list
+     * @param role node role
+     * @param protocol normalized protocol
+     * @return runtime endpoint list
+     */
     private List<SeaTunnelClientEndpoint> toEndpoints(
             List<SeaTunnelClientEndpointDTO> endpointDTOList,
             String role,
@@ -271,6 +369,14 @@ public class SeaTunnelClientAssembler {
         return new ArrayList<>(endpointMap.values());
     }
 
+    /**
+     * Builds endpoint base URL from protocol, host, and port.
+     *
+     * @param protocol endpoint protocol
+     * @param host endpoint host
+     * @param port endpoint port
+     * @return endpoint base URL
+     */
     private String buildBaseUrl(
             String protocol,
             String host,
@@ -283,6 +389,12 @@ public class SeaTunnelClientAssembler {
         return normalizeProtocol(protocol) + "://" + host.trim() + ":" + port;
     }
 
+    /**
+     * Resolves protocol from endpoint base URL.
+     *
+     * @param baseUrl endpoint base URL
+     * @return protocol name
+     */
     private String resolveProtocolFromBaseUrl(String baseUrl) {
         if (StringUtils.startsWithIgnoreCase(baseUrl, "https://")) {
             return "https";
@@ -291,6 +403,15 @@ public class SeaTunnelClientAssembler {
         return "http";
     }
 
+    /**
+     * Resolves node id for persistence.
+     *
+     * <p>If the endpoint already has an id, the existing id will be reused. Otherwise,
+     * a new id will be generated for the node entity.</p>
+     *
+     * @param endpoint runtime endpoint model
+     * @return node id
+     */
     private Long resolveNodeId(SeaTunnelClientEndpoint endpoint) {
         if (endpoint != null && endpoint.getId() != null) {
             return endpoint.getId();

@@ -287,7 +287,7 @@ export const useLocalFileUploader = ({ limit, disabled = false, onUpload }: useL
       return
 
     if (limit && file.size > limit * 1024 * 1024) {
-      message.error("uploadFromComputerLimit" + limit)
+      
       return
     }
 

@@ -35,6 +35,16 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
+/**
+ * Application service for managing the lifecycle of SeaTunnel clients.
+ *
+ * <p>This service is responsible for client registration, update, deletion,
+ * node refresh, activation result persistence, and node status synchronization.</p>
+ *
+ * <p>The application layer coordinates domain services, persistence, and remote
+ * SeaTunnel engine calls. The core activation and topology rules are delegated
+ * to {@link SeaTunnelClientTopologyBuilder} and {@link SeaTunnelClientActivationService}.</p>
+ */
 @Service
 @Slf4j
 public class SeaTunnelClientLifecycleAppService {
@@ -63,16 +73,32 @@ public class SeaTunnelClientLifecycleAppService {
     @Resource
     private StreamingJobDefinitionDao streamingJobDefinitionDao;
 
+    /**
+     * Checks whether the client is already referenced by batch or streaming jobs.
+     *
+     * <p>A client that is currently used by any job should not be deleted or modified
+     * directly, otherwise existing jobs may lose their runtime engine binding.</p>
+     */
     private void checkClientNotUsed(Long clientId) {
         boolean usedByBatchJob = jobDefinitionDao.existsByClientId(clientId);
         boolean usedByStreamingJob = streamingJobDefinitionDao.existsByClientId(clientId);
 
         if (usedByBatchJob || usedByStreamingJob) {
-            throw new ServiceException("The data client is currently used by a job and cannot be deleted."
+            throw new ServiceException(
+                    "The data client is currently used by a job and cannot be deleted."
             );
         }
     }
 
+    /**
+     * Creates or updates a SeaTunnel client.
+     *
+     * <p>The client configuration is first converted into a runtime specification,
+     * then a topology is built from that specification. The topology will be activated
+     * before being persisted, so only reachable and supported SeaTunnel clients can be saved.</p>
+     *
+     * @param dto client save or update request
+     */
     @Transactional(rollbackFor = Exception.class)
     public void saveOrUpdate(SeaTunnelClientDTO dto) {
         validateSaveOrUpdateRequest(dto);
@@ -99,6 +125,14 @@ public class SeaTunnelClientLifecycleAppService {
         updateClient(dto, activationResult, now);
     }
 
+    /**
+     * Deletes a SeaTunnel client and its related nodes.
+     *
+     * <p>The client can only be deleted when it is not referenced by any batch or
+     * streaming job definition.</p>
+     *
+     * @param id client id
+     */
     @Transactional(rollbackFor = Exception.class)
     public void deleteById(Long id) {
         SeaTunnelClient entity = getEntity(id);
@@ -109,6 +143,16 @@ public class SeaTunnelClientLifecycleAppService {
         seaTunnelClientDao.deleteById(entity.getId());
     }
 
+    /**
+     * Refreshes all configured nodes of a SeaTunnel client.
+     *
+     * <p>This method rebuilds the runtime topology from persisted client and node
+     * configuration, probes master nodes again, updates the active master, and refreshes
+     * worker node health status.</p>
+     *
+     * @param clientId client id
+     * @return latest endpoint list
+     */
     @Transactional(rollbackFor = Exception.class)
     public List<SeaTunnelClientEndpointDTO> refreshNodes(Long clientId) {
         SeaTunnelClient client = getEntity(clientId);
@@ -143,6 +187,9 @@ public class SeaTunnelClientLifecycleAppService {
         return currentEndpointList(clientId);
     }
 
+    /**
+     * Persists a new SeaTunnel client and rebuilds its node records.
+     */
     private void createClient(
             SeaTunnelClientDTO dto,
             SeaTunnelClientActivationResult activationResult,
@@ -168,6 +215,12 @@ public class SeaTunnelClientLifecycleAppService {
         seaTunnelClientDao.updateById(entity);
     }
 
+    /**
+     * Updates an existing SeaTunnel client and rebuilds its node records.
+     *
+     * <p>The client cannot be updated when it is already used by existing jobs,
+     * because updating engine address or authentication may affect job execution.</p>
+     */
     private void updateClient(
             SeaTunnelClientDTO dto,
             SeaTunnelClientActivationResult activationResult,
@@ -193,6 +246,9 @@ public class SeaTunnelClientLifecycleAppService {
         seaTunnelClientDao.updateById(entity);
     }
 
+    /**
+     * Applies normalized base configuration values to the client entity.
+     */
     private void applyBaseConfig(
             SeaTunnelClientDTO dto,
             SeaTunnelClient entity
@@ -201,6 +257,12 @@ public class SeaTunnelClientLifecycleAppService {
         entity.setProtocol(assembler.normalizeProtocol(dto.getProtocol()));
     }
 
+    /**
+     * Applies activation result to the client entity.
+     *
+     * <p>When an active master is found, the client will be marked as LIVE and its
+     * active base URL will be updated. Otherwise, the client will be marked as DEAD.</p>
+     */
     private void applyActivationToClient(
             SeaTunnelClient client,
             SeaTunnelClientActivationResult activationResult,
@@ -227,6 +289,14 @@ public class SeaTunnelClientLifecycleAppService {
         client.setUpdateTime(now);
     }
 
+    /**
+     * Rebuilds all node records based on the latest topology and activation result.
+     *
+     * <p>Master nodes are updated according to probe results. Worker nodes are persisted
+     * as configured nodes and marked as UNKNOWN by default until they are refreshed.</p>
+     *
+     * @return active master node id, or null if no active master exists
+     */
     private Long rebuildClientNodes(
             Long clientId,
             SeaTunnelClientActivationResult activationResult,
@@ -271,6 +341,9 @@ public class SeaTunnelClientLifecycleAppService {
         return activeMasterNodeId;
     }
 
+    /**
+     * Updates persisted master node states according to the latest probe results.
+     */
     private void updateMasterNodesByProbeResult(
             Long clientId,
             SeaTunnelClientActivationResult activationResult,
@@ -318,6 +391,12 @@ public class SeaTunnelClientLifecycleAppService {
                 });
     }
 
+    /**
+     * Refreshes worker node health status by calling the SeaTunnel overview API.
+     *
+     * <p>Worker nodes are not used as active runtime entry points, but their status
+     * is still useful for displaying cluster topology and diagnosing engine issues.</p>
+     */
     private void refreshWorkerNodes(
             Long clientId,
             SeaTunnelClient client
@@ -371,6 +450,12 @@ public class SeaTunnelClientLifecycleAppService {
         }
     }
 
+    /**
+     * Applies a probe result to a persisted client node.
+     *
+     * <p>A missing probe result means the node was not probed in the current activation
+     * process, so its status will be marked as UNKNOWN.</p>
+     */
     private void applyProbeResultToNode(
             SeaTunnelClientNode node,
             SeaTunnelClientProbeResult probeResult,
@@ -402,6 +487,9 @@ public class SeaTunnelClientLifecycleAppService {
         node.setUpdateTime(now);
     }
 
+    /**
+     * Checks whether the given endpoint is the active master selected by activation.
+     */
     private boolean isActiveMaster(
             SeaTunnelClientActivationResult activationResult,
             SeaTunnelClientEndpoint endpoint
@@ -418,6 +506,9 @@ public class SeaTunnelClientLifecycleAppService {
         );
     }
 
+    /**
+     * Finds the probe result that belongs to the given endpoint.
+     */
     private SeaTunnelClientProbeResult findProbeResult(
             SeaTunnelClientActivationResult activationResult,
             SeaTunnelClientEndpoint endpoint
@@ -439,6 +530,9 @@ public class SeaTunnelClientLifecycleAppService {
                 .orElse(null);
     }
 
+    /**
+     * Marks the client as DEAD when no available master can be activated.
+     */
     private void markClientDead(
             SeaTunnelClient client,
             String errorMessage,
@@ -457,6 +551,9 @@ public class SeaTunnelClientLifecycleAppService {
         seaTunnelClientDao.updateById(client);
     }
 
+    /**
+     * Returns the latest endpoint list of a client.
+     */
     private List<SeaTunnelClientEndpointDTO> currentEndpointList(Long clientId) {
         List<SeaTunnelClientNode> nodes =
                 seaTunnelClientNodeDao.selectByClientId(clientId);
@@ -470,6 +567,9 @@ public class SeaTunnelClientLifecycleAppService {
                 .collect(Collectors.toList());
     }
 
+    /**
+     * Validates the client save or update request.
+     */
     private void validateSaveOrUpdateRequest(SeaTunnelClientDTO dto) {
         if (dto == null) {
             throw new ServiceException(
@@ -541,6 +641,9 @@ public class SeaTunnelClientLifecycleAppService {
         }
     }
 
+    /**
+     * Gets an existing SeaTunnel client entity by id.
+     */
     private SeaTunnelClient getEntity(Long id) {
         if (id == null) {
             throw new ServiceException(
@@ -561,6 +664,9 @@ public class SeaTunnelClientLifecycleAppService {
         return entity;
     }
 
+    /**
+     * Builds authentication information used when calling SeaTunnel REST API.
+     */
     private SeaTunnelClientAuth buildAuth(SeaTunnelClient entity) {
         SeaTunnelClientAuth auth = new SeaTunnelClientAuth();
 
@@ -575,6 +681,9 @@ public class SeaTunnelClientLifecycleAppService {
         return auth;
     }
 
+    /**
+     * Resolves SeaTunnel client version from the overview API response.
+     */
     private String resolveClientVersion(Map<String, Object> overview) {
         Object projectVersion = overview == null ? null : overview.get("projectVersion");
 
@@ -588,6 +697,9 @@ public class SeaTunnelClientLifecycleAppService {
         return String.valueOf(projectVersion).trim();
     }
 
+    /**
+     * Returns an empty list when the given list is null.
+     */
     private <T> List<T> safeList(List<T> list) {
         return list == null ? Collections.emptyList() : list;
     }

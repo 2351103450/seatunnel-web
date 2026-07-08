@@ -22,6 +22,13 @@ import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
 
+/**
+ * Application service for querying SeaTunnel clients.
+ *
+ * <p>This service is responsible for client option loading, paginated client query,
+ * and endpoint query. It only handles read-side application logic and does not change
+ * client runtime state.</p>
+ */
 @Service
 public class SeaTunnelClientQueryAppService {
 
@@ -34,6 +41,14 @@ public class SeaTunnelClientQueryAppService {
     @Resource
     private SeaTunnelClientAssembler assembler;
 
+    /**
+     * Returns available SeaTunnel client options.
+     *
+     * <p>Only LIVE clients are returned here because these options are mainly used by
+     * job configuration pages, where users should select an available runtime client.</p>
+     *
+     * @return available client options
+     */
     public List<OptionVO> option() {
         LambdaQueryWrapper<SeaTunnelClient> wrapper = new LambdaQueryWrapper<>();
         wrapper.eq(
@@ -53,6 +68,15 @@ public class SeaTunnelClientQueryAppService {
                 .collect(Collectors.toList());
     }
 
+    /**
+     * Queries SeaTunnel clients by page.
+     *
+     * <p>The returned client records will be enriched with master and worker endpoint
+     * information so that the frontend can display the client topology directly.</p>
+     *
+     * @param dto page query request
+     * @return paginated SeaTunnel clients
+     */
     public IPage<SeaTunnelClient> page(SeaTunnelClientPageDTO dto) {
         int pageNo = dto == null || dto.getPageNo() == null || dto.getPageNo() <= 0
                 ? 1
@@ -73,6 +97,12 @@ public class SeaTunnelClientQueryAppService {
         return page;
     }
 
+    /**
+     * Returns all configured endpoints of a SeaTunnel client.
+     *
+     * @param clientId SeaTunnel client id
+     * @return client endpoint list
+     */
     public List<SeaTunnelClientEndpointDTO> nodes(Long clientId) {
         getEntity(clientId);
 
@@ -88,6 +118,12 @@ public class SeaTunnelClientQueryAppService {
                 .collect(Collectors.toList());
     }
 
+    /**
+     * Fills master and worker endpoint lists for each client record.
+     *
+     * <p>This method groups persisted nodes by node role and attaches them to the
+     * corresponding client entity for frontend rendering.</p>
+     */
     private void fillClientNodes(List<SeaTunnelClient> clients) {
         if (clients == null || clients.isEmpty()) {
             return;
@@ -124,6 +160,12 @@ public class SeaTunnelClientQueryAppService {
         }
     }
 
+    /**
+     * Gets an existing SeaTunnel client entity by id.
+     *
+     * @param id SeaTunnel client id
+     * @return existing SeaTunnel client entity
+     */
     private SeaTunnelClient getEntity(Long id) {
         if (id == null) {
             throw new ServiceException(
