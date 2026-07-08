@@ -70,8 +70,8 @@ export const layout: RunTimeLayoutConfig = ({
       // <OpenAPI key="open-api" />,
       <Knowledge key="knowledge" />,
       // <BI key="bi" />,
-      <ThemeSwitch key="theme-switch" />,
-      <SelectLang key="SelectLang" />,
+      // <ThemeSwitch key="theme-switch" />,
+      // <SelectLang key="SelectLang" />,
     ],
     avatarProps: {
       src: initialState?.currentUser?.avatar,
