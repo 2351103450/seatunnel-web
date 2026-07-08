@@ -233,8 +233,14 @@ const RealtimeTaskActionColumn: React.FC<RealtimeTaskActionColumnProps> = ({
           description={
             <div className="mr-3">
               实时任务会持续运行，
-              <br />
+              <br/>
               确认立即启动该任务吗？
+              {hasSavepoint ? (
+                <>
+                  <br />
+                  <span>存在保存点：{record.savepointPath}</span>
+                </>
+              ) : null}
             </div>
           }
           okText="确认"

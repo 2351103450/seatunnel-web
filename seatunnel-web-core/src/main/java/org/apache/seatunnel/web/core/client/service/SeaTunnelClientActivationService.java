@@ -1,10 +1,6 @@
 package org.apache.seatunnel.web.core.client.service;
 
-import org.apache.seatunnel.web.core.client.model.SeaTunnelClientActivationResult;
-import org.apache.seatunnel.web.core.client.model.SeaTunnelClientEndpoint;
-import org.apache.seatunnel.web.core.client.model.SeaTunnelClientProbeResult;
-import org.apache.seatunnel.web.core.client.model.SeaTunnelClientSpec;
-import org.apache.seatunnel.web.core.client.model.SeaTunnelClientTopology;
+import org.apache.seatunnel.web.core.client.model.*;
 import org.apache.seatunnel.web.core.client.policy.SeaTunnelClientVersionPolicy;
 import org.apache.seatunnel.web.core.client.port.SeaTunnelClientProbeGateway;
 import org.apache.seatunnel.web.core.exceptions.ServiceException;
@@ -63,7 +59,6 @@ public class SeaTunnelClientActivationService {
 
         List<SeaTunnelClientProbeResult> probeResults = new ArrayList<>();
         SeaTunnelClientEndpoint activeMaster = null;
-        String activeVersion = null;
 
         for (SeaTunnelClientEndpoint master : topology.getMasters()) {
             SeaTunnelClientProbeResult result =
@@ -75,24 +70,25 @@ public class SeaTunnelClientActivationService {
                 continue;
             }
 
+            SeaTunnelClientEndpoint endpoint = result.getEndpoint();
+
+            if (endpoint == null) {
+                continue;
+            }
+            
             // A reachable master must also use a version supported by SeaTunnel Web.
             versionPolicy.check(result.getClientVersion());
 
-            activeMaster = master;
-            activeMaster.setActiveMaster(true);
-            activeMaster.setHealthStatus("LIVE");
-            activeMaster.setClientVersion(result.getClientVersion());
-            activeMaster.setLastError(null);
-
-            activeVersion = result.getClientVersion();
-            break;
+            if (endpoint.getActiveMaster()) {
+                activeMaster = endpoint;
+            }
         }
 
         if (activeMaster == null) {
             return SeaTunnelClientActivationResult.dead(
                     topology,
                     probeResults,
-                    "所有 Master REST 节点均连接失败，请检查地址、端口、账号密码或 Zeta 引擎是否已启动"
+                    "所有 Master REST 节点均连接失败，请检查地址、端口、账号密码或 Zeta 引擎是否已启动，可能需要设置hostname"
             );
         }
 
@@ -100,7 +96,7 @@ public class SeaTunnelClientActivationService {
                 topology,
                 probeResults,
                 activeMaster,
-                activeVersion
+                activeMaster.getClientVersion()
         );
     }
 }

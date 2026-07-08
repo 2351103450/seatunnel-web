@@ -29,6 +29,8 @@ public class SeaTunnelClientNode {
 
     private String host;
 
+    private String hostname;
+
     private Integer port;
 
     private String baseUrl;

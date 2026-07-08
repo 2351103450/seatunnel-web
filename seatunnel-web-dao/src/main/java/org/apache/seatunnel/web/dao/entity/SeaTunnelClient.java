@@ -28,6 +28,8 @@ public class SeaTunnelClient {
 
     private String baseUrl;
 
+    private String contextPath;
+
     private Long activeMasterNodeId;
 
     private Integer healthStatus;

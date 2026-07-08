@@ -58,6 +58,12 @@ public class SeaTunnelClientSpec {
     private String host;
 
     /**
+     * Hostname of the server.
+     * <p>For example: node1 or localhost</p>
+     */
+    private String hostname;
+
+    /**
      * REST port used in SINGLE deployment mode.
      */
     private Integer port;
@@ -80,4 +86,9 @@ public class SeaTunnelClientSpec {
      * Authentication information used to access SeaTunnel REST endpoints.
      */
     private SeaTunnelClientAuthInfo auth;
+    
+    /**
+     * Context path for the application.
+     */
+    private String contextPath;
 }

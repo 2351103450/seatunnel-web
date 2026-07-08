@@ -39,6 +39,12 @@ public class SeaTunnelClientEndpoint {
     private String host;
 
     /**
+     * Hostname of the server.
+     * <p>For example: node1 or localhost</p>
+     */
+    private String hostname;
+
+    /**
      * Endpoint REST port.
      */
     private Integer port;
@@ -56,6 +62,11 @@ public class SeaTunnelClientEndpoint {
      * <p>For example: http://127.0.0.1:5801.</p>
      */
     private String baseUrl;
+
+    /**
+     * Context path for the application.
+     */
+    private String contextPath;
 
     /**
      * Whether this endpoint is the currently selected active master.
