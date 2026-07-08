@@ -13,6 +13,8 @@ public class SeaTunnelClientEndpointDTO {
 
     private String host;
 
+    private String hostname;
+
     private Integer port;
 
     /**

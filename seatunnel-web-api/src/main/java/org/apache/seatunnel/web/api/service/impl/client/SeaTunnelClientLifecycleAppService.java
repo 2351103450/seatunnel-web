@@ -416,7 +416,8 @@ public class SeaTunnelClientLifecycleAppService {
 
             try {
                 Map<String, Object> overview = seaTunnelRestClient.overview(
-                        buildOverviewUrl(worker.getBaseUrl()),
+                        worker.getBaseUrl(),
+                        null, // TODO 暂时不设置
                         null,
                         buildAuth(client)
                 );
@@ -694,13 +695,6 @@ public class SeaTunnelClientLifecycleAppService {
         }
 
         return String.valueOf(projectVersion).trim();
-    }
-
-    /**
-     * Builds the SeaTunnel overview API URL from node base URL.
-     */
-    private String buildOverviewUrl(String baseUrl) {
-        return StringUtils.removeEnd(baseUrl, "/") + "/overview";
     }
 
     /**

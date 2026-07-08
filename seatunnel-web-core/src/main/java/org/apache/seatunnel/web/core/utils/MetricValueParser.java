@@ -38,4 +38,28 @@ public final class MetricValueParser {
             return null;
         }
     }
+
+    /** Parse value to boolean, return false if invalid. */
+    public static Boolean parseBoolean(Object value) {
+        if (value == null) {
+            return Boolean.FALSE;
+        }
+        try {
+            return Boolean.parseBoolean(String.valueOf(value).trim());
+        } catch (Exception e) {
+            return Boolean.FALSE;
+        }
+    }
+
+    /** Parse value to string, return "" if invalid. */
+    public static String parseString(Object value) {
+        if (value == null) {
+            return "";
+        }
+        try {
+            return String.valueOf(value).trim();
+        } catch (Exception e) {
+            return "";
+        }
+    }
 }

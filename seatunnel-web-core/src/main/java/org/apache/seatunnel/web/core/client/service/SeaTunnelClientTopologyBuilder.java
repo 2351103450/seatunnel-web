@@ -1,6 +1,8 @@
 package org.apache.seatunnel.web.core.client.service;
 
 import org.apache.commons.lang3.StringUtils;
+import org.apache.seatunnel.web.common.enums.SeaTunnelClientDeployMode;
+import org.apache.seatunnel.web.common.enums.SeaTunnelClientNodeRole;
 import org.apache.seatunnel.web.core.client.model.SeaTunnelClientEndpoint;
 import org.apache.seatunnel.web.core.client.model.SeaTunnelClientSpec;
 import org.apache.seatunnel.web.core.client.model.SeaTunnelClientTopology;
@@ -39,26 +41,28 @@ public class SeaTunnelClientTopologyBuilder {
         String deployMode = normalizeDeployMode(spec.getDeployMode());
         String protocol = normalizeProtocol(spec.getProtocol());
 
-        if ("SINGLE".equalsIgnoreCase(deployMode)) {
+        if (SeaTunnelClientDeployMode.SINGLE.equalsIgnoreCase(deployMode)) {
             SeaTunnelClientEndpoint master = buildEndpoint(
-                    "MASTER",
+                    SeaTunnelClientNodeRole.MASTER,
                     spec.getHost(),
+                    spec.getHostname(),
                     spec.getPort(),
-                    protocol
+                    protocol,
+                    spec.getContextPath()
             );
 
             return SeaTunnelClientTopology.builder()
-                    .deployMode("SINGLE")
+                    .deployMode(SeaTunnelClientDeployMode.SINGLE)
                     .masters(Collections.singletonList(master))
                     .workers(Collections.emptyList())
                     .build();
         }
 
         List<SeaTunnelClientEndpoint> masters =
-                normalizeEndpoints("MASTER", spec.getMasterEndpoints(), protocol);
+                normalizeEndpoints(SeaTunnelClientNodeRole.MASTER, spec.getMasterEndpoints(), protocol, spec.getContextPath());
 
         List<SeaTunnelClientEndpoint> workers =
-                normalizeEndpoints("WORKER", spec.getWorkerEndpoints(), protocol);
+                normalizeEndpoints(SeaTunnelClientNodeRole.WORKER, spec.getWorkerEndpoints(), protocol, spec.getContextPath());
 
         if (masters.isEmpty()) {
             throw new ServiceException(
@@ -68,7 +72,7 @@ public class SeaTunnelClientTopologyBuilder {
         }
 
         return SeaTunnelClientTopology.builder()
-                .deployMode("SEPARATED_CLUSTER")
+                .deployMode(SeaTunnelClientDeployMode.SEPARATED_CLUSTER)
                 .masters(masters)
                 .workers(workers)
                 .build();
@@ -105,7 +109,8 @@ public class SeaTunnelClientTopologyBuilder {
     private List<SeaTunnelClientEndpoint> normalizeEndpoints(
             String role,
             List<SeaTunnelClientEndpoint> endpoints,
-            String protocol
+            String protocol,
+            String contextPath
     ) {
         if (endpoints == null || endpoints.isEmpty()) {
             return Collections.emptyList();
@@ -123,8 +128,10 @@ public class SeaTunnelClientTopologyBuilder {
             SeaTunnelClientEndpoint normalized = buildEndpoint(
                     role,
                     endpoint.getHost(),
+                    endpoint.getHostname(),
                     endpoint.getPort(),
-                    protocol
+                    protocol,
+                    contextPath
             );
 
             normalized.setId(endpoint.getId());
@@ -149,8 +156,10 @@ public class SeaTunnelClientTopologyBuilder {
     private SeaTunnelClientEndpoint buildEndpoint(
             String role,
             String host,
+            String hostname,
             Integer port,
-            String protocol
+            String protocol,
+            String contextPath
     ) {
         if (StringUtils.isBlank(host)) {
             throw new ServiceException(Status.INTERNAL_SERVER_ERROR_ARGS, "客户端地址不能为空");
@@ -163,9 +172,11 @@ public class SeaTunnelClientTopologyBuilder {
         return SeaTunnelClientEndpoint.builder()
                 .role(role)
                 .host(normalizedHost)
+                .hostname(hostname)
                 .port(port)
                 .protocol(protocol)
                 .baseUrl(buildBaseUrl(protocol, normalizedHost, port))
+                .contextPath(contextPath)
                 .activeMaster(false)
                 .healthStatus("UNKNOWN")
                 .build();
@@ -195,11 +206,11 @@ public class SeaTunnelClientTopologyBuilder {
      * @return normalized deploy mode
      */
     private String normalizeDeployMode(String deployMode) {
-        if ("SEPARATED_CLUSTER".equalsIgnoreCase(deployMode)) {
-            return "SEPARATED_CLUSTER";
+        if (SeaTunnelClientDeployMode.SEPARATED_CLUSTER.equalsIgnoreCase(deployMode)) {
+            return SeaTunnelClientDeployMode.SEPARATED_CLUSTER;
         }
 
-        return "SINGLE";
+        return SeaTunnelClientDeployMode.SINGLE;
     }
 
     /**

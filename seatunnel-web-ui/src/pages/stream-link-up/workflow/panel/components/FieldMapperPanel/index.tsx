@@ -325,6 +325,8 @@ function FieldMapperPanel({
       return;
     }
 
+    console.log(inputSchema)
+
     setRows(buildRowsFromSchema(inputSchema));
     message.success("已按输入字段同步");
   }, [pluginInput, pluginOutput, inputSchema]);
@@ -501,7 +503,7 @@ function FieldMapperPanel({
               {record.sourceFieldName || "-"}
             </span>
 
-           
+
           </div>
         ),
       },

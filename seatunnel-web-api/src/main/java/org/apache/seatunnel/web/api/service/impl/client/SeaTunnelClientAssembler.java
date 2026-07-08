@@ -58,22 +58,26 @@ public class SeaTunnelClientAssembler {
                 .deployMode(deployMode)
                 .protocol(protocol)
                 .host(dto.getClientAddress())
+                .hostname(dto.getClientHostname())
                 .port(parsePort(dto.getClientPort()))
                 .masterEndpoints(toEndpoints(
                         dto.getMasterEndpoints(),
                         SeaTunnelClientNodeRole.MASTER,
-                        protocol
+                        protocol,
+                        dto.getContextPath()
                 ))
                 .workerEndpoints(toEndpoints(
                         dto.getWorkerEndpoints(),
                         SeaTunnelClientNodeRole.WORKER,
-                        protocol
+                        protocol,
+                        dto.getContextPath()
                 ))
                 .auth(SeaTunnelClientAuthInfo.builder()
                         .authEnabled(dto.getAuthEnabled())
                         .username(dto.getUsername())
                         .password(dto.getPassword())
                         .build())
+                .contextPath(dto.getContextPath())
                 .build();
     }
 
@@ -165,6 +169,7 @@ public class SeaTunnelClientAssembler {
 
         dto.setId(node.getId());
         dto.setHost(node.getHost());
+        dto.setHostname(node.getHostname());
         dto.setPort(node.getPort());
         dto.setRole(node.getNodeRole());
         dto.setBaseUrl(node.getBaseUrl());
@@ -215,6 +220,7 @@ public class SeaTunnelClientAssembler {
         node.setNodeRole(endpoint.getRole());
         node.setNodeName(endpoint.getHost() + ":" + endpoint.getPort());
         node.setHost(endpoint.getHost());
+        node.setHostname(endpoint.getHostname());
         node.setPort(endpoint.getPort());
         node.setBaseUrl(endpoint.getBaseUrl());
         node.setActiveMaster(Boolean.TRUE.equals(endpoint.getActiveMaster()));
@@ -325,7 +331,8 @@ public class SeaTunnelClientAssembler {
     private List<SeaTunnelClientEndpoint> toEndpoints(
             List<SeaTunnelClientEndpointDTO> endpointDTOList,
             String role,
-            String protocol
+            String protocol,
+            String contextPath
     ) {
         if (endpointDTOList == null || endpointDTOList.isEmpty()) {
             return Collections.emptyList();
@@ -340,14 +347,17 @@ public class SeaTunnelClientAssembler {
 
             Integer port = dto.getPort();
             String host = dto.getHost().trim();
+            String hostname = dto.getHostname();
 
             SeaTunnelClientEndpoint endpoint = SeaTunnelClientEndpoint.builder()
                     .id(dto.getId())
                     .role(role)
                     .host(host)
+                    .hostname(hostname)
                     .port(port)
                     .protocol(protocol)
                     .baseUrl(buildBaseUrl(protocol, host, port))
+                    .contextPath(contextPath)
                     .activeMaster(Boolean.TRUE.equals(dto.getActiveMaster()))
                     .healthStatus(dto.getHealthStatus())
                     .lastError(dto.getLastError())

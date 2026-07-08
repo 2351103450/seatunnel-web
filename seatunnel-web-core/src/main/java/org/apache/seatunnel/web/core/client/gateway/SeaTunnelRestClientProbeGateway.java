@@ -7,10 +7,13 @@ import org.apache.seatunnel.web.core.client.model.SeaTunnelClientAuthInfo;
 import org.apache.seatunnel.web.core.client.model.SeaTunnelClientEndpoint;
 import org.apache.seatunnel.web.core.client.model.SeaTunnelClientProbeResult;
 import org.apache.seatunnel.web.core.client.port.SeaTunnelClientProbeGateway;
+import org.apache.seatunnel.web.core.utils.MetricValueParser;
 import org.apache.seatunnel.web.engine.client.modal.SeaTunnelClientAuth;
 import org.apache.seatunnel.web.engine.client.rest.SeaTunnelRestClient;
 import org.springframework.stereotype.Component;
 
+import java.util.Arrays;
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -65,11 +68,10 @@ public class SeaTunnelRestClientProbeGateway implements SeaTunnelClientProbeGate
             );
         }
 
-        String overviewUrl = buildOverviewUrl(endpoint.getBaseUrl());
-
         try {
             Map<String, Object> overview = seaTunnelRestClient.overview(
-                    overviewUrl,
+                    endpoint.getBaseUrl(),
+                    endpoint.getContextPath(),
                     null,
                     buildAuth(auth)
             );
@@ -82,6 +84,34 @@ public class SeaTunnelRestClientProbeGateway implements SeaTunnelClientProbeGate
                         "SeaTunnel 客户端连接成功，但未获取到版本信息"
                 );
             }
+
+            endpoint.setClientVersion(clientVersion);
+
+            // host + hostname匹配
+            List<String> hosts = Arrays.asList(endpoint.getHost(), endpoint.getHostname());
+
+            // 通过这个接口识别是否是主节点，会返回所有节点
+            List<Map<String, Object>> systemMonitoringInformations = seaTunnelRestClient.systemMonitoringInformation(
+                    endpoint.getBaseUrl(),
+                    endpoint.getContextPath(),
+                    buildAuth(auth)
+            );
+
+            for (Map<String, Object> systemMonitoringInformation : systemMonitoringInformations) {
+
+                // 单节点一般是host=localhost，混合集群没有验证，这个问题一般都是配置导致的，如果配置好真实IP不会存在问题
+                String host = MetricValueParser.parseString(
+                        systemMonitoringInformation == null ? null : systemMonitoringInformation.get("host")
+                );
+
+                if (hosts.contains(host)) {
+                    Boolean isMaster = MetricValueParser.parseBoolean(
+                            systemMonitoringInformation == null ? null : systemMonitoringInformation.get("isMaster")
+                    );
+                    endpoint.setActiveMaster(isMaster);
+                }
+            }
+
 
             return SeaTunnelClientProbeResult.live(
                     endpoint,
@@ -140,15 +170,5 @@ public class SeaTunnelRestClientProbeGateway implements SeaTunnelClientProbeGate
         }
 
         return StringUtils.trimToNull(String.valueOf(projectVersion));
-    }
-
-    /**
-     * Builds the SeaTunnel overview API URL from endpoint base URL.
-     *
-     * @param baseUrl endpoint base URL
-     * @return overview API URL
-     */
-    private String buildOverviewUrl(String baseUrl) {
-        return StringUtils.removeEnd(baseUrl, "/") + "/overview";
     }
 }
