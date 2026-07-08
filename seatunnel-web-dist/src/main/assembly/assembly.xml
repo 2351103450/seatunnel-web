@@ -7,7 +7,7 @@
         <format>tar.gz</format>
     </formats>
     <includeBaseDirectory>true</includeBaseDirectory>
-    <baseDirectory>apache-seatunnel-web-${project.version}</baseDirectory>
+    <baseDirectory>seatunnel-web-${project.version}</baseDirectory>
 
     <dependencySets>
         <dependencySet>
