@@ -366,7 +366,7 @@ const AddClientModal: React.FC<AddClientModalProps> = ({
                 label="上下文路径"
                 rules={[{ required: false, message: "请输入上下文路径" }]}
               >
-                <Input placeholder="例如：object" style={inputStyle} />
+                <Input placeholder="例如：/" style={inputStyle} />
               </Form.Item>
             </Col>
           </Row>
@@ -405,71 +405,48 @@ const AddClientModal: React.FC<AddClientModalProps> = ({
                             {fields.map((field, index) => (
                               <div
                                 key={field.key}
+                                className="grid items-start gap-2"
                                 style={{
-                                  display: "grid",
                                   gridTemplateColumns:
                                     "minmax(0, 1fr) 120px 32px",
-                                  gap: 8,
-                                  alignItems: "start",
                                 }}
                               >
-                                <Row gutter={16}>
-                                  <Col span={8}>
-                                    <Form.Item
-                                      name={[field.name, "host"]}
-                                      rules={[
-                                        {
-                                          required: true,
-                                          message: "请输入 Master 地址: 127.0.0.1",
-                                        },
-                                      ]}
-                                      style={{ marginBottom: 0 }}
-                                    >
-                                      <Input
-                                        placeholder={`Master ${index + 1} 地址`}
-                                        style={inputStyle}
-                                      />
-                                    </Form.Item>
-                                  </Col>
-                                  <Col span={8}>
-                                    <Form.Item
-                                      name={[field.name, "hostname"]}
-                                      rules={[
-                                        {
-                                          required: false,
-                                          message: "请输入 Master hostname: node1",
-                                        },
-                                      ]}
-                                      style={{ marginBottom: 0 }}
-                                    >
-                                      <Input
-                                        placeholder={`Master ${index + 1} hostname`}
-                                        style={inputStyle}
-                                      />
-                                    </Form.Item>
-                                  </Col>
-                                  <Col span={8}>
-                                    <Form.Item
-                                      name={[field.name, "port"]}
-                                      rules={[
-                                        {
-                                          required: true,
-                                          message: "请输入端口",
-                                        },
-                                        {
-                                          pattern: /^\d+$/,
-                                          message: "端口必须为数字",
-                                        },
-                                      ]}
-                                      style={{ marginBottom: 0 }}
-                                    >
-                                      <Input
-                                        placeholder="8080"
-                                        style={inputStyle}
-                                      />
-                                    </Form.Item>
-                                  </Col>
-                                </Row>
+                                <Form.Item
+                                  name={[field.name, "host"]}
+                                  rules={[
+                                    {
+                                      required: true,
+                                      message: "请输入 Master 地址: 127.0.0.1",
+                                    },
+                                  ]}
+                                  style={{ marginBottom: 0 }}
+                                >
+                                  <Input
+                                    placeholder={`Master ${index + 1} 地址`}
+                                    style={inputStyle}
+                                  />
+                                </Form.Item>
+
+                                <Form.Item
+                                  name={[field.name, "port"]}
+                                  rules={[
+                                    {
+                                      required: true,
+                                      message: "请输入端口",
+                                    },
+                                    {
+                                      pattern: /^\d+$/,
+                                      message: "端口必须为数字",
+                                    },
+                                  ]}
+                                  style={{ marginBottom: 0 }}
+                                >
+                                  <Input
+                                    placeholder="8080"
+                                    style={inputStyle}
+                                  />
+                                </Form.Item>
+
                                 <Button
                                   type="text"
                                   danger
@@ -480,6 +457,7 @@ const AddClientModal: React.FC<AddClientModalProps> = ({
                                     width: 32,
                                     height: 34,
                                     borderRadius: 16,
+                                    padding: 0,
                                   }}
                                 />
 
@@ -509,8 +487,8 @@ const AddClientModal: React.FC<AddClientModalProps> = ({
               }
 
               return (
-                <Row gutter={16}>
-                  <Col span={8}>
+                <Row gutter={24}>
+                  <Col span={12}>
                     <Form.Item
                       name="clientAddress"
                       label="客户端地址"
@@ -527,25 +505,8 @@ const AddClientModal: React.FC<AddClientModalProps> = ({
                       />
                     </Form.Item>
                   </Col>
-                  <Col span={8}>
-                    <Form.Item
-                      name="clientHostname"
-                      label="hostname"
-                      rules={[
-                        {
-                          required: false,
-                          message: "请输入hostname: localhost",
-                        },
-                      ]}
-                    >
-                      <Input
-                        placeholder="例如：node1"
-                        style={inputStyle}
-                      />
-                    </Form.Item>
-                  </Col>
 
-                  <Col span={8}>
+                  <Col span={12}>
                     <Form.Item
                       name="clientPort"
                       label="客户端端口"

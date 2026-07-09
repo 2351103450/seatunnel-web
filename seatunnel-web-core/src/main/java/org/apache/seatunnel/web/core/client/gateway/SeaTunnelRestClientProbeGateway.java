@@ -12,7 +12,6 @@ import org.apache.seatunnel.web.engine.client.modal.SeaTunnelClientAuth;
 import org.apache.seatunnel.web.engine.client.rest.SeaTunnelRestClient;
 import org.springframework.stereotype.Component;
 
-import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 
@@ -20,11 +19,13 @@ import java.util.Map;
  * REST-based implementation of {@link SeaTunnelClientProbeGateway}.
  *
  * <p>This gateway probes a SeaTunnel endpoint by calling the SeaTunnel REST
- * overview API. It converts the REST response into a core probe result, including
- * live status, client version, raw response, and error message.</p>
+ * overview API. If the overview API can be reached and the SeaTunnel version can
+ * be resolved, the endpoint is considered live.</p>
  *
- * <p>This class belongs to the engine client adapter layer. The core client module
- * only depends on the gateway interface and does not know the REST implementation details.</p>
+ * <p>The active master flag is resolved by calling the system monitoring API.
+ * This step is best-effort only. A failure or host mismatch during active master
+ * detection should not make the endpoint dead, because standalone deployments may
+ * report host as localhost while users configure the real IP address.</p>
  */
 @Slf4j
 @Component
@@ -34,6 +35,16 @@ public class SeaTunnelRestClientProbeGateway implements SeaTunnelClientProbeGate
      * Key used to resolve SeaTunnel engine version from overview response.
      */
     private static final String PROJECT_VERSION_KEY = "projectVersion";
+
+    /**
+     * Key used to resolve host from system monitoring response.
+     */
+    private static final String HOST_KEY = "host";
+
+    /**
+     * Key used to resolve whether the node is master from system monitoring response.
+     */
+    private static final String IS_MASTER_KEY = "isMaster";
 
     @Resource
     private SeaTunnelRestClient seaTunnelRestClient;
@@ -68,12 +79,14 @@ public class SeaTunnelRestClientProbeGateway implements SeaTunnelClientProbeGate
             );
         }
 
+        SeaTunnelClientAuth clientAuth = buildAuth(auth);
+
         try {
             Map<String, Object> overview = seaTunnelRestClient.overview(
                     endpoint.getBaseUrl(),
                     endpoint.getContextPath(),
                     null,
-                    buildAuth(auth)
+                    clientAuth
             );
 
             String clientVersion = resolveClientVersion(overview);
@@ -87,31 +100,15 @@ public class SeaTunnelRestClientProbeGateway implements SeaTunnelClientProbeGate
 
             endpoint.setClientVersion(clientVersion);
 
-            // host + hostname匹配
-            List<String> hosts = Arrays.asList(endpoint.getHost(), endpoint.getHostname());
-
-            // 通过这个接口识别是否是主节点，会返回所有节点
-            List<Map<String, Object>> systemMonitoringInformations = seaTunnelRestClient.systemMonitoringInformation(
-                    endpoint.getBaseUrl(),
-                    endpoint.getContextPath(),
-                    buildAuth(auth)
-            );
-
-            for (Map<String, Object> systemMonitoringInformation : systemMonitoringInformations) {
-
-                // 单节点一般是host=localhost，混合集群没有验证，这个问题一般都是配置导致的，如果配置好真实IP不会存在问题
-                String host = MetricValueParser.parseString(
-                        systemMonitoringInformation == null ? null : systemMonitoringInformation.get("host")
-                );
-
-                if (hosts.contains(host)) {
-                    Boolean isMaster = MetricValueParser.parseBoolean(
-                            systemMonitoringInformation == null ? null : systemMonitoringInformation.get("isMaster")
-                    );
-                    endpoint.setActiveMaster(isMaster);
-                }
-            }
-
+            /*
+             * Active master detection is only an enhancement.
+             *
+             * In standalone mode, the engine may report host as localhost, while the
+             * user configures a real IP such as 192.168.x.x. In that case, overview
+             * has already proved that the endpoint is reachable, so this method should
+             * still return live.
+             */
+            resolveActiveMasterSafely(endpoint, clientAuth);
 
             return SeaTunnelClientProbeResult.live(
                     endpoint,
@@ -133,6 +130,100 @@ public class SeaTunnelRestClientProbeGateway implements SeaTunnelClientProbeGate
     }
 
     /**
+     * Resolves whether the endpoint is active master.
+     *
+     * <p>This method is best-effort. Any exception here should not affect endpoint
+     * liveness, because the overview API has already completed successfully before
+     * this method is called.</p>
+     *
+     * @param endpoint endpoint to be checked
+     * @param auth SeaTunnel REST authentication information
+     */
+    private void resolveActiveMasterSafely(
+            SeaTunnelClientEndpoint endpoint,
+            SeaTunnelClientAuth auth
+    ) {
+        if (endpoint == null || StringUtils.isBlank(endpoint.getBaseUrl())) {
+            return;
+        }
+
+        try {
+            List<Map<String, Object>> systemMonitoringInformations =
+                    seaTunnelRestClient.systemMonitoringInformation(
+                            endpoint.getBaseUrl(),
+                            endpoint.getContextPath(),
+                            auth
+                    );
+
+            if (systemMonitoringInformations == null
+                    || systemMonitoringInformations.isEmpty()) {
+                return;
+            }
+
+            for (Map<String, Object> systemMonitoringInformation : systemMonitoringInformations) {
+                if (systemMonitoringInformation == null || systemMonitoringInformation.isEmpty()) {
+                    continue;
+                }
+
+                String engineHost = MetricValueParser.parseString(
+                        systemMonitoringInformation.get(HOST_KEY)
+                );
+
+                Boolean master = MetricValueParser.parseBoolean(
+                        systemMonitoringInformation.get(IS_MASTER_KEY)
+                );
+
+                if (!Boolean.TRUE.equals(master)) {
+                    continue;
+                }
+
+                if (matchEndpointHost(endpoint, engineHost)) {
+                    endpoint.setActiveMaster(true);
+                    return;
+                }
+            }
+
+            /*
+             * Do not force activeMaster=false here.
+             *
+             * Reason:
+             * - In cluster mode, ActivationService will decide whether active master
+             *   must be found.
+             * - In single mode, ActivationService can fallback to first live master.
+             * - This gateway should not turn a reachable endpoint into a dead endpoint
+             *   just because host matching failed.
+             */
+        } catch (Exception e) {
+            log.warn(
+                    "Resolve SeaTunnel active master failed, baseUrl={}",
+                    endpoint.getBaseUrl(),
+                    e
+            );
+        }
+    }
+
+    /**
+     * Checks whether the host reported by SeaTunnel engine matches the configured endpoint.
+     *
+     * <p>Users may configure either host or hostname. Therefore both fields are compared.</p>
+     *
+     * @param endpoint configured endpoint
+     * @param engineHost host returned by SeaTunnel engine
+     * @return true if matched
+     */
+    private boolean matchEndpointHost(
+            SeaTunnelClientEndpoint endpoint,
+            String engineHost
+    ) {
+        if (endpoint == null || StringUtils.isBlank(engineHost)) {
+            return false;
+        }
+
+        return StringUtils.equalsIgnoreCase(engineHost, endpoint.getHost())
+                || StringUtils.equalsIgnoreCase(engineHost, endpoint.getHostname());
+    }
+
+    /**
      * Converts core authentication information to engine client authentication model.
      *
      * @param authInfo core authentication information
@@ -145,7 +236,7 @@ public class SeaTunnelRestClientProbeGateway implements SeaTunnelClientProbeGate
             return auth;
         }
 
-        auth.setAuthEnabled(authInfo.getAuthEnabled());
+        auth.setAuthEnabled(Boolean.TRUE.equals(authInfo.getAuthEnabled()));
         auth.setUsername(authInfo.getUsername());
         auth.setPassword(authInfo.getPassword());
 
