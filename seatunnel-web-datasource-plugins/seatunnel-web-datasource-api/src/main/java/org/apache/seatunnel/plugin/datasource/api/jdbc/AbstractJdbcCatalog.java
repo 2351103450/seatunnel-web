@@ -185,15 +185,7 @@ public abstract class AbstractJdbcCatalog implements JdbcCatalog {
             throw new IllegalArgumentException("table is null");
         }
 
-        String schemaName = tablePath.getSchemaName();
-        if (StringUtils.isBlank(schemaName)) {
-            schemaName = getParam().getSchemaName();
-        }
-        if (StringUtils.isBlank(schemaName)) {
-            schemaName = "public";
-        }
-
-        return quoteIdentifier(schemaName) + "." + quoteIdentifier(tablePath.getTableName());
+        return quoteIdentifier(tablePath.getTableName());
     }
 
     @Override
