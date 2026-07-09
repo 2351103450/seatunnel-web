@@ -73,22 +73,7 @@ public class SeaTunnelClientLifecycleAppService {
     @Resource
     private StreamingJobDefinitionDao streamingJobDefinitionDao;
 
-    /**
-     * Checks whether the client is already referenced by batch or streaming jobs.
-     *
-     * <p>A client that is currently used by any job should not be deleted or modified
-     * directly, otherwise existing jobs may lose their runtime engine binding.</p>
-     */
-    private void checkClientNotUsed(Long clientId) {
-        boolean usedByBatchJob = jobDefinitionDao.existsByClientId(clientId);
-        boolean usedByStreamingJob = streamingJobDefinitionDao.existsByClientId(clientId);
 
-        if (usedByBatchJob || usedByStreamingJob) {
-            throw new ServiceException(
-                    "The data client is currently used by a job and cannot be deleted."
-            );
-        }
-    }
 
     /**
      * Creates or updates a SeaTunnel client.
@@ -136,8 +121,6 @@ public class SeaTunnelClientLifecycleAppService {
     @Transactional(rollbackFor = Exception.class)
     public void deleteById(Long id) {
         SeaTunnelClient entity = getEntity(id);
-
-        checkClientNotUsed(id);
 
         seaTunnelClientNodeDao.deleteByClientId(entity.getId());
         seaTunnelClientDao.deleteById(entity.getId());
@@ -227,8 +210,6 @@ public class SeaTunnelClientLifecycleAppService {
             Date now
     ) {
         SeaTunnelClient entity = getEntity(dto.getId());
-
-        checkClientNotUsed(dto.getId());
 
         BeanUtils.copyProperties(dto, entity);
 

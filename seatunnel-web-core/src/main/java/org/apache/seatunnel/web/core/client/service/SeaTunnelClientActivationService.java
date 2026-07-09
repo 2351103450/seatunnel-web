@@ -1,5 +1,7 @@
 package org.apache.seatunnel.web.core.client.service;
 
+import org.apache.commons.lang3.StringUtils;
+import org.apache.seatunnel.web.common.enums.SeaTunnelClientDeployMode;
 import org.apache.seatunnel.web.core.client.model.*;
 import org.apache.seatunnel.web.core.client.policy.SeaTunnelClientVersionPolicy;
 import org.apache.seatunnel.web.core.client.port.SeaTunnelClientProbeGateway;
@@ -12,13 +14,6 @@ import java.util.List;
 
 /**
  * Domain service used to activate a SeaTunnel client topology.
- *
- * <p>This service probes configured master endpoints, validates the runtime version,
- * selects an available master as the active runtime entry point, and returns the
- * activation result.</p>
- *
- * <p>The actual probing implementation is delegated to {@link SeaTunnelClientProbeGateway},
- * so this service does not depend on any specific communication protocol such as REST.</p>
  */
 @Component
 public class SeaTunnelClientActivationService {
@@ -35,17 +30,6 @@ public class SeaTunnelClientActivationService {
         this.versionPolicy = versionPolicy;
     }
 
-    /**
-     * Activates the given SeaTunnel client topology.
-     *
-     * <p>The method probes master endpoints one by one. The first live and supported
-     * master will be selected as the active master. All probe results are preserved
-     * in the activation result for later persistence and diagnostics.</p>
-     *
-     * @param spec client runtime specification
-     * @param topology client topology built from the specification
-     * @return activation result, including active master, version, topology, and probe results
-     */
     public SeaTunnelClientActivationResult activate(
             SeaTunnelClientSpec spec,
             SeaTunnelClientTopology topology
@@ -58,11 +42,13 @@ public class SeaTunnelClientActivationService {
         }
 
         List<SeaTunnelClientProbeResult> probeResults = new ArrayList<>();
-        SeaTunnelClientEndpoint activeMaster = null;
+
+        SeaTunnelClientEndpoint firstLiveMaster = null;
+        SeaTunnelClientEndpoint reportedActiveMaster = null;
 
         for (SeaTunnelClientEndpoint master : topology.getMasters()) {
             SeaTunnelClientProbeResult result =
-                    probeGateway.probe(master, spec.getAuth());
+                    probeGateway.probe(master, spec == null ? null : spec.getAuth());
 
             probeResults.add(result);
 
@@ -75,22 +61,33 @@ public class SeaTunnelClientActivationService {
             if (endpoint == null) {
                 continue;
             }
-            
-            // A reachable master must also use a version supported by SeaTunnel Web.
+
             versionPolicy.check(result.getClientVersion());
 
-            if (endpoint.getActiveMaster()) {
-                activeMaster = endpoint;
+            if (firstLiveMaster == null) {
+                firstLiveMaster = endpoint;
+            }
+
+            if (Boolean.TRUE.equals(endpoint.getActiveMaster())) {
+                reportedActiveMaster = endpoint;
             }
         }
+
+        SeaTunnelClientEndpoint activeMaster = resolveActiveMaster(
+                spec,
+                firstLiveMaster,
+                reportedActiveMaster
+        );
 
         if (activeMaster == null) {
             return SeaTunnelClientActivationResult.dead(
                     topology,
                     probeResults,
-                    "所有 Master REST 节点均连接失败，请检查地址、端口、账号密码或 Zeta 引擎是否已启动，可能需要设置hostname"
+                    buildNoActiveMasterMessage(spec)
             );
         }
+
+        activeMaster.setActiveMaster(true);
 
         return SeaTunnelClientActivationResult.live(
                 topology,
@@ -98,5 +95,41 @@ public class SeaTunnelClientActivationService {
                 activeMaster,
                 activeMaster.getClientVersion()
         );
+    }
+
+    /**
+     * Resolves the active runtime entrypoint according to deploy mode.
+     *
+     * <p>For SINGLE mode, a reachable REST endpoint is enough, because there is only
+     * one runtime entrypoint from SeaTunnel Web's perspective.</p>
+     *
+     * <p>For SEPARATED_CLUSTER mode, prefer the master reported by SeaTunnel engine.</p>
+     */
+    private SeaTunnelClientEndpoint resolveActiveMaster(
+            SeaTunnelClientSpec spec,
+            SeaTunnelClientEndpoint firstLiveMaster,
+            SeaTunnelClientEndpoint reportedActiveMaster
+    ) {
+        if (isSingleMode(spec)) {
+            return firstLiveMaster;
+        }
+
+        return reportedActiveMaster;
+    }
+
+    private boolean isSingleMode(SeaTunnelClientSpec spec) {
+        return spec != null
+                && StringUtils.equalsIgnoreCase(
+                spec.getDeployMode(),
+                SeaTunnelClientDeployMode.SINGLE
+        );
+    }
+
+    private String buildNoActiveMasterMessage(SeaTunnelClientSpec spec) {
+        if (isSingleMode(spec)) {
+            return "SeaTunnel REST 节点连接失败，请检查地址、端口、账号密码或 Zeta 引擎是否已启动";
+        }
+
+        return "所有 Master REST 节点均未识别到 active master，请检查地址、端口、账号密码、Zeta 引擎状态或 hostname 配置";
     }
 }
