@@ -13,9 +13,8 @@ Use this checklist to prepare, validate, and publish a SeaTunnel Web release.
 ## 2. Validate
 
 - [ ] Run backend verification: `./mvnw -T 1C clean verify`.
-- [ ] Run frontend linting: `cd seatunnel-web-ui && npm run lint`.
-- [ ] Run frontend tests: `cd seatunnel-web-ui && npm test`.
-- [ ] Run frontend build: `cd seatunnel-web-ui && npm run build`.
+- [ ] Run frontend linting: `cd seatunnel-web-ui && yar`.
+- [ ] Run frontend build: `cd seatunnel-web-ui && yarn build`.
 - [ ] Validate Docker image build if publishing container artifacts.
 - [ ] Smoke test installation, login, datasource creation, job submission, monitoring, and logs.
 

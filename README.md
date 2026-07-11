@@ -312,55 +312,13 @@ cd seatunnel-web-ui
 Install dependencies:
 
 ```bash
-npm install
-```
-
-Start the development server:
-
-```bash
-npm run start:dev
+yarn
 ```
 
 Build the production assets:
 
 ```bash
-npm run build
-```
-
-Run static checks:
-
-```bash
-npm run lint
-```
-
-## Project Structure
-
-```text
-seatunnel-web
-├── seatunnel-web-api
-│   └── Application entry point and REST APIs
-├── seatunnel-web-common
-│   └── Shared utilities, constants, and exceptions
-├── seatunnel-web-core
-│   └── Core job assembly and business logic
-├── seatunnel-web-dao
-│   └── Database access and persistence models
-├── seatunnel-web-dao-plugin
-│   └── Database persistence extensions
-├── seatunnel-web-datasource-connection
-│   └── Data source connection management
-├── seatunnel-web-datasource-plugins
-│   └── Pluggable data source implementations
-├── seatunnel-web-engine-client
-│   └── SeaTunnel engine client integration
-├── seatunnel-web-spi
-│   └── Extension interfaces and shared abstractions
-├── seatunnel-web-ui
-│   └── React-based Web application
-├── seatunnel-web-dist
-│   └── Distribution package assembly
-└── seatunnel-web-bom
-    └── Dependency version management
+yarn build
 ```
 
 ## Documentation

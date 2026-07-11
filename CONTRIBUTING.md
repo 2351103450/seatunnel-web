@@ -39,10 +39,8 @@ For faster local iteration when tests are not needed:
 
 ```bash
 cd seatunnel-web-ui
-npm install
-npm run lint
-npm test
-npm run build
+yarn
+yarn build
 ```
 
 ## Pull Request Guidelines
