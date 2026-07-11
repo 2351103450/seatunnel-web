@@ -1,0 +1,53 @@
+services:
+  mysql:
+    image: mysql:8.0
+    container_name: seatunnel-web-mysql
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-seatunnel_root}
+      MYSQL_DATABASE: ${MYSQL_DATABASE:-seatunnel_web}
+      MYSQL_USER: ${MYSQL_USER:-seatunnel}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD:-seatunnel}
+      TZ: Asia/Shanghai
+    command:
+      - --character-set-server=utf8mb4
+      - --collation-server=utf8mb4_unicode_ci
+      - --default-time-zone=+08:00
+    ports:
+      - "${MYSQL_PORT:-3306}:3306"
+    volumes:
+      - mysql-data:/var/lib/mysql
+      - ./docker/mysql/init:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      test: ["CMD-SHELL", "mysqladmin ping -h 127.0.0.1 -u$${MYSQL_USER} -p$${MYSQL_PASSWORD} --silent"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 30s
+
+  seatunnel-web:
+    image: ${SEATUNNEL_WEB_IMAGE:-seatunnel-web:latest}
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: seatunnel-web
+    restart: unless-stopped
+    depends_on:
+      mysql:
+        condition: service_healthy
+    environment:
+      JAVA_OPTS: ${JAVA_OPTS:-}
+      APP_OPTS: ${APP_OPTS:-}
+      SERVER_PORT: 9527
+      SPRING_PROFILES_ACTIVE: mysql
+      SPRING_DATASOURCE_URL: jdbc:mysql://mysql:3306/${MYSQL_DATABASE:-seatunnel_web}?useUnicode=true&characterEncoding=utf8&useSSL=false&serverTimezone=GMT%2B8&allowPublicKeyRetrieval=true
+      SPRING_DATASOURCE_USERNAME: ${MYSQL_USER:-seatunnel}
+      SPRING_DATASOURCE_PASSWORD: ${MYSQL_PASSWORD:-seatunnel}
+    ports:
+      - "${SEATUNNEL_WEB_PORT:-9527}:9527"
+    volumes:
+      - seatunnel-web-logs:/opt/seatunnel-web/logs
+
+volumes:
+  mysql-data:
+  seatunnel-web-logs:

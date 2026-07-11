@@ -1,0 +1,11 @@
+.git
+.github
+**/node_modules
+**/dist
+**/target
+**/.idea
+**/.vscode
+**/.DS_Store
+logs
+*.log
+.env
