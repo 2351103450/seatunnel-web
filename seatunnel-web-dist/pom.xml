@@ -23,7 +23,7 @@
     </dependencies>
 
     <build>
-        <finalName>apache-seatunnel-web-${project.version}</finalName>
+        <finalName>seatunnel-web-${project.version}</finalName>
         <plugins>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
