@@ -11,4 +11,6 @@ public interface DataSourcePluginConfigDao extends IDao<DataSourcePluginConfig> 
     boolean existsByPluginType(DbType pluginType);
 
     int insertPluginConfig(DataSourcePluginConfig entity);
+
+    int updatePluginConfig(DataSourcePluginConfig existing);
 }
