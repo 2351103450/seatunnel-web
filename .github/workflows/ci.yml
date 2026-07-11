@@ -55,17 +55,19 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v7
+        uses: actions/checkout@v4
 
       - name: Set up Node.js
         uses: actions/setup-node@v6
         with:
-          node-version: '20'
+          node-version: '22.22.1'
           cache: yarn
           cache-dependency-path: seatunnel-web-ui/yarn.lock
 
-      - name: Enable Corepack
-        run: corepack enable
+      - name: Enable Corepack and set Yarn
+        run: |
+          corepack enable
+          corepack prepare yarn@1.22.22 --activate
 
       - name: Show versions
         run: |
