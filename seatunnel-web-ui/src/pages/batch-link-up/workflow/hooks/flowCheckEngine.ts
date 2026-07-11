@@ -7,6 +7,7 @@ export interface CheckItem {
   message: string;
   title?: string;
   dbType?: string;
+  componentType?: string;
   field?: string;
 }
 
@@ -16,6 +17,7 @@ export interface NodeCheckGroup {
   title?: string;
   dbType?: string;
   items: CheckItem[];
+  componentType?: string;
 }
 
 export type NodeCheckRule = (node: any) => CheckItem | null;
@@ -23,6 +25,7 @@ export type NodeCheckRule = (node: any) => CheckItem | null;
 const getNodeMeta = (node: any) => ({
   nodeId: node?.id,
   nodeType: node?.data?.nodeType || "",
+  componentType: node?.data?.componentType || "",
   title: node?.data?.title,
   dbType: node?.data?.dbType,
 });
@@ -47,6 +50,7 @@ export const groupCheckListByNode = (
       map.set(key, {
         nodeId: item.nodeId,
         nodeType: item.nodeType,
+        componentType: item.componentType,
         title: item.title,
         dbType: item.dbType,
         items: [],
