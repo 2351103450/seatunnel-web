@@ -12,6 +12,13 @@ import org.apache.seatunnel.web.spi.form.FormField;
 @EqualsAndHashCode(callSuper = true)
 public class OracleConnectionParam extends BaseConnectionParam {
 
+    @FormField(
+            label = "连接方式",
+            required = true,
+            type = FieldType.SELECT,
+            order = 3,
+            defaultValue = "ORACLE_SERVICE_NAME"
+    )
     protected DbConnectType connectType;
 
     @FormField(label = "端口号", required = true, order = 2, defaultValue = "1521", type = FieldType.NUMBER)

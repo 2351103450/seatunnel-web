@@ -43,4 +43,9 @@ public class DataSourcePluginConfigDaoImpl
     public int insertPluginConfig(DataSourcePluginConfig entity) {
         return datasourcePluginConfigMapper.insert(entity);
     }
+
+    @Override
+    public int updatePluginConfig(DataSourcePluginConfig entity) {
+        return datasourcePluginConfigMapper.updateById(entity);
+    }
 }
