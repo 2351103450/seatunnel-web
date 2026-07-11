@@ -1,8 +1,8 @@
-import { useModel } from "@umijs/max";
-import { createStyles } from "antd-style";
+import { useModel } from '@umijs/max';
+import { createStyles } from 'antd-style';
 
-import React, { useEffect, useRef, useState } from "react";
-import "./index.less";
+import React, { useEffect, useRef, useState } from 'react';
+import './index.less';
 
 export type GlobalHeaderRightProps = {
   menu?: boolean;
@@ -10,7 +10,7 @@ export type GlobalHeaderRightProps = {
 };
 
 export const AvatarName = () => {
-  const { initialState } = useModel("@@initialState");
+  const { initialState } = useModel('@@initialState');
   const { currentUser } = initialState || {};
   return <span className="anticon">{currentUser?.name}</span>;
 };
@@ -18,15 +18,15 @@ export const AvatarName = () => {
 const useStyles = createStyles(({ token }) => {
   return {
     action: {
-      display: "flex",
-      height: "48px",
-      marginLeft: "auto",
-      overflow: "hidden",
-      alignItems: "center",
-      padding: "0 8px",
-      cursor: "pointer",
+      display: 'flex',
+      height: '48px',
+      marginLeft: 'auto',
+      overflow: 'hidden',
+      alignItems: 'center',
+      padding: '0 8px',
+      cursor: 'pointer',
       borderRadius: token.borderRadius,
-      "&:hover": {
+      '&:hover': {
         backgroundColor: token.colorBgTextHover,
       },
     },
@@ -130,42 +130,35 @@ export const AvatarDropdown: React.FC<GlobalHeaderRightProps> = ({
     };
 
     const handleKeyDown = (event: KeyboardEvent) => {
-      if (event.key === "Escape") {
+      if (event.key === 'Escape') {
         setOpen(false);
       }
     };
 
-    document.addEventListener("mousedown", handleClickOutside);
-    document.addEventListener("keydown", handleKeyDown);
+    document.addEventListener('mousedown', handleClickOutside);
+    document.addEventListener('keydown', handleKeyDown);
 
     return () => {
-      document.removeEventListener("mousedown", handleClickOutside);
-      document.removeEventListener("keydown", handleKeyDown);
+      document.removeEventListener('mousedown', handleClickOutside);
+      document.removeEventListener('keydown', handleKeyDown);
     };
   }, []);
 
   return (
     <div ref={containerRef} className="relative inline-flex items-center">
       {/* 点击区域 */}
-      <div
-        role="button"
-        tabIndex={0}
+      <button
+        type="button"
         aria-label="打开用户菜单"
         aria-expanded={open}
-        className="cursor-pointer outline-none"
+        className="cursor-pointer border-0 bg-transparent p-0 outline-none"
         onClick={() => setOpen((previous) => !previous)}
-        onKeyDown={(event) => {
-          if (event.key === "Enter" || event.key === " ") {
-            event.preventDefault();
-            setOpen((previous) => !previous);
-          }
-        }}
       >
         {/* 原来的头像样式，完全不变 */}
         <div className="status-pill">
           <span className="status-dot">S</span>
         </div>
-      </div>
+      </button>
 
       {/* 自定义下拉框 */}
       <div
@@ -181,12 +174,11 @@ export const AvatarDropdown: React.FC<GlobalHeaderRightProps> = ({
     transition-all duration-200 ease-out
     ${
       open
-        ? "visible translate-y-0 scale-100 opacity-100"
-        : "invisible -translate-y-1 scale-[0.98] opacity-0"
+        ? 'visible translate-y-0 scale-100 opacity-100'
+        : 'invisible -translate-y-1 scale-[0.98] opacity-0'
     }
   `}
       >
-
         {/* 小箭头 */}
         <span
           className="

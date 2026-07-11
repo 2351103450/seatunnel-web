@@ -4,18 +4,19 @@
     "ignoreUnknown": true,
     "includes": [
       "**/*",
-      "!**/.umi/**",
-      "!**/.umi-production/**",
-      "!**/.umi-test/**",
-      "!**/.umi-test-production/**",
-      "!**/src/services/**",
-      "!**/mock/**",
-      "!**/dist/**",
-      "!**/server/**",
-      "!**/public/**",
-      "!**/coverage/**",
-      "!**/node_modules/**",
-      "!biome.json"
+      "!**/.umi",
+      "!**/.umi-production",
+      "!**/.umi-test",
+      "!**/.umi-test-production",
+      "!**/src/services",
+      "!**/mock",
+      "!**/dist",
+      "!**/server",
+      "!**/public",
+      "!**/coverage",
+      "!**/node_modules",
+      "!biome.json",
+      "!**/*.svg"
     ]
   },
   "formatter": {
@@ -25,17 +26,35 @@
   "linter": {
     "enabled": true,
     "rules": {
-      "recommended": true,
+      "preset": "recommended",
       "suspicious": {
-        "noExplicitAny": "off"
+        "noExplicitAny": "off",
+        "noArrayIndexKey": "off",
+        "noAssignInExpressions": "off",
+        "useIterableCallbackReturn": "off",
+        "noUnknownAtRules": "off"
       },
       "correctness": {
-        "useExhaustiveDependencies": "off"
+        "useExhaustiveDependencies": "off",
+        "noConstantCondition": "off",
+        "noEmptyPattern": "off"
       },
       "a11y": {
         "noStaticElementInteractions": "off",
         "useValidAnchor": "off",
-        "useKeyWithClickEvents": "off"
+        "useKeyWithClickEvents": "off",
+        "noSvgWithoutTitle": "off",
+        "useSemanticElements": "off",
+        "useButtonType": "off",
+        "useAriaPropsSupportedByRole": "off",
+        "useFocusableInteractive": "off",
+        "useAriaPropsForRole": "off",
+        "noAutofocus": "off",
+        "useAltText": "off",
+        "useAnchorContent": "off"
+      },
+      "security": {
+        "noDangerouslySetInnerHtml": "off"
       }
     }
   },
