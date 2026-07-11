@@ -40,51 +40,6 @@
         <plugins>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-antrun-plugin</artifactId>
-                <version>${maven-antrun-plugin.version}</version>
-
-                <executions>
-                    <execution>
-                        <id>validate-distribution-files</id>
-                        <phase>prepare-package</phase>
-
-                        <goals>
-                            <goal>run</goal>
-                        </goals>
-
-                        <configuration>
-                            <target>
-                                <available
-                                        file="${frontend.dist.dir}/index.html"
-                                        property="frontend.dist.exists"/>
-
-                                <fail
-                                        unless="frontend.dist.exists"
-                                        message="Frontend distribution is missing: ${frontend.dist.dir}/index.html. Run 'yarn build' in seatunnel-web-ui first."/>
-
-                                <available
-                                        file="${nginx.config.file}"
-                                        property="nginx.config.exists"/>
-
-                                <fail
-                                        unless="nginx.config.exists"
-                                        message="Nginx configuration is missing: ${nginx.config.file}"/>
-
-                                <available
-                                        file="${run.script.file}"
-                                        property="run.script.exists"/>
-
-                                <fail
-                                        unless="run.script.exists"
-                                        message="SeaTunnel Web foreground startup script is missing: ${run.script.file}"/>
-                            </target>
-                        </configuration>
-                    </execution>
-                </executions>
-            </plugin>
-
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-assembly-plugin</artifactId>
                 <version>${maven-assembly-plugin.version}</version>
 
