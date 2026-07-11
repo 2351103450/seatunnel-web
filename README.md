@@ -153,27 +153,8 @@ The following environment is recommended for the current version:
 
 SeaTunnel Web uses a front-end and back-end separated architecture.
 
-```text
-Browser
-   │
-   ▼
-SeaTunnel Web UI
-React + Umi Max + Ant Design + Tailwind CSS
-   │
-   ▼
-SeaTunnel Web API
-Spring Boot + MyBatis-Plus + Quartz
-   │
-   ├── Data Source Management
-   ├── Job Definition Management
-   ├── Job Scheduling
-   ├── Configuration Generation
-   ├── Runtime Logs
-   └── Metrics Monitoring
-   │
-   ▼
-Apache SeaTunnel Zeta Engine
-```
+<img width="1448" height="1086" alt="31db05202fb68511127f1f6dcf367466" src="https://github.com/user-attachments/assets/187f2558-3668-4cc0-9ba8-9eb8807c3b02" />
+
 
 ## Quick Start
 
