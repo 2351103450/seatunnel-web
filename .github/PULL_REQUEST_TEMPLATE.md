@@ -15,9 +15,8 @@
 <!-- List the commands you ran and the results. -->
 
 - [ ] `./mvnw -T 1C clean verify`
-- [ ] `cd seatunnel-web-ui && npm run lint`
-- [ ] `cd seatunnel-web-ui && npm test`
-- [ ] `cd seatunnel-web-ui && npm run build`
+- [ ] `cd seatunnel-web-ui && yarn`
+- [ ] `cd seatunnel-web-ui && yarn build`
 
 ## Checklist
 
