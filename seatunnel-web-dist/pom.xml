@@ -1,7 +1,10 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project xmlns="http://maven.apache.org/POM/4.0.0"
          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+         xsi:schemaLocation="
+             http://maven.apache.org/POM/4.0.0
+             https://maven.apache.org/xsd/maven-4.0.0.xsd">
+
     <modelVersion>4.0.0</modelVersion>
 
     <parent>
@@ -10,9 +13,18 @@
         <version>1.0.0</version>
     </parent>
 
+
+
     <artifactId>seatunnel-web-dist</artifactId>
     <packaging>pom</packaging>
     <name>SeaTunnel Web Distribution</name>
+
+    <properties>
+        <frontend.dist.dir>${project.basedir}/../seatunnel-web-ui/dist</frontend.dist.dir>
+        <nginx.config.file>${project.basedir}/src/main/conf/nginx/default.conf</nginx.config.file>
+        <run.script.file>${project.basedir}/src/main/bin/run-seatunnel-web.sh</run.script.file>
+        <maven-antrun-plugin.version>3.1.0</maven-antrun-plugin.version>
+    </properties>
 
     <dependencies>
         <dependency>
@@ -24,22 +36,73 @@
 
     <build>
         <finalName>seatunnel-web-${project.version}</finalName>
+
         <plugins>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-antrun-plugin</artifactId>
+                <version>${maven-antrun-plugin.version}</version>
+
+                <executions>
+                    <execution>
+                        <id>validate-distribution-files</id>
+                        <phase>prepare-package</phase>
+
+                        <goals>
+                            <goal>run</goal>
+                        </goals>
+
+                        <configuration>
+                            <target>
+                                <available
+                                        file="${frontend.dist.dir}/index.html"
+                                        property="frontend.dist.exists"/>
+
+                                <fail
+                                        unless="frontend.dist.exists"
+                                        message="Frontend distribution is missing: ${frontend.dist.dir}/index.html. Run 'yarn build' in seatunnel-web-ui first."/>
+
+                                <available
+                                        file="${nginx.config.file}"
+                                        property="nginx.config.exists"/>
+
+                                <fail
+                                        unless="nginx.config.exists"
+                                        message="Nginx configuration is missing: ${nginx.config.file}"/>
+
+                                <available
+                                        file="${run.script.file}"
+                                        property="run.script.exists"/>
+
+                                <fail
+                                        unless="run.script.exists"
+                                        message="SeaTunnel Web foreground startup script is missing: ${run.script.file}"/>
+                            </target>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-assembly-plugin</artifactId>
                 <version>${maven-assembly-plugin.version}</version>
+
                 <configuration>
                     <descriptors>
                         <descriptor>src/main/assembly/assembly.xml</descriptor>
                     </descriptors>
+
                     <appendAssemblyId>false</appendAssemblyId>
+
                     <tarLongFileMode>posix</tarLongFileMode>
                 </configuration>
+
                 <executions>
                     <execution>
                         <id>make-dist</id>
                         <phase>package</phase>
+
                         <goals>
                             <goal>single</goal>
                         </goals>
