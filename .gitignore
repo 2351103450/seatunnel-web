@@ -55,4 +55,3 @@ spark-warehouse
 /seatunnel-web-it/profile/*
 /deploy/docker/dist/
 /node_modules/.yarn-integrity
-/yarn.lock
