@@ -98,18 +98,50 @@ const sourceRules: NodeCheckRule[] = [
 
 const transformRules: NodeCheckRule[] = [
   (node) => {
-    console.log(node)
     const config = getConfig(node);
+
     if (!config.pluginInput) {
-      return buildWarning(node, "pluginInput", "缺少上游输入配置");
+      return buildWarning(
+        node,
+        "pluginInput",
+        "缺少上游输入配置"
+      );
     }
+
     return null;
   },
+
   (node) => {
     const config = getConfig(node);
+
     if (!config.pluginOutput) {
-      return buildWarning(node, "pluginOutput", "缺少下游输出配置");
+      return buildWarning(
+        node,
+        "pluginOutput",
+        "缺少下游输出配置"
+      );
     }
+
+    return null;
+  },
+
+  (node) => {
+    const componentType =
+      node?.data?.componentType;
+
+    const config = getConfig(node);
+
+    if (
+      componentType === "SQL" &&
+      !String(config.sql || "").trim()
+    ) {
+      return buildWarning(
+        node,
+        "sql",
+        "SQL 转换脚本不能为空"
+      );
+    }
+
     return null;
   },
 ];

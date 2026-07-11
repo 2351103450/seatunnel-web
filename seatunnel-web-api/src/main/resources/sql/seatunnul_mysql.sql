@@ -4,9 +4,6 @@ DATABASE IF NOT EXISTS seatunnel_web;
 use
 seatunnel_web;
 
--- =========================================
--- 连接器参数元数据表
--- =========================================
 CREATE TABLE `t_seatunnel_web_connector_param_meta`
 (
     `id`             bigint       NOT NULL AUTO_INCREMENT COMMENT '主键ID',
@@ -30,9 +27,6 @@ CREATE TABLE `t_seatunnel_web_connector_param_meta`
     KEY              `idx_param_name` (`param_name`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='连接器参数元数据表';
 
--- =========================================
--- SeaTunnel Client 表
--- =========================================
 CREATE TABLE `t_seatunnel_web_client`
 (
     `id`             bigint       NOT NULL AUTO_INCREMENT COMMENT '主键ID',
@@ -62,9 +56,6 @@ ADD COLUMN protocol varchar(16) DEFAULT 'http' COMMENT '协议：http / https',
 ADD COLUMN active_master_node_id bigint DEFAULT NULL COMMENT '当前可用 Master 节点 ID',
 ADD COLUMN last_error text COMMENT '最近一次连接失败原因';
 
--- =========================================
--- 数据源表
--- =========================================
 CREATE TABLE `t_seatunnel_web_datasource`
 (
     `id`                bigint NOT NULL COMMENT '主键',
@@ -80,9 +71,6 @@ CREATE TABLE `t_seatunnel_web_datasource`
     PRIMARY KEY (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='数据集成-数据源表';
 
--- =========================================
--- 数据源插件配置表
--- =========================================
 CREATE TABLE `t_seatunnel_web_datasource_plugin_config`
 (
     `id`            varchar(32) NOT NULL COMMENT '主键',
@@ -93,9 +81,6 @@ CREATE TABLE `t_seatunnel_web_datasource_plugin_config`
     PRIMARY KEY (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='数据源插件动态配置表';
 
--- =========================================
--- 任务定义主表
--- =========================================
 CREATE TABLE `t_seatunnel_web_job_definition`
 (
     `id`                   bigint       NOT NULL COMMENT '主键ID',
@@ -123,9 +108,6 @@ CREATE TABLE `t_seatunnel_web_job_definition`
     KEY                    `idx_sink_datasource_id` (`sink_datasource_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='任务定义主表';
 
--- =========================================
--- 任务定义内容表
--- =========================================
 CREATE TABLE `t_seatunnel_web_job_definition_content`
 (
     `id`                     bigint      NOT NULL AUTO_INCREMENT COMMENT '主键',
@@ -141,10 +123,6 @@ CREATE TABLE `t_seatunnel_web_job_definition_content`
     KEY                      `idx_job_definition_id` (`job_definition_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='任务定义内容版本表';
 
-
--- =========================================
--- 任务运行实例表
--- =========================================
 CREATE TABLE `t_seatunnel_web_job_instance`
 (
     `id`                bigint      NOT NULL COMMENT '主键ID',
@@ -173,9 +151,6 @@ CREATE TABLE `t_seatunnel_web_job_instance`
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='任务运行实例表';
 
 
--- =========================================
--- 任务运行汇总指标表
--- =========================================
 CREATE TABLE `t_seatunnel_web_job_metrics`
 (
     `id`                      bigint NOT NULL COMMENT '主键ID',
@@ -204,10 +179,6 @@ CREATE TABLE `t_seatunnel_web_job_metrics`
     KEY                       `idx_create_time` (`create_time`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='任务运行汇总指标表';
 
-
--- =========================================
--- 任务调度表
--- =========================================
 CREATE TABLE `t_seatunnel_web_job_schedule`
 (
     `id`                 bigint      NOT NULL COMMENT '主键ID',
@@ -225,10 +196,6 @@ CREATE TABLE `t_seatunnel_web_job_schedule`
     KEY                  `idx_next_schedule_time` (`next_schedule_time`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='任务调度表';
 
-
--- =========================================
--- 任务表级运行指标表
--- =========================================
 CREATE TABLE `t_seatunnel_web_job_table_metrics`
 (
     `id`                bigint NOT NULL COMMENT '主键ID',
@@ -258,10 +225,6 @@ CREATE TABLE `t_seatunnel_web_job_table_metrics`
     KEY                 `idx_create_time` (`create_time`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='任务表级运行指标表';
 
-
--- =========================================
--- 用户会话表
--- =========================================
 CREATE TABLE `t_seatunnel_web_session`
 (
     `id`              varchar(64) NOT NULL COMMENT '会话ID',
@@ -271,10 +234,6 @@ CREATE TABLE `t_seatunnel_web_session`
     PRIMARY KEY (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='用户会话表';
 
-
--- =========================================
--- 用户表
--- =========================================
 CREATE TABLE `t_seatunnel_web_user`
 (
     `id`            int NOT NULL COMMENT '用户ID',
@@ -289,10 +248,6 @@ CREATE TABLE `t_seatunnel_web_user`
     PRIMARY KEY (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='用户表';
 
-
--- =========================================
--- 时间变量表
--- =========================================
 CREATE TABLE `t_seatunnel_web_time_variable`
 (
     `id`              bigint       NOT NULL COMMENT '主键ID',
@@ -313,9 +268,6 @@ CREATE TABLE `t_seatunnel_web_time_variable`
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='SeaTunnel时间变量表';
 
 
--- =========================================
--- 实时任务定义表
--- =========================================
 CREATE TABLE `t_seatunnel_web_streaming_job_definition`
 (
     `id`                   bigint NOT NULL COMMENT '主键ID',
@@ -344,9 +296,6 @@ CREATE TABLE `t_seatunnel_web_streaming_job_definition`
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='实时任务定义表';
 
 
--- =========================================
--- 实时任务定义内容表
--- =========================================
 CREATE TABLE `t_seatunnel_web_streaming_job_definition_content`
 (
     `id`                     bigint NOT NULL COMMENT '主键ID',
@@ -366,10 +315,6 @@ CREATE TABLE `t_seatunnel_web_streaming_job_definition_content`
     KEY                      `idx_streaming_content_create_time` (`create_time`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='实时任务定义内容表';
 
-
--- =========================================
--- 实时任务当前汇总指标表
--- =========================================
 CREATE TABLE `t_seatunnel_web_streaming_job_metrics_current`
 (
     `job_instance_id`         bigint         NOT NULL COMMENT 'Web侧实例ID',
@@ -402,9 +347,6 @@ CREATE TABLE `t_seatunnel_web_streaming_job_metrics_current`
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='实时任务当前汇总指标表';
 
 
--- =========================================
--- 实时任务指标快照表
--- =========================================
 CREATE TABLE `t_seatunnel_web_streaming_job_metrics_snapshot`
 (
     `collect_time_ms`         bigint         NOT NULL COMMENT '采集时间戳，单位：毫秒',
@@ -432,10 +374,6 @@ CREATE TABLE `t_seatunnel_web_streaming_job_metrics_snapshot`
     KEY                       `idx_streaming_metrics_engine_time` (`engine_job_id`, `collect_time_ms`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='实时任务指标快照表';
 
-
--- =========================================
--- 实时任务当前表级指标表
--- =========================================
 CREATE TABLE `t_seatunnel_web_streaming_job_table_metrics_current`
 (
     `job_instance_id`      bigint         NOT NULL COMMENT 'Web侧实例ID',
@@ -468,10 +406,6 @@ CREATE TABLE `t_seatunnel_web_streaming_job_table_metrics_current`
     KEY                    `idx_streaming_table_current_update_time` (`update_time`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='实时任务当前表级指标表';
 
-
--- =========================================
--- 实时任务运行实例表
--- =========================================
 CREATE TABLE `t_seatunnel_web_streaming_job_instance`
 (
     `id`                bigint      NOT NULL COMMENT '主键ID',
@@ -502,9 +436,6 @@ CREATE TABLE `t_seatunnel_web_streaming_job_instance`
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='实时任务运行实例表';
 
 
--- =========================================
--- 初始化时间变量数据
--- =========================================
 INSERT INTO `t_seatunnel_web_time_variable`
 (`id`, `param_name`, `param_desc`, `variable_source`, `value_type`, `time_format`, `default_value`, `expression`,
  `example_value`, `enabled`, `remark`)
@@ -520,17 +451,11 @@ VALUES (10001, 'now', '当前时间', 'SYSTEM', 'DYNAMIC', 'yyyy-MM-dd HH:mm:ss'
         'schedule_time@day_start', '2026-05-02 00:00:00', 1, '系统内置变量');
 
 
--- =========================================
--- 初始化管理员用户
--- =========================================
 INSERT INTO `t_seatunnel_web_user`
 (`id`, `user_name`, `user_password`, `user_type`, `email`, `phone`, `create_time`, `update_time`, `state`)
 VALUES (1, 'admin', 'e10adc3949ba59abbe56e057f20f883e', 0, '295227940@qq.com', '15002344940', NULL, NULL, 1);
 
 
--- =========================================
--- 初始化连接器参数元数据
--- =========================================
 INSERT INTO `t_seatunnel_web_connector_param_meta`
 (`id`, `type`, `connector_name`, `connector_type`, `param_name`, `param_desc`, `param_type`, `required_flag`,
  `default_value`, `example_value`, `param_context`, `remark`, `create_time`, `update_time`, `deleted`)
@@ -553,9 +478,7 @@ VALUES (1, 'connector', 'Jdbc', 'source', 'fetch.size', '控制单次从数据�
   ]
 }', '用于AI参数推荐', '2026-04-09 20:48:01', '2026-04-10 10:23:36', 0);
 
--- ----------------------------
--- Table structure for qrtz_blob_triggers
--- ----------------------------
+
 DROP TABLE IF EXISTS `QRTZ_BLOB_TRIGGERS`;
 CREATE TABLE `QRTZ_BLOB_TRIGGERS`
 (
@@ -566,9 +489,7 @@ CREATE TABLE `QRTZ_BLOB_TRIGGERS`
     PRIMARY KEY (`sched_name`, `trigger_name`, `trigger_group`) USING BTREE
 ) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_general_ci ROW_FORMAT = Dynamic;
 
--- ----------------------------
--- Table structure for qrtz_calendars
--- ----------------------------
+
 DROP TABLE IF EXISTS `QRTZ_CALENDARS`;
 CREATE TABLE `QRTZ_CALENDARS`
 (
@@ -578,9 +499,7 @@ CREATE TABLE `QRTZ_CALENDARS`
     PRIMARY KEY (`sched_name`, `calendar_name`) USING BTREE
 ) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_general_ci ROW_FORMAT = Dynamic;
 
--- ----------------------------
--- Table structure for qrtz_cron_triggers
--- ----------------------------
+
 DROP TABLE IF EXISTS `QRTZ_CRON_TRIGGERS`;
 CREATE TABLE `QRTZ_CRON_TRIGGERS`
 (
@@ -592,9 +511,7 @@ CREATE TABLE `QRTZ_CRON_TRIGGERS`
     PRIMARY KEY (`sched_name`, `trigger_name`, `trigger_group`) USING BTREE
 ) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_general_ci ROW_FORMAT = Dynamic;
 
--- ----------------------------
--- Table structure for qrtz_fired_triggers
--- ----------------------------
+
 DROP TABLE IF EXISTS `QRTZ_FIRED_TRIGGERS`;
 CREATE TABLE `QRTZ_FIRED_TRIGGERS`
 (
@@ -614,9 +531,6 @@ CREATE TABLE `QRTZ_FIRED_TRIGGERS`
     PRIMARY KEY (`sched_name`, `entry_id`) USING BTREE
 ) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_general_ci ROW_FORMAT = Dynamic;
 
--- ----------------------------
--- Table structure for qrtz_job_details
--- ----------------------------
 DROP TABLE IF EXISTS `QRTZ_JOB_DETAILS`;
 CREATE TABLE `QRTZ_JOB_DETAILS`
 (
@@ -633,9 +547,7 @@ CREATE TABLE `QRTZ_JOB_DETAILS`
     PRIMARY KEY (`sched_name`, `job_name`, `job_group`) USING BTREE
 ) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_general_ci ROW_FORMAT = Dynamic;
 
--- ----------------------------
--- Table structure for qrtz_locks
--- ----------------------------
+
 DROP TABLE IF EXISTS `QRTZ_LOCKS`;
 CREATE TABLE `QRTZ_LOCKS`
 (
@@ -644,9 +556,7 @@ CREATE TABLE `QRTZ_LOCKS`
     PRIMARY KEY (`sched_name`, `lock_name`) USING BTREE
 ) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_general_ci ROW_FORMAT = Dynamic;
 
--- ----------------------------
--- Table structure for qrtz_paused_trigger_grps
--- ----------------------------
+
 DROP TABLE IF EXISTS `QRTZ_PAUSED_TRIGGER_GRPS`;
 CREATE TABLE `QRTZ_PAUSED_TRIGGER_GRPS`
 (
@@ -655,9 +565,6 @@ CREATE TABLE `QRTZ_PAUSED_TRIGGER_GRPS`
     PRIMARY KEY (`sched_name`, `trigger_group`) USING BTREE
 ) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_general_ci ROW_FORMAT = Dynamic;
 
--- ----------------------------
--- Table structure for qrtz_scheduler_state
--- ----------------------------
 DROP TABLE IF EXISTS `QRTZ_SCHEDULER_STATE`;
 CREATE TABLE `QRTZ_SCHEDULER_STATE`
 (
@@ -668,9 +575,6 @@ CREATE TABLE `QRTZ_SCHEDULER_STATE`
     PRIMARY KEY (`sched_name`, `instance_name`) USING BTREE
 ) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_general_ci ROW_FORMAT = Dynamic;
 
--- ----------------------------
--- Table structure for qrtz_simple_triggers
--- ----------------------------
 DROP TABLE IF EXISTS `QRTZ_SIMPLE_TRIGGERS`;
 CREATE TABLE `QRTZ_SIMPLE_TRIGGERS`
 (
@@ -683,9 +587,7 @@ CREATE TABLE `QRTZ_SIMPLE_TRIGGERS`
     PRIMARY KEY (`sched_name`, `trigger_name`, `trigger_group`) USING BTREE
 ) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_general_ci ROW_FORMAT = Dynamic;
 
--- ----------------------------
--- Table structure for qrtz_simprop_triggers
--- ----------------------------
+
 DROP TABLE IF EXISTS `QRTZ_SIMPROP_TRIGGERS`;
 CREATE TABLE `QRTZ_SIMPROP_TRIGGERS`
 (
@@ -706,9 +608,7 @@ CREATE TABLE `QRTZ_SIMPROP_TRIGGERS`
     PRIMARY KEY (`sched_name`, `trigger_name`, `trigger_group`) USING BTREE
 ) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_general_ci ROW_FORMAT = Dynamic;
 
--- ----------------------------
--- Table structure for qrtz_triggers
--- ----------------------------
+
 DROP TABLE IF EXISTS `QRTZ_TRIGGERS`;
 CREATE TABLE `QRTZ_TRIGGERS`
 (
@@ -732,9 +632,6 @@ CREATE TABLE `QRTZ_TRIGGERS`
 ) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_general_ci ROW_FORMAT = Dynamic;
 
 
--- ----------------------------
--- Table structure for t_seatunnel_web_cdc_server_id_pool
--- ----------------------------
 DROP TABLE IF EXISTS `t_seatunnel_web_cdc_server_id_pool`;
 CREATE TABLE `t_seatunnel_web_cdc_server_id_pool`
 (
@@ -751,9 +648,7 @@ CREATE TABLE `t_seatunnel_web_cdc_server_id_pool`
     KEY             `idx_cdc_server_id_pool_datasource` (`datasource_id`) USING BTREE
 ) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_general_ci COMMENT = 'MySQL CDC server-id allocation pool' ROW_FORMAT = Dynamic;
 
--- ----------------------------
--- Table structure for t_seatunnel_web_cdc_server_id_allocation
--- ----------------------------
+
 DROP TABLE IF EXISTS `t_seatunnel_web_cdc_server_id_allocation`;
 CREATE TABLE `t_seatunnel_web_cdc_server_id_allocation`
 (
@@ -797,7 +692,6 @@ CREATE TABLE t_seatunnel_web_client_node
 ) COMMENT='SeaTunnel Client 节点表';
 
 
---
 ALTER TABLE `t_seatunnel_web_client_node`
     ADD COLUMN `hostname` varchar(255) NULL COMMENT '节点名称' AFTER `host`;
 

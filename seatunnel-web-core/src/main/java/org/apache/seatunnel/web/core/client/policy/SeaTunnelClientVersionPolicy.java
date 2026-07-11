@@ -5,6 +5,7 @@ import org.apache.seatunnel.web.core.exceptions.ServiceException;
 import org.apache.seatunnel.web.spi.enums.Status;
 import org.springframework.stereotype.Component;
 
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
@@ -25,7 +26,10 @@ public class SeaTunnelClientVersionPolicy {
      * here after compatibility verification.</p>
      */
     private final Set<String> supportedVersions =
-            new HashSet<>(Collections.singletonList("2.3.13"));
+            new HashSet<>(Arrays.asList(
+//                    "2.3.12",
+                    "2.3.13"
+            ));
 
     /**
      * Checks whether the given SeaTunnel client version is supported.
