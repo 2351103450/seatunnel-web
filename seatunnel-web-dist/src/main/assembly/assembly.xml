@@ -61,7 +61,7 @@
             </includes>
         </fileSet>
         <fileSet>
-            <directory>src/main/dbc-drivers</directory>
+            <directory>src/main/jdbc-drivers</directory>
             <outputDirectory>jdbc-drivers</outputDirectory>
             <includes>
                 <include>**/*</include>
