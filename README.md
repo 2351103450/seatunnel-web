@@ -135,15 +135,17 @@ SeaTunnel Web is designed for teams that need:
 
 ## Compatibility
 
-The following environment is recommended for the current version:
+The following environment is supported or recommended for the current version:
 
 | Component        | Supported or Recommended Version |
 | ---------------- | -------------------------------- |
 | Apache SeaTunnel | 2.3.13                           |
-| Java             | JDK 21                           |
-| Node.js          | 20 or later                      |
-| npm              | Compatible with Node.js 20+      |
+| Java             | JDK/JRE 21                       |
+| Node.js          | 20 or later, source builds only  |
+| Yarn             | Yarn Classic 1.x                 |
 | MySQL            | MySQL 8.0 recommended            |
+| Docker           | Docker Engine or Docker Desktop  |
+| Docker Compose   | Compose v2                       |
 | Operating System | Linux recommended                |
 | Browser          | Latest Chrome or Edge            |
 
@@ -153,84 +155,178 @@ The following environment is recommended for the current version:
 
 SeaTunnel Web uses a front-end and back-end separated architecture.
 
+For containerized deployment, Nginx serves the front-end assets and proxies API and WebSocket traffic to the Spring Boot service. The Spring Boot service connects to the SeaTunnel Web metadata database and communicates with the configured Apache SeaTunnel engine.
+
 <img width="1448" height="1086" alt="31db05202fb68511127f1f6dcf367466" src="https://github.com/user-attachments/assets/187f2558-3668-4cc0-9ba8-9eb8807c3b02" />
 
 
 ## Quick Start
 
-For complete installation and deployment instructions, please refer to the official project documentation:
+Docker Compose is the recommended way to run SeaTunnel Web locally.
 
-**Documentation:**
+For complete installation and deployment instructions, please refer to the project documentation:
+
+**Documentation:**  
 https://doc.seatunnel-web.com/
 
-### Prerequisites
+### Option A: Docker Compose with MySQL
 
-Before starting SeaTunnel Web, prepare the following components:
+This mode starts the following services together:
 
-1. Apache SeaTunnel 2.3.13
-2. JDK 21
-3. MySQL 8.0
-4. Node.js 20 or later, only required when building the front end from source
-5. Maven, or use the Maven Wrapper included in the repository
+* MySQL 8.0
+* SeaTunnel Web API
+* Nginx front end
 
-### 1. Clone the Repository
+Clone the repository and create the environment file:
 
 ```bash
 git clone https://github.com/weifuwan/seatunnel-web.git
 cd seatunnel-web
+cp .env.example .env
 ```
 
-### 2. Initialize the Database
+Build and start the services:
 
-Create the `seatunnel_web` database and execute the MySQL initialization script located in:
+```bash
+docker compose up -d --build
+```
+
+Open SeaTunnel Web:
+
+```text
+http://localhost:9527
+```
+
+View the service status and logs:
+
+```bash
+docker compose ps
+docker compose logs -f seatunnel-web-api
+```
+
+Stop the services:
+
+```bash
+docker compose down
+```
+
+To recreate the local MySQL database and run the initialization scripts again:
+
+```bash
+docker compose down -v
+docker compose up -d --build
+```
+
+> `docker compose down -v` permanently removes the Compose-managed MySQL data volume.
+
+### Option B: Docker Compose with an Existing MySQL
+
+Use this mode when MySQL is already installed on the host or deployed on another server.
+
+Create the external database and execute the MySQL initialization SQL before starting SeaTunnel Web. The SQL files are included in the distribution package under `sql/` and are also available in the source repository under:
 
 ```text
 seatunnel-web-api/src/main/resources/sql/
 ```
 
-Before executing the script, review the SQL file and confirm that the database version is compatible.
+Create the environment file:
 
-### 3. Configure the Database
-
-Update the back-end configuration:
-
-```text
-seatunnel-web-api/src/main/resources/application.yml
+```bash
+cp .env.without-mysql.example .env.without-mysql
 ```
 
-Example:
+Configure the existing database:
 
-```yaml
-spring:
-  datasource:
-    url: jdbc:mysql://127.0.0.1:3306/seatunnel_web?useUnicode=true&characterEncoding=utf8&useSSL=false&serverTimezone=GMT%2B8&allowPublicKeyRetrieval=true
-    username: your_username
-    password: your_password
+```env
+MYSQL_HOST=host.docker.internal
+MYSQL_PORT=3306
+MYSQL_DATABASE=seatunnel_web
+MYSQL_USER=seatunnel
+MYSQL_PASSWORD=change_me
 ```
 
-Do not use the example password in a production environment.
+On Docker Desktop for Windows or macOS, use:
 
-### 4. Build the Project
+```env
+MYSQL_HOST=host.docker.internal
+```
 
-Build the complete project from the repository root:
+For a remote MySQL server, set `MYSQL_HOST` to its hostname or IP address.
+
+The MySQL account must allow connections from the Docker host. A dedicated account is recommended:
+
+```sql
+CREATE USER IF NOT EXISTS 'seatunnel'@'%' IDENTIFIED BY 'change_me';
+GRANT ALL PRIVILEGES ON seatunnel_web.* TO 'seatunnel'@'%';
+FLUSH PRIVILEGES;
+```
+
+Start SeaTunnel Web without starting another MySQL container:
+
+```bash
+docker compose   --env-file .env.without-mysql   -f compose.without-mysql.yaml   up -d --build
+```
+
+View logs:
+
+```bash
+docker compose   --env-file .env.without-mysql   -f compose.without-mysql.yaml   logs -f seatunnel-web-api
+```
+
+### Option C: Build the Distribution Package from Source
+
+Requirements:
+
+* JDK 21
+* Node.js 20 or later
+* Yarn Classic
+* MySQL 8.0
+* Maven, or the Maven Wrapper included in the repository
+
+Build the front-end assets first:
+
+```bash
+cd seatunnel-web-ui
+yarn install --frozen-lockfile
+yarn build
+cd ..
+```
+
+Build the complete distribution package from the repository root:
 
 ```bash
 ./mvnw clean package -DskipTests
 ```
 
-After a successful build, the distribution package will be generated under:
+On Windows:
+
+```cmd
+mvnw.cmd clean package -DskipTests
+```
+
+The generated package is located under:
 
 ```text
 seatunnel-web-dist/target/
 ```
 
-The package contains:
+The distribution package contains:
 
 ```text
 seatunnel-web-<version>/
 ├── bin/
+│   ├── run-seatunnel-web.sh
+│   ├── start-seatunnel-web.sh
+│   ├── status-seatunnel-web.sh
+│   └── stop-seatunnel-web.sh
 ├── conf/
+│   ├── application.yml
+│   ├── logback-spring.xml
+│   └── nginx/
+│       └── default.conf
+├── jdbc-drivers/
 ├── libs/
+│   └── seatunnel-web-api.jar
 ├── sql/
 ├── web/
 ├── LICENSE
@@ -238,45 +334,23 @@ seatunnel-web-<version>/
 └── README.md
 ```
 
-### 5. Start SeaTunnel Web
+The same distribution package is used to produce both runtime images:
 
-Extract the distribution package:
+* `seatunnel-web-api`: Java 21 back-end runtime
+* `seatunnel-web`: Nginx front end and reverse proxy
 
-```bash
-tar -zxvf seatunnel-web-<version>.tar.gz
-cd seatunnel-web-<version>
-```
+For a manual Linux deployment, extract the package, review `conf/application.yml`, start the back end with the scripts under `bin/`, and configure Nginx with `conf/nginx/default.conf`.
 
-Review the configuration under:
+### Connect to Apache SeaTunnel
 
-```text
-conf/application.yml
-```
-
-Then start the service using the script under the `bin` directory.
-
-After the service starts successfully, open:
-
-```text
-http://localhost:9527
-```
-
-The actual access address may vary depending on your reverse proxy and deployment configuration.
-
-### 6. Connect to SeaTunnel
-
-After logging in:
+After SeaTunnel Web starts:
 
 1. Open the SeaTunnel client management page.
-2. Add a SeaTunnel 2.3.13 engine address.
+2. Add an Apache SeaTunnel 2.3.13 engine address.
 3. Test the connection.
 4. Create a data source.
 5. Create and publish a synchronization job.
 6. Submit the job and inspect runtime logs and metrics.
-
-For detailed steps, see:
-
-https://doc.seatunnel-web.com/
 
 ## Development
 
@@ -342,6 +416,7 @@ The documentation covers topics such as:
 * Task scheduling
 * Runtime logs
 * Metrics monitoring
+* Docker and Docker Compose deployment
 * Troubleshooting
 
 ## Live Demo
@@ -366,7 +441,7 @@ Planned improvements include:
 * More complete operational monitoring
 * Improved permission management
 * Better internationalization
-* Docker and containerized deployment support
+* Improved container image release, upgrade, and migration tooling
 
 Roadmap priorities may change based on community feedback and actual usage scenarios.
 
@@ -377,7 +452,7 @@ Before using the current version, please note:
 * The currently validated SeaTunnel version is 2.3.13.
 * MySQL 8.0 is recommended for the SeaTunnel Web metadata database.
 * Some advanced SeaTunnel connector parameters may still require script-mode configuration.
-* Production deployment should use a reverse proxy and secure database credentials.
+* Production deployment should use secure database credentials, persistent volumes, and controlled network access.
 * The public demo environment must not be used with sensitive data.
 * Back up the SeaTunnel Web database before upgrading to a newer version.
 
