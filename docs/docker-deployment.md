@@ -11,7 +11,7 @@ This document describes how to build and run SeaTunnel Web with Docker before a 
 ## Quick start
 
 ```bash
-cp .env.example .env
+cp .env.without-mysql.example .env.without-mysql
 docker compose up -d --build
 ```
 
