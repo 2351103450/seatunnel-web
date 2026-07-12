@@ -21,12 +21,12 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 
 - None.
 
-## [1.0.0] - TBD
+## [1.0.0] - 2026-07-12
 
 ### Added
 
 - SeaTunnel Web backend modules for API, core services, datasource connections, DAO plugins, SPI, engine client, and distribution packaging.
 - SeaTunnel Web UI for visual pipeline creation, datasource management, task execution, monitoring, and logs.
 
-[Unreleased]: https://github.com/apache/seatunnel-web/compare/v1.0.0...HEAD
-[1.0.0]: https://github.com/apache/seatunnel-web/releases/tag/v1.0.0
+[Unreleased]: https://github.com/weifuwan/seatunnel-web/compare/v1.0.0...HEAD
+[1.0.0]: https://github.com/weifuwan/seatunnel-web/releases/tag/v1.0.0
