@@ -13,11 +13,14 @@ on:
 
 permissions:
   contents: write
+  packages: write
 
 jobs:
   build:
     name: Build release artifacts
     runs-on: ubuntu-latest
+    env:
+      RELEASE_VERSION: ${{ github.event.inputs.version || github.ref_name }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -30,20 +33,43 @@ jobs:
       - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '20'
+          node-version: '22.22.1'
+          cache: yarn
+          cache-dependency-path: seatunnel-web-ui/yarn.lock
+      - name: Enable Corepack and set Yarn
+        run: |
+          corepack enable
+          corepack prepare yarn@1.22.22 --activate
       - name: Install frontend dependencies
         working-directory: seatunnel-web-ui
-        run: npm install
+        run: yarn install --frozen-lockfile
       - name: Build frontend
         working-directory: seatunnel-web-ui
-        run: npm run build
-      - name: Build backend distribution
-        run: ./mvnw -T 1C clean package -DskipTests
+        run: yarn build
+      - name: Test and build backend distribution
+        run: ./mvnw --batch-mode --no-transfer-progress -T 1C clean verify
+      - name: Package release payload
+        run: |
+          mkdir -p release
+          cp seatunnel-web-dist/target/seatunnel-web-*.tar.gz release/
+          (cd seatunnel-web-ui && zip -qr ../release/seatunnel-web-ui-${RELEASE_VERSION}.zip dist)
+          (cd release && sha256sum * > checksums.sha256)
+      - name: Generate SBOM
+        uses: anchore/sbom-action@v0
+        with:
+          path: .
+          format: cyclonedx-json
+          output-file: release/sbom.cdx.json
       - name: Upload build artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: seatunnel-web-release
-          path: |
-            seatunnel-web-dist/target/*
-            seatunnel-web-ui/dist/**
-          if-no-files-found: warn
+          name: seatunnel-web-release-${{ env.RELEASE_VERSION }}
+          path: release/*
+          if-no-files-found: error
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ env.RELEASE_VERSION }}
+          name: SeaTunnel Web ${{ env.RELEASE_VERSION }}
+          generate_release_notes: true
+          files: release/*

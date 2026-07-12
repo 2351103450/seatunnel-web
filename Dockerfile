@@ -12,9 +12,15 @@ COPY seatunnel-web-dist/target/seatunnel-web-*.tar.gz \
 # =========================
 FROM eclipse-temurin:21-jre-jammy AS backend-runtime
 
+ARG VERSION=dev
+ARG VCS_REF=unknown
+ARG BUILD_DATE=unknown
 LABEL org.opencontainers.image.title="SeaTunnel Web API" \
       org.opencontainers.image.description="SeaTunnel Web backend service" \
-      org.opencontainers.image.licenses="Apache-2.0"
+      org.opencontainers.image.licenses="Apache-2.0" \
+      org.opencontainers.image.version="${VERSION}" \
+      org.opencontainers.image.revision="${VCS_REF}" \
+      org.opencontainers.image.created="${BUILD_DATE}"
 
 ENV SEATUNNEL_WEB_HOME=/opt/seatunnel-web \
     JAVA_OPTS="" \
@@ -55,9 +61,15 @@ ENTRYPOINT ["/opt/seatunnel-web/bin/run-seatunnel-web.sh"]
 # =========================
 FROM nginx:latest AS frontend-runtime
 
+ARG VERSION=dev
+ARG VCS_REF=unknown
+ARG BUILD_DATE=unknown
 LABEL org.opencontainers.image.title="SeaTunnel Web" \
       org.opencontainers.image.description="SeaTunnel Web frontend and reverse proxy" \
-      org.opencontainers.image.licenses="Apache-2.0"
+      org.opencontainers.image.licenses="Apache-2.0" \
+      org.opencontainers.image.version="${VERSION}" \
+      org.opencontainers.image.revision="${VCS_REF}" \
+      org.opencontainers.image.created="${BUILD_DATE}"
 
 COPY --from=dist-artifact \
      /seatunnel-web.tar.gz \
