@@ -1,5 +1,5 @@
 server:
-  port: 9527
+  port: ${SERVER_PORT:9527}
   tomcat:
     accept-count: 1000
     max-connections: 10000
@@ -11,7 +11,7 @@ springdoc:
 
 spring:
   profiles:
-    active: mysql
+    active: ${SPRING_PROFILES_ACTIVE:mysql}
   banner:
     charset: UTF-8
   jackson:
@@ -24,13 +24,21 @@ spring:
   messages:
     basename: i18n/messages
   datasource:
-    driver-class-name: com.mysql.cj.jdbc.Driver
-    url: jdbc:mysql://127.0.0.1:3306/seatunnel_web?useUnicode=true&characterEncoding=utf8&useSSL=false&serverTimezone=GMT%2B8&allowPublicKeyRetrieval=true
-    username: root
-    password: ${SPRING_DATASOURCE_PASSWORD:change_me}
+    url: ${SPRING_DATASOURCE_URL}
+    username: ${SPRING_DATASOURCE_USERNAME}
+    password: ${SPRING_DATASOURCE_PASSWORD}
     hikari:
-      connection-test-query: select 1
       pool-name: seatunnel-web
+      connection-timeout: 15000
+      validation-timeout: 5000
+  flyway:
+    enabled: ${SPRING_FLYWAY_ENABLED:true}
+    locations: classpath:db/migration/{vendor}
+    table: t_seatunnel_web_schema_history
+    validate-on-migrate: true
+    out-of-order: false
+    clean-disabled: true
+    baseline-on-migrate: false
   application:
     name: seatunnel-web
   main:
@@ -56,7 +64,6 @@ spring:
       org.quartz.scheduler.makeSchedulerThreadDaemon: true
 
       org.quartz.jobStore.class: org.springframework.scheduling.quartz.LocalDataSourceJobStore
-      org.quartz.jobStore.driverDelegateClass: org.quartz.impl.jdbcjobstore.StdJDBCDelegate
       org.quartz.jobStore.tablePrefix: QRTZ_
       org.quartz.jobStore.isClustered: true
       org.quartz.jobStore.clusterCheckinInterval: 5000
@@ -127,3 +134,6 @@ seatunnel:
       enabled: true
       initial-delay-ms: 60000
       fixed-delay-ms: 60000
+  web:
+    database:
+      type: ${SEATUNNEL_WEB_DATABASE_TYPE:mysql}

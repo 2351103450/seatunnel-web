@@ -36,6 +36,7 @@
         <mysql-connector.version>8.0.33</mysql-connector.version>
         <h2.version>2.2.220</h2.version>
         <postgresql.version>42.4.4</postgresql.version>
+        <flyway.version>10.20.1</flyway.version>
     </properties>
 
 
@@ -215,6 +216,22 @@
                 <artifactId>janino</artifactId>
                 <version>${janino.version}</version>
             </dependency>
+            <dependency>
+                <groupId>org.flywaydb</groupId>
+                <artifactId>flyway-core</artifactId>
+                <version>${flyway.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.flywaydb</groupId>
+                <artifactId>flyway-mysql</artifactId>
+                <version>${flyway.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.flywaydb</groupId>
+                <artifactId>flyway-database-postgresql</artifactId>
+                <version>${flyway.version}</version>
+            </dependency>
+
             <dependency>
                 <groupId>org.yaml</groupId>
                 <artifactId>snakeyaml</artifactId>
