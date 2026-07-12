@@ -1,2 +1,2 @@
 org.springframework.boot.autoconfigure.EnableAutoConfiguration=\
-  org.apache.seatunnel.web.dao.plugin.h2.PostgresqlDaoPluginAutoConfiguration
+  org.apache.seatunnel.web.dao.plugin.postgresql.PostgresqlDaoPluginAutoConfiguration

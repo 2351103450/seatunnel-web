@@ -1,8 +1,10 @@
-CREATE
-DATABASE IF NOT EXISTS seatunnel_web;
+-- SeaTunnel Web MySQL Flyway initialization script.
+-- Do not add DROP TABLE, CREATE DATABASE, or USE statements to Flyway migrations.
+SET NAMES utf8mb4;
 
-use
-seatunnel_web;
+-- ============================================================
+-- 1. SeaTunnel Web business tables
+-- ============================================================
 
 CREATE TABLE `t_seatunnel_web_connector_param_meta`
 (
@@ -29,32 +31,55 @@ CREATE TABLE `t_seatunnel_web_connector_param_meta`
 
 CREATE TABLE `t_seatunnel_web_client`
 (
-    `id`             bigint       NOT NULL AUTO_INCREMENT COMMENT '主键ID',
-    `client_name`    varchar(128) NOT NULL COMMENT 'Client名称',
-    `engine_type`    varchar(32)  NOT NULL COMMENT '引擎类型',
-    `base_url`       varchar(512)          DEFAULT NULL COMMENT '基础访问地址',
-    `health_status`  int                   DEFAULT NULL COMMENT '健康状态',
-    `heartbeat_time` datetime              DEFAULT NULL COMMENT '心跳时间',
-    `client_version` varchar(128)          DEFAULT NULL COMMENT 'Client版本',
-    `client_address` varchar(255)          DEFAULT NULL COMMENT 'Client地址',
-    `client_port`    varchar(32)           DEFAULT NULL COMMENT 'Client端口',
-    `auth_enabled`   tinyint(1) DEFAULT 0 COMMENT '是否开启认证',
-    `username`       varchar(128)          DEFAULT NULL COMMENT 'Zeta Engine 用户名',
-    `password`       varchar(512)          DEFAULT NULL COMMENT 'Zeta Engine 密码',
-    `remark`         varchar(500)          DEFAULT NULL COMMENT '备注',
-    `create_time`    datetime     NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
-    `update_time`    datetime     NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+    `id`                    bigint       NOT NULL AUTO_INCREMENT COMMENT '主键ID',
+    `client_name`           varchar(128) NOT NULL COMMENT 'Client名称',
+    `engine_type`           varchar(32)  NOT NULL COMMENT '引擎类型',
+    `base_url`              varchar(512)          DEFAULT NULL COMMENT '基础访问地址',
+    `context_path`          varchar(255)          DEFAULT NULL COMMENT '上下文路径',
+    `health_status`         int                   DEFAULT NULL COMMENT '健康状态',
+    `heartbeat_time`        datetime              DEFAULT NULL COMMENT '心跳时间',
+    `client_version`        varchar(128)          DEFAULT NULL COMMENT 'Client版本',
+    `client_address`        varchar(255)          DEFAULT NULL COMMENT 'Client地址',
+    `client_port`           varchar(32)           DEFAULT NULL COMMENT 'Client端口',
+    `deploy_mode`           varchar(32)           DEFAULT 'SINGLE' COMMENT '部署模式：SINGLE / SEPARATED_CLUSTER',
+    `protocol`              varchar(16)           DEFAULT 'http' COMMENT '协议：http / https',
+    `active_master_node_id` bigint                DEFAULT NULL COMMENT '当前可用 Master 节点 ID',
+    `last_error`            text                           COMMENT '最近一次连接失败原因',
+    `auth_enabled`          tinyint(1)            DEFAULT 0 COMMENT '是否开启认证',
+    `username`              varchar(128)          DEFAULT NULL COMMENT 'Zeta Engine 用户名',
+    `password`              varchar(512)          DEFAULT NULL COMMENT 'Zeta Engine 密码',
+    `remark`                varchar(500)          DEFAULT NULL COMMENT '备注',
+    `create_time`           datetime     NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+    `update_time`           datetime     NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
     PRIMARY KEY (`id`),
-    KEY              `idx_engine_type` (`engine_type`),
-    KEY              `idx_health_status` (`health_status`),
-    KEY              `idx_heartbeat_time` (`heartbeat_time`)
+    KEY                     `idx_engine_type` (`engine_type`),
+    KEY                     `idx_health_status` (`health_status`),
+    KEY                     `idx_heartbeat_time` (`heartbeat_time`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='SeaTunnel Client 表';
 
-ALTER TABLE t_seatunnel_web_client
-    ADD COLUMN deploy_mode varchar(32) DEFAULT 'SINGLE' COMMENT '部署模式：SINGLE / SEPARATED_CLUSTER',
-ADD COLUMN protocol varchar(16) DEFAULT 'http' COMMENT '协议：http / https',
-ADD COLUMN active_master_node_id bigint DEFAULT NULL COMMENT '当前可用 Master 节点 ID',
-ADD COLUMN last_error text COMMENT '最近一次连接失败原因';
+CREATE TABLE `t_seatunnel_web_client_node`
+(
+    `id`                  bigint       NOT NULL COMMENT '主键 ID',
+    `client_id`           bigint       NOT NULL COMMENT '客户端 ID',
+    `node_role`           varchar(32)  NOT NULL COMMENT '节点角色：MASTER / WORKER',
+    `node_name`           varchar(128)          DEFAULT NULL COMMENT '节点名称',
+    `host`                varchar(255) NOT NULL COMMENT '节点地址',
+    `hostname`            varchar(255)          DEFAULT NULL COMMENT '主机名称',
+    `port`                int                   DEFAULT NULL COMMENT 'REST 端口',
+    `base_url`            varchar(512)          DEFAULT NULL COMMENT 'REST Base URL',
+    `active_master`       tinyint(1)            DEFAULT 0 COMMENT '是否当前活跃 Master',
+    `health_status`       int                   DEFAULT 0 COMMENT '健康状态：0 UNKNOWN, 1 LIVE, 2 DEAD',
+    `client_version`      varchar(64)           DEFAULT NULL COMMENT '节点版本',
+    `last_heartbeat_time` datetime              DEFAULT NULL COMMENT '最近探活时间',
+    `last_error`          text                           COMMENT '最近错误信息',
+    `create_time`         datetime     NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+    `update_time`         datetime     NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+    PRIMARY KEY (`id`),
+    UNIQUE KEY `uk_client_role_host_port` (`client_id`, `node_role`, `host`, `port`),
+    KEY `idx_client_id` (`client_id`),
+    KEY `idx_client_role` (`client_id`, `node_role`),
+    KEY `idx_health_status` (`health_status`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='SeaTunnel Client 节点表';
 
 CREATE TABLE `t_seatunnel_web_datasource`
 (
@@ -80,6 +105,82 @@ CREATE TABLE `t_seatunnel_web_datasource_plugin_config`
     `update_time`   datetime DEFAULT NULL COMMENT '更新时间',
     PRIMARY KEY (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='数据源插件动态配置表';
+
+CREATE TABLE `t_seatunnel_web_cdc_server_id_pool`
+(
+    `id`            bigint                                                  NOT NULL COMMENT 'primary key',
+    `datasource_id` bigint                                                  NOT NULL COMMENT 'datasource id for this MySQL CDC server-id pool',
+    `instance_key`  varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL COMMENT 'unique MySQL instance or cluster key',
+    `min_server_id` bigint                                                  NOT NULL DEFAULT 5400 COMMENT 'minimum allocatable server-id',
+    `max_server_id` bigint                                                  NOT NULL DEFAULT 6400 COMMENT 'maximum allocatable server-id',
+    `status`        tinyint(4) NOT NULL DEFAULT 1 COMMENT '1 enabled, 0 disabled',
+    `create_time`   datetime NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT 'create time',
+    `update_time`   datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT 'update time',
+    PRIMARY KEY (`id`) USING BTREE,
+    UNIQUE KEY `uk_cdc_server_id_pool_instance` (`instance_key`) USING BTREE,
+    KEY             `idx_cdc_server_id_pool_datasource` (`datasource_id`) USING BTREE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='MySQL CDC server-id allocation pool';
+
+CREATE TABLE `t_seatunnel_web_cdc_server_id_allocation`
+(
+    `id`                bigint                                                 NOT NULL COMMENT 'primary key',
+    `pool_id`           bigint                                                 NOT NULL COMMENT 'server-id pool id',
+    `server_id`         bigint                                                 NOT NULL COMMENT 'allocated MySQL CDC server-id',
+    `job_definition_id` bigint                                                 NOT NULL COMMENT 'job definition id',
+    `job_instance_id`   bigint NULL DEFAULT NULL COMMENT 'job instance id',
+    `source`            varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'MANUAL' COMMENT 'MANUAL or AUTO',
+    `active`            tinyint(4) NULL DEFAULT 1 COMMENT '1 currently occupied, NULL released',
+    `allocated_time`    datetime NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT 'allocated time',
+    `released_time`     datetime NULL DEFAULT NULL COMMENT 'released time',
+    `create_time`       datetime NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT 'create time',
+    `update_time`       datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT 'update time',
+    PRIMARY KEY (`id`) USING BTREE,
+    UNIQUE KEY `uk_cdc_server_id_active` (`pool_id`, `server_id`, `active`) USING BTREE,
+    KEY                 `idx_cdc_server_id_job_definition` (`job_definition_id`) USING BTREE,
+    KEY                 `idx_cdc_server_id_job_instance` (`job_instance_id`) USING BTREE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='MySQL CDC server-id allocation records';
+
+CREATE TABLE `t_seatunnel_web_user`
+(
+    `id`            int NOT NULL COMMENT '用户ID',
+    `user_name`     varchar(64) DEFAULT NULL COMMENT '用户名',
+    `user_password` varchar(128) DEFAULT NULL COMMENT '用户密码',
+    `user_type`     int         DEFAULT NULL COMMENT '用户类型',
+    `email`         varchar(64) DEFAULT NULL COMMENT '邮箱地址',
+    `phone`         varchar(11) DEFAULT NULL COMMENT '手机号',
+    `create_time`   timestamp NULL DEFAULT NULL COMMENT '创建时间',
+    `update_time`   timestamp NULL DEFAULT NULL COMMENT '更新时间',
+    `state`         tinyint     DEFAULT 1 COMMENT '状态：0禁用 1启用',
+    PRIMARY KEY (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='用户表';
+
+CREATE TABLE `t_seatunnel_web_session`
+(
+    `id`              varchar(64) NOT NULL COMMENT '会话ID',
+    `user_id`         int         DEFAULT NULL COMMENT '关联用户ID',
+    `ip`              varchar(45) DEFAULT NULL COMMENT '客户端IP地址',
+    `last_login_time` timestamp NULL DEFAULT NULL COMMENT '最后登录时间',
+    PRIMARY KEY (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='用户会话表';
+
+CREATE TABLE `t_seatunnel_web_time_variable`
+(
+    `id`              bigint       NOT NULL COMMENT '主键ID',
+    `param_name`      varchar(128) NOT NULL COMMENT '变量名称，如 biz_date、start_time、end_time',
+    `param_desc`      varchar(500)          DEFAULT NULL COMMENT '变量说明',
+    `variable_source` varchar(32)  NOT NULL DEFAULT 'CUSTOM' COMMENT '变量来源：SYSTEM / CUSTOM',
+    `value_type`      varchar(32)  NOT NULL DEFAULT 'DYNAMIC' COMMENT '取值方式：FIXED / DYNAMIC',
+    `time_format`     varchar(64)  NOT NULL DEFAULT 'yyyy-MM-dd HH:mm:ss' COMMENT '输出时间格式',
+    `default_value`   varchar(255)          DEFAULT NULL COMMENT '默认值，固定值模式下直接使用',
+    `expression`      varchar(255)          DEFAULT NULL COMMENT '动态表达式，如 schedule_time-1d@day_start',
+    `example_value`   varchar(128)          DEFAULT NULL COMMENT '示例值',
+    `enabled`         tinyint      NOT NULL DEFAULT 1 COMMENT '是否启用：1启用 0禁用',
+    `remark`          varchar(500)          DEFAULT NULL COMMENT '备注',
+    `create_time`     datetime              DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+    `update_time`     datetime              DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+    PRIMARY KEY (`id`),
+    UNIQUE KEY `uk_param_name` (`param_name`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='SeaTunnel时间变量表';
 
 CREATE TABLE `t_seatunnel_web_job_definition`
 (
@@ -150,6 +251,22 @@ CREATE TABLE `t_seatunnel_web_job_instance`
     KEY                 `idx_definition_status` (`job_definition_id`, `job_status`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='任务运行实例表';
 
+CREATE TABLE `t_seatunnel_web_job_schedule`
+(
+    `id`                 bigint      NOT NULL COMMENT '主键ID',
+    `job_definition_id`  bigint      NOT NULL COMMENT '任务定义ID',
+    `cron_expression`    varchar(64) NOT NULL COMMENT 'Cron表达式',
+    `schedule_status`    varchar(20) NOT NULL DEFAULT 'PAUSE' COMMENT '调度状态：NORMAL / PAUSE / EMPTY',
+    `schedule_config`    text COMMENT '前端完整调度配置JSON',
+    `last_schedule_time` datetime             DEFAULT NULL COMMENT '最后调度时间',
+    `next_schedule_time` datetime             DEFAULT NULL COMMENT '下次调度时间',
+    `create_time`        datetime    NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+    `update_time`        datetime    NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+    PRIMARY KEY (`id`),
+    UNIQUE KEY `uk_job_definition_id` (`job_definition_id`),
+    KEY                  `idx_schedule_status` (`schedule_status`),
+    KEY                  `idx_next_schedule_time` (`next_schedule_time`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='任务调度表';
 
 CREATE TABLE `t_seatunnel_web_job_metrics`
 (
@@ -178,23 +295,6 @@ CREATE TABLE `t_seatunnel_web_job_metrics`
     KEY                       `idx_job_definition_id` (`job_definition_id`),
     KEY                       `idx_create_time` (`create_time`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='任务运行汇总指标表';
-
-CREATE TABLE `t_seatunnel_web_job_schedule`
-(
-    `id`                 bigint      NOT NULL COMMENT '主键ID',
-    `job_definition_id`  bigint      NOT NULL COMMENT '任务定义ID',
-    `cron_expression`    varchar(64) NOT NULL COMMENT 'Cron表达式',
-    `schedule_status`    varchar(20) NOT NULL DEFAULT 'PAUSE' COMMENT '调度状态：NORMAL / PAUSE / EMPTY',
-    `schedule_config`    text COMMENT '前端完整调度配置JSON',
-    `last_schedule_time` datetime             DEFAULT NULL COMMENT '最后调度时间',
-    `next_schedule_time` datetime             DEFAULT NULL COMMENT '下次调度时间',
-    `create_time`        datetime    NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
-    `update_time`        datetime    NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
-    PRIMARY KEY (`id`),
-    UNIQUE KEY `uk_job_definition_id` (`job_definition_id`),
-    KEY                  `idx_schedule_status` (`schedule_status`),
-    KEY                  `idx_next_schedule_time` (`next_schedule_time`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='任务调度表';
 
 CREATE TABLE `t_seatunnel_web_job_table_metrics`
 (
@@ -225,49 +325,6 @@ CREATE TABLE `t_seatunnel_web_job_table_metrics`
     KEY                 `idx_create_time` (`create_time`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='任务表级运行指标表';
 
-CREATE TABLE `t_seatunnel_web_session`
-(
-    `id`              varchar(64) NOT NULL COMMENT '会话ID',
-    `user_id`         int         DEFAULT NULL COMMENT '关联用户ID',
-    `ip`              varchar(45) DEFAULT NULL COMMENT '客户端IP地址',
-    `last_login_time` timestamp NULL DEFAULT NULL COMMENT '最后登录时间',
-    PRIMARY KEY (`id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='用户会话表';
-
-CREATE TABLE `t_seatunnel_web_user`
-(
-    `id`            int NOT NULL COMMENT '用户ID',
-    `user_name`     varchar(64) DEFAULT NULL COMMENT '用户名',
-    `user_password` varchar(128) DEFAULT NULL COMMENT '用户密码',
-    `user_type`     int         DEFAULT NULL COMMENT '用户类型',
-    `email`         varchar(64) DEFAULT NULL COMMENT '邮箱地址',
-    `phone`         varchar(11) DEFAULT NULL COMMENT '手机号',
-    `create_time`   timestamp NULL DEFAULT NULL COMMENT '创建时间',
-    `update_time`   timestamp NULL DEFAULT NULL COMMENT '更新时间',
-    `state`         tinyint     DEFAULT 1 COMMENT '状态：0禁用 1启用',
-    PRIMARY KEY (`id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='用户表';
-
-CREATE TABLE `t_seatunnel_web_time_variable`
-(
-    `id`              bigint       NOT NULL COMMENT '主键ID',
-    `param_name`      varchar(128) NOT NULL COMMENT '变量名称，如 biz_date、start_time、end_time',
-    `param_desc`      varchar(500)          DEFAULT NULL COMMENT '变量说明',
-    `variable_source` varchar(32)  NOT NULL DEFAULT 'CUSTOM' COMMENT '变量来源：SYSTEM / CUSTOM',
-    `value_type`      varchar(32)  NOT NULL DEFAULT 'DYNAMIC' COMMENT '取值方式：FIXED / DYNAMIC',
-    `time_format`     varchar(64)  NOT NULL DEFAULT 'yyyy-MM-dd HH:mm:ss' COMMENT '输出时间格式',
-    `default_value`   varchar(255)          DEFAULT NULL COMMENT '默认值，固定值模式下直接使用',
-    `expression`      varchar(255)          DEFAULT NULL COMMENT '动态表达式，如 schedule_time-1d@day_start',
-    `example_value`   varchar(128)          DEFAULT NULL COMMENT '示例值',
-    `enabled`         tinyint      NOT NULL DEFAULT 1 COMMENT '是否启用：1启用 0禁用',
-    `remark`          varchar(500)          DEFAULT NULL COMMENT '备注',
-    `create_time`     datetime              DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
-    `update_time`     datetime              DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
-    PRIMARY KEY (`id`),
-    UNIQUE KEY `uk_param_name` (`param_name`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='SeaTunnel时间变量表';
-
-
 CREATE TABLE `t_seatunnel_web_streaming_job_definition`
 (
     `id`                   bigint NOT NULL COMMENT '主键ID',
@@ -295,7 +352,6 @@ CREATE TABLE `t_seatunnel_web_streaming_job_definition`
     KEY                    `idx_streaming_create_time` (`create_time`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='实时任务定义表';
 
-
 CREATE TABLE `t_seatunnel_web_streaming_job_definition_content`
 (
     `id`                     bigint NOT NULL COMMENT '主键ID',
@@ -314,6 +370,35 @@ CREATE TABLE `t_seatunnel_web_streaming_job_definition_content`
     KEY                      `idx_streaming_content_mode` (`mode`),
     KEY                      `idx_streaming_content_create_time` (`create_time`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='实时任务定义内容表';
+
+CREATE TABLE `t_seatunnel_web_streaming_job_instance`
+(
+    `id`                bigint      NOT NULL COMMENT '主键ID',
+    `job_definition_id` bigint      NOT NULL COMMENT '实时任务定义ID',
+    `client_id`         bigint               DEFAULT NULL COMMENT 'SeaTunnel Client ID',
+    `run_mode`          varchar(32) NOT NULL COMMENT '运行模式：MANUAL / SCHEDULE / RETRY',
+    `job_status`        varchar(32) NOT NULL COMMENT '实例状态',
+    `trigger_source`    varchar(64)          DEFAULT NULL COMMENT '触发来源',
+    `retry_count`       int         NOT NULL DEFAULT 0 COMMENT '重试次数',
+    `engine_job_id`     varchar(64)          DEFAULT NULL COMMENT 'SeaTunnel Engine Job ID',
+    `runtime_config`    longtext COMMENT '本次执行使用的 HOCON 配置',
+    `log_path`          varchar(512)         DEFAULT NULL COMMENT '日志路径',
+    `error_message`     text COMMENT '错误摘要',
+    `submit_time`       datetime             DEFAULT NULL COMMENT '提交时间',
+    `start_time`        datetime             DEFAULT NULL COMMENT '开始时间',
+    `end_time`          datetime             DEFAULT NULL COMMENT '结束时间',
+    `checkpoint_path`   varchar(1024)        DEFAULT NULL COMMENT 'Checkpoint 路径',
+    `savepoint_path`    varchar(1024)        DEFAULT NULL COMMENT 'Savepoint 路径',
+    `last_collect_time` datetime             DEFAULT NULL COMMENT '最后一次指标采集时间',
+    `create_time`       datetime    NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+    `update_time`       datetime    NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+    PRIMARY KEY (`id`),
+    KEY                 `idx_streaming_instance_definition_id` (`job_definition_id`),
+    KEY                 `idx_streaming_instance_status` (`job_status`),
+    KEY                 `idx_streaming_instance_engine_job_id` (`engine_job_id`),
+    KEY                 `idx_streaming_instance_create_time` (`create_time`),
+    KEY                 `idx_streaming_instance_definition_status` (`job_definition_id`, `job_status`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='实时任务运行实例表';
 
 CREATE TABLE `t_seatunnel_web_streaming_job_metrics_current`
 (
@@ -345,7 +430,6 @@ CREATE TABLE `t_seatunnel_web_streaming_job_metrics_current`
     KEY                       `idx_streaming_current_status` (`job_status`),
     KEY                       `idx_streaming_current_update_time` (`update_time`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='实时任务当前汇总指标表';
-
 
 CREATE TABLE `t_seatunnel_web_streaming_job_metrics_snapshot`
 (
@@ -406,108 +490,10 @@ CREATE TABLE `t_seatunnel_web_streaming_job_table_metrics_current`
     KEY                    `idx_streaming_table_current_update_time` (`update_time`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='实时任务当前表级指标表';
 
-CREATE TABLE `t_seatunnel_web_streaming_job_instance`
-(
-    `id`                bigint      NOT NULL COMMENT '主键ID',
-    `job_definition_id` bigint      NOT NULL COMMENT '实时任务定义ID',
-    `client_id`         bigint               DEFAULT NULL COMMENT 'SeaTunnel Client ID',
-    `run_mode`          varchar(32) NOT NULL COMMENT '运行模式：MANUAL / SCHEDULE / RETRY',
-    `job_status`        varchar(32) NOT NULL COMMENT '实例状态',
-    `trigger_source`    varchar(64)          DEFAULT NULL COMMENT '触发来源',
-    `retry_count`       int         NOT NULL DEFAULT 0 COMMENT '重试次数',
-    `engine_job_id`     varchar(64)          DEFAULT NULL COMMENT 'SeaTunnel Engine Job ID',
-    `runtime_config`    longtext COMMENT '本次执行使用的 HOCON 配置',
-    `log_path`          varchar(512)         DEFAULT NULL COMMENT '日志路径',
-    `error_message`     text COMMENT '错误摘要',
-    `submit_time`       datetime             DEFAULT NULL COMMENT '提交时间',
-    `start_time`        datetime             DEFAULT NULL COMMENT '开始时间',
-    `end_time`          datetime             DEFAULT NULL COMMENT '结束时间',
-    `checkpoint_path`   varchar(1024)        DEFAULT NULL COMMENT 'Checkpoint 路径',
-    `savepoint_path`    varchar(1024)        DEFAULT NULL COMMENT 'Savepoint 路径',
-    `last_collect_time` datetime             DEFAULT NULL COMMENT '最后一次指标采集时间',
-    `create_time`       datetime    NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
-    `update_time`       datetime    NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
-    PRIMARY KEY (`id`),
-    KEY                 `idx_streaming_instance_definition_id` (`job_definition_id`),
-    KEY                 `idx_streaming_instance_status` (`job_status`),
-    KEY                 `idx_streaming_instance_engine_job_id` (`engine_job_id`),
-    KEY                 `idx_streaming_instance_create_time` (`create_time`),
-    KEY                 `idx_streaming_instance_definition_status` (`job_definition_id`, `job_status`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='实时任务运行实例表';
+-- ============================================================
+-- 2. Quartz scheduler tables
+-- ============================================================
 
-
-INSERT INTO `t_seatunnel_web_time_variable`
-(`id`, `param_name`, `param_desc`, `variable_source`, `value_type`, `time_format`, `default_value`, `expression`,
- `example_value`, `enabled`, `remark`)
-VALUES (10001, 'now', '当前时间', 'SYSTEM', 'DYNAMIC', 'yyyy-MM-dd HH:mm:ss', NULL, 'now', '2026-05-02 09:30:00', 1,
-        '系统内置变量'),
-       (10002, 'today', '今天零点', 'SYSTEM', 'DYNAMIC', 'yyyy-MM-dd HH:mm:ss', NULL, 'today', '2026-05-02 00:00:00', 1,
-        '系统内置变量'),
-       (10003, 'biz_date', '业务日期，默认取调度时间的前一天', 'SYSTEM', 'DYNAMIC', 'yyyy-MM-dd', NULL, 'schedule_time-1d',
-        '2026-05-01', 1, '系统内置变量'),
-       (10004, 'start_time', '同步开始时间，默认取调度时间前一天零点', 'SYSTEM', 'DYNAMIC', 'yyyy-MM-dd HH:mm:ss', NULL,
-        'schedule_time-1d@day_start', '2026-05-01 00:00:00', 1, '系统内置变量'),
-       (10005, 'end_time', '同步结束时间，默认取调度当天零点', 'SYSTEM', 'DYNAMIC', 'yyyy-MM-dd HH:mm:ss', NULL,
-        'schedule_time@day_start', '2026-05-02 00:00:00', 1, '系统内置变量');
-
-
-INSERT INTO `t_seatunnel_web_user`
-(`id`, `user_name`, `user_password`, `user_type`, `email`, `phone`, `create_time`, `update_time`, `state`)
-VALUES (1, 'admin', '$2a$10$7EqJtq98hPqEX7fNZaFWoOhi4iFP1Zc2l1N9CifJmJ4PrGiHeq.8K', 0, NULL, NULL, NULL, NULL, 1);
-
-DROP TABLE IF EXISTS `QRTZ_BLOB_TRIGGERS`;
-CREATE TABLE `QRTZ_BLOB_TRIGGERS`
-(
-    `sched_name`    varchar(120) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL,
-    `trigger_name`  varchar(200) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL,
-    `trigger_group` varchar(200) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL,
-    `blob_data`     blob NULL,
-    PRIMARY KEY (`sched_name`, `trigger_name`, `trigger_group`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_general_ci ROW_FORMAT = Dynamic;
-
-
-DROP TABLE IF EXISTS `QRTZ_CALENDARS`;
-CREATE TABLE `QRTZ_CALENDARS`
-(
-    `sched_name`    varchar(120) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL,
-    `calendar_name` varchar(200) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL,
-    `calendar`      blob                                                    NOT NULL,
-    PRIMARY KEY (`sched_name`, `calendar_name`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_general_ci ROW_FORMAT = Dynamic;
-
-
-DROP TABLE IF EXISTS `QRTZ_CRON_TRIGGERS`;
-CREATE TABLE `QRTZ_CRON_TRIGGERS`
-(
-    `sched_name`      varchar(120) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL,
-    `trigger_name`    varchar(200) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL,
-    `trigger_group`   varchar(200) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL,
-    `cron_expression` varchar(200) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL,
-    `time_zone_id`    varchar(80) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL,
-    PRIMARY KEY (`sched_name`, `trigger_name`, `trigger_group`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_general_ci ROW_FORMAT = Dynamic;
-
-
-DROP TABLE IF EXISTS `QRTZ_FIRED_TRIGGERS`;
-CREATE TABLE `QRTZ_FIRED_TRIGGERS`
-(
-    `sched_name`        varchar(120) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL,
-    `entry_id`          varchar(95) CHARACTER SET utf8 COLLATE utf8_general_ci  NOT NULL,
-    `trigger_name`      varchar(200) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL,
-    `trigger_group`     varchar(200) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL,
-    `instance_name`     varchar(200) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL,
-    `fired_time`        bigint(0) NOT NULL,
-    `sched_time`        bigint(0) NOT NULL,
-    `priority`          int(0) NOT NULL,
-    `state`             varchar(16) CHARACTER SET utf8 COLLATE utf8_general_ci  NOT NULL,
-    `job_name`          varchar(200) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL,
-    `job_group`         varchar(200) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL,
-    `is_nonconcurrent`  varchar(1) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL,
-    `requests_recovery` varchar(1) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL,
-    PRIMARY KEY (`sched_name`, `entry_id`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_general_ci ROW_FORMAT = Dynamic;
-
-DROP TABLE IF EXISTS `QRTZ_JOB_DETAILS`;
 CREATE TABLE `QRTZ_JOB_DETAILS`
 (
     `sched_name`        varchar(120) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL,
@@ -523,69 +509,6 @@ CREATE TABLE `QRTZ_JOB_DETAILS`
     PRIMARY KEY (`sched_name`, `job_name`, `job_group`) USING BTREE
 ) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_general_ci ROW_FORMAT = Dynamic;
 
-
-DROP TABLE IF EXISTS `QRTZ_LOCKS`;
-CREATE TABLE `QRTZ_LOCKS`
-(
-    `sched_name` varchar(120) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL,
-    `lock_name`  varchar(40) CHARACTER SET utf8 COLLATE utf8_general_ci  NOT NULL,
-    PRIMARY KEY (`sched_name`, `lock_name`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_general_ci ROW_FORMAT = Dynamic;
-
-
-DROP TABLE IF EXISTS `QRTZ_PAUSED_TRIGGER_GRPS`;
-CREATE TABLE `QRTZ_PAUSED_TRIGGER_GRPS`
-(
-    `sched_name`    varchar(120) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL,
-    `trigger_group` varchar(200) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL,
-    PRIMARY KEY (`sched_name`, `trigger_group`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_general_ci ROW_FORMAT = Dynamic;
-
-DROP TABLE IF EXISTS `QRTZ_SCHEDULER_STATE`;
-CREATE TABLE `QRTZ_SCHEDULER_STATE`
-(
-    `sched_name`        varchar(120) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL,
-    `instance_name`     varchar(200) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL,
-    `last_checkin_time` bigint(0) NOT NULL,
-    `checkin_interval`  bigint(0) NOT NULL,
-    PRIMARY KEY (`sched_name`, `instance_name`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_general_ci ROW_FORMAT = Dynamic;
-
-DROP TABLE IF EXISTS `QRTZ_SIMPLE_TRIGGERS`;
-CREATE TABLE `QRTZ_SIMPLE_TRIGGERS`
-(
-    `sched_name`      varchar(120) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL,
-    `trigger_name`    varchar(200) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL,
-    `trigger_group`   varchar(200) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL,
-    `repeat_count`    bigint(0) NOT NULL,
-    `repeat_interval` bigint(0) NOT NULL,
-    `times_triggered` bigint(0) NOT NULL,
-    PRIMARY KEY (`sched_name`, `trigger_name`, `trigger_group`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_general_ci ROW_FORMAT = Dynamic;
-
-
-DROP TABLE IF EXISTS `QRTZ_SIMPROP_TRIGGERS`;
-CREATE TABLE `QRTZ_SIMPROP_TRIGGERS`
-(
-    `sched_name`    varchar(120) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL,
-    `trigger_name`  varchar(200) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL,
-    `trigger_group` varchar(200) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL,
-    `str_prop_1`    varchar(512) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL,
-    `str_prop_2`    varchar(512) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL,
-    `str_prop_3`    varchar(512) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL,
-    `int_prop_1`    int(0) NULL DEFAULT NULL,
-    `int_prop_2`    int(0) NULL DEFAULT NULL,
-    `long_prop_1`   bigint(0) NULL DEFAULT NULL,
-    `long_prop_2`   bigint(0) NULL DEFAULT NULL,
-    `dec_prop_1`    decimal(13, 4) NULL DEFAULT NULL,
-    `dec_prop_2`    decimal(13, 4) NULL DEFAULT NULL,
-    `bool_prop_1`   varchar(1) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL,
-    `bool_prop_2`   varchar(1) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL,
-    PRIMARY KEY (`sched_name`, `trigger_name`, `trigger_group`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_general_ci ROW_FORMAT = Dynamic;
-
-
-DROP TABLE IF EXISTS `QRTZ_TRIGGERS`;
 CREATE TABLE `QRTZ_TRIGGERS`
 (
     `sched_name`     varchar(120) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL,
@@ -607,69 +530,122 @@ CREATE TABLE `QRTZ_TRIGGERS`
     PRIMARY KEY (`sched_name`, `trigger_name`, `trigger_group`) USING BTREE
 ) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_general_ci ROW_FORMAT = Dynamic;
 
-
-DROP TABLE IF EXISTS `t_seatunnel_web_cdc_server_id_pool`;
-CREATE TABLE `t_seatunnel_web_cdc_server_id_pool`
+CREATE TABLE `QRTZ_SIMPLE_TRIGGERS`
 (
-    `id`            bigint                                                  NOT NULL COMMENT 'primary key',
-    `datasource_id` bigint                                                  NOT NULL COMMENT 'datasource id for this MySQL CDC server-id pool',
-    `instance_key`  varchar(255) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL COMMENT 'unique MySQL instance or cluster key',
-    `min_server_id` bigint                                                  NOT NULL DEFAULT 5400 COMMENT 'minimum allocatable server-id',
-    `max_server_id` bigint                                                  NOT NULL DEFAULT 6400 COMMENT 'maximum allocatable server-id',
-    `status`        tinyint(4) NOT NULL DEFAULT 1 COMMENT '1 enabled, 0 disabled',
-    `create_time`   datetime(0) NOT NULL DEFAULT CURRENT_TIMESTAMP (0) COMMENT 'create time',
-    `update_time`   datetime(0) NOT NULL DEFAULT CURRENT_TIMESTAMP (0) ON UPDATE CURRENT_TIMESTAMP (0) COMMENT 'update time',
-    PRIMARY KEY (`id`) USING BTREE,
-    UNIQUE KEY `uk_cdc_server_id_pool_instance` (`instance_key`) USING BTREE,
-    KEY             `idx_cdc_server_id_pool_datasource` (`datasource_id`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_general_ci COMMENT = 'MySQL CDC server-id allocation pool' ROW_FORMAT = Dynamic;
+    `sched_name`      varchar(120) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL,
+    `trigger_name`    varchar(200) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL,
+    `trigger_group`   varchar(200) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL,
+    `repeat_count`    bigint(0) NOT NULL,
+    `repeat_interval` bigint(0) NOT NULL,
+    `times_triggered` bigint(0) NOT NULL,
+    PRIMARY KEY (`sched_name`, `trigger_name`, `trigger_group`) USING BTREE
+) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_general_ci ROW_FORMAT = Dynamic;
 
-
-DROP TABLE IF EXISTS `t_seatunnel_web_cdc_server_id_allocation`;
-CREATE TABLE `t_seatunnel_web_cdc_server_id_allocation`
+CREATE TABLE `QRTZ_CRON_TRIGGERS`
 (
-    `id`                bigint                                                 NOT NULL COMMENT 'primary key',
-    `pool_id`           bigint                                                 NOT NULL COMMENT 'server-id pool id',
-    `server_id`         bigint                                                 NOT NULL COMMENT 'allocated MySQL CDC server-id',
-    `job_definition_id` bigint                                                 NOT NULL COMMENT 'job definition id',
-    `job_instance_id`   bigint NULL DEFAULT NULL COMMENT 'job instance id',
-    `source`            varchar(32) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL DEFAULT 'MANUAL' COMMENT 'MANUAL or AUTO',
-    `active`            tinyint(4) NULL DEFAULT 1 COMMENT '1 currently occupied, NULL released',
-    `allocated_time`    datetime(0) NOT NULL DEFAULT CURRENT_TIMESTAMP (0) COMMENT 'allocated time',
-    `released_time`     datetime(0) NULL DEFAULT NULL COMMENT 'released time',
-    `create_time`       datetime(0) NOT NULL DEFAULT CURRENT_TIMESTAMP (0) COMMENT 'create time',
-    `update_time`       datetime(0) NOT NULL DEFAULT CURRENT_TIMESTAMP (0) ON UPDATE CURRENT_TIMESTAMP (0) COMMENT 'update time',
-    PRIMARY KEY (`id`) USING BTREE,
-    UNIQUE KEY `uk_cdc_server_id_active` (`pool_id`, `server_id`, `active`) USING BTREE,
-    KEY                 `idx_cdc_server_id_job_definition` (`job_definition_id`) USING BTREE,
-    KEY                 `idx_cdc_server_id_job_instance` (`job_instance_id`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_general_ci COMMENT = 'MySQL CDC server-id allocation records' ROW_FORMAT = Dynamic;
+    `sched_name`      varchar(120) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL,
+    `trigger_name`    varchar(200) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL,
+    `trigger_group`   varchar(200) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL,
+    `cron_expression` varchar(200) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL,
+    `time_zone_id`    varchar(80) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL,
+    PRIMARY KEY (`sched_name`, `trigger_name`, `trigger_group`) USING BTREE
+) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_general_ci ROW_FORMAT = Dynamic;
 
-CREATE TABLE t_seatunnel_web_client_node
+CREATE TABLE `QRTZ_SIMPROP_TRIGGERS`
 (
-    id                  bigint       NOT NULL PRIMARY KEY COMMENT '主键 ID',
-    client_id           bigint       NOT NULL COMMENT '客户端 ID',
-    node_role           varchar(32)  NOT NULL COMMENT '节点角色：MASTER / WORKER',
-    node_name           varchar(128) DEFAULT NULL COMMENT '节点名称',
-    host                varchar(255) NOT NULL COMMENT '节点地址',
-    port                int          DEFAULT NULL COMMENT 'REST 端口',
-    base_url            varchar(512) DEFAULT NULL COMMENT 'REST Base URL',
-    active_master       tinyint(1) DEFAULT 0 COMMENT '是否当前活跃 Master',
-    health_status       int          DEFAULT 0 COMMENT '健康状态：0 UNKNOWN, 1 LIVE, 2 DEAD',
-    client_version      varchar(64)  DEFAULT NULL COMMENT '节点版本',
-    last_heartbeat_time datetime     DEFAULT NULL COMMENT '最近探活时间',
-    last_error          text COMMENT '最近错误信息',
-    `create_time`       datetime(0) NOT NULL DEFAULT CURRENT_TIMESTAMP (0) COMMENT 'create time',
-    `update_time`       datetime(0) NOT NULL DEFAULT CURRENT_TIMESTAMP (0) ON UPDATE CURRENT_TIMESTAMP (0) COMMENT 'update time',
-    UNIQUE KEY uk_client_role_host_port (client_id, node_role, host, port),
-    KEY                 idx_client_id (client_id),
-    KEY                 idx_client_role (client_id, node_role),
-    KEY                 idx_health_status (health_status)
-) COMMENT='SeaTunnel Client 节点表';
+    `sched_name`    varchar(120) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL,
+    `trigger_name`  varchar(200) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL,
+    `trigger_group` varchar(200) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL,
+    `str_prop_1`    varchar(512) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL,
+    `str_prop_2`    varchar(512) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL,
+    `str_prop_3`    varchar(512) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL,
+    `int_prop_1`    int(0) NULL DEFAULT NULL,
+    `int_prop_2`    int(0) NULL DEFAULT NULL,
+    `long_prop_1`   bigint(0) NULL DEFAULT NULL,
+    `long_prop_2`   bigint(0) NULL DEFAULT NULL,
+    `dec_prop_1`    decimal(13, 4) NULL DEFAULT NULL,
+    `dec_prop_2`    decimal(13, 4) NULL DEFAULT NULL,
+    `bool_prop_1`   varchar(1) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL,
+    `bool_prop_2`   varchar(1) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL,
+    PRIMARY KEY (`sched_name`, `trigger_name`, `trigger_group`) USING BTREE
+) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_general_ci ROW_FORMAT = Dynamic;
 
+CREATE TABLE `QRTZ_BLOB_TRIGGERS`
+(
+    `sched_name`    varchar(120) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL,
+    `trigger_name`  varchar(200) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL,
+    `trigger_group` varchar(200) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL,
+    `blob_data`     blob NULL,
+    PRIMARY KEY (`sched_name`, `trigger_name`, `trigger_group`) USING BTREE
+) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_general_ci ROW_FORMAT = Dynamic;
 
-ALTER TABLE `t_seatunnel_web_client_node`
-    ADD COLUMN `hostname` varchar(255) NULL COMMENT '节点名称' AFTER `host`;
+CREATE TABLE `QRTZ_CALENDARS`
+(
+    `sched_name`    varchar(120) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL,
+    `calendar_name` varchar(200) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL,
+    `calendar`      blob                                                    NOT NULL,
+    PRIMARY KEY (`sched_name`, `calendar_name`) USING BTREE
+) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_general_ci ROW_FORMAT = Dynamic;
 
-ALTER TABLE `t_seatunnel_web_client`
-    ADD COLUMN `context_path` varchar(255) NULL COMMENT '上下文路径' AFTER `base_url`;
+CREATE TABLE `QRTZ_PAUSED_TRIGGER_GRPS`
+(
+    `sched_name`    varchar(120) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL,
+    `trigger_group` varchar(200) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL,
+    PRIMARY KEY (`sched_name`, `trigger_group`) USING BTREE
+) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_general_ci ROW_FORMAT = Dynamic;
+
+CREATE TABLE `QRTZ_FIRED_TRIGGERS`
+(
+    `sched_name`        varchar(120) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL,
+    `entry_id`          varchar(95) CHARACTER SET utf8 COLLATE utf8_general_ci  NOT NULL,
+    `trigger_name`      varchar(200) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL,
+    `trigger_group`     varchar(200) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL,
+    `instance_name`     varchar(200) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL,
+    `fired_time`        bigint(0) NOT NULL,
+    `sched_time`        bigint(0) NOT NULL,
+    `priority`          int(0) NOT NULL,
+    `state`             varchar(16) CHARACTER SET utf8 COLLATE utf8_general_ci  NOT NULL,
+    `job_name`          varchar(200) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL,
+    `job_group`         varchar(200) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL,
+    `is_nonconcurrent`  varchar(1) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL,
+    `requests_recovery` varchar(1) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL,
+    PRIMARY KEY (`sched_name`, `entry_id`) USING BTREE
+) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_general_ci ROW_FORMAT = Dynamic;
+
+CREATE TABLE `QRTZ_SCHEDULER_STATE`
+(
+    `sched_name`        varchar(120) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL,
+    `instance_name`     varchar(200) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL,
+    `last_checkin_time` bigint(0) NOT NULL,
+    `checkin_interval`  bigint(0) NOT NULL,
+    PRIMARY KEY (`sched_name`, `instance_name`) USING BTREE
+) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_general_ci ROW_FORMAT = Dynamic;
+
+CREATE TABLE `QRTZ_LOCKS`
+(
+    `sched_name` varchar(120) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL,
+    `lock_name`  varchar(40) CHARACTER SET utf8 COLLATE utf8_general_ci  NOT NULL,
+    PRIMARY KEY (`sched_name`, `lock_name`) USING BTREE
+) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_general_ci ROW_FORMAT = Dynamic;
+
+-- ============================================================
+-- 3. Initial data
+-- ============================================================
+
+INSERT INTO `t_seatunnel_web_time_variable`
+(`id`, `param_name`, `param_desc`, `variable_source`, `value_type`, `time_format`, `default_value`, `expression`,
+ `example_value`, `enabled`, `remark`)
+VALUES (10001, 'now', '当前时间', 'SYSTEM', 'DYNAMIC', 'yyyy-MM-dd HH:mm:ss', NULL, 'now', '2026-05-02 09:30:00', 1,
+        '系统内置变量'),
+       (10002, 'today', '今天零点', 'SYSTEM', 'DYNAMIC', 'yyyy-MM-dd HH:mm:ss', NULL, 'today', '2026-05-02 00:00:00', 1,
+        '系统内置变量'),
+       (10003, 'biz_date', '业务日期，默认取调度时间的前一天', 'SYSTEM', 'DYNAMIC', 'yyyy-MM-dd', NULL, 'schedule_time-1d',
+        '2026-05-01', 1, '系统内置变量'),
+       (10004, 'start_time', '同步开始时间，默认取调度时间前一天零点', 'SYSTEM', 'DYNAMIC', 'yyyy-MM-dd HH:mm:ss', NULL,
+        'schedule_time-1d@day_start', '2026-05-01 00:00:00', 1, '系统内置变量'),
+       (10005, 'end_time', '同步结束时间，默认取调度当天零点', 'SYSTEM', 'DYNAMIC', 'yyyy-MM-dd HH:mm:ss', NULL,
+        'schedule_time@day_start', '2026-05-02 00:00:00', 1, '系统内置变量');
+
+INSERT INTO `t_seatunnel_web_user`
+(`id`, `user_name`, `user_password`, `user_type`, `email`, `phone`, `create_time`, `update_time`, `state`)
+VALUES (1, 'admin', '$2a$10$7EqJtq98hPqEX7fNZaFWoOhi4iFP1Zc2l1N9CifJmJ4PrGiHeq.8K', 0, NULL, NULL, NULL, NULL, 1);
