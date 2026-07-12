@@ -59,7 +59,7 @@ ENTRYPOINT ["/opt/seatunnel-web/bin/run-seatunnel-web.sh"]
 # =========================
 # Frontend runtime
 # =========================
-FROM nginx:1.27.3-alpine AS frontend-runtime
+FROM nginx:latest AS frontend-runtime
 
 ARG VERSION=dev
 ARG VCS_REF=unknown
