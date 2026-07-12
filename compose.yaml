@@ -22,18 +22,6 @@ services:
     volumes:
       - mysql-data:/var/lib/mysql
 
-    healthcheck:
-      test:
-        [
-            "CMD-SHELL",
-            "mysqladmin ping -h 127.0.0.1 -u$${MYSQL_USER} -p$${MYSQL_PASSWORD} --silent"
-        ]
-      interval: 10s
-      timeout: 5s
-      retries: 12
-      start_period: 30s
-
-
   seatunnel-web-api:
     image: ${SEATUNNEL_WEB_API_IMAGE:-seatunnel-web-api:latest}
     container_name: seatunnel-web-api
@@ -76,19 +64,6 @@ services:
     volumes:
       - seatunnel-web-logs:/opt/seatunnel-web/logs
       - ./jdbc-drivers:/opt/seatunnel-web/jdbc-drivers
-
-    healthcheck:
-      test:
-        [
-            "CMD",
-            "bash",
-            "-c",
-            "</dev/tcp/127.0.0.1/9527"
-        ]
-      interval: 10s
-      timeout: 3s
-      retries: 12
-      start_period: 30s
 
 
   seatunnel-web:
