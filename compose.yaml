@@ -16,11 +16,25 @@ services:
       - --collation-server=utf8mb4_unicode_ci
       - --default-time-zone=+08:00
 
+    # 宿主机访问：127.0.0.1:3307
+    # Docker 容器内部访问：mysql:3306
     ports:
-      - "${MYSQL_HOST_PORT:-3306}:3306"
+      - "${MYSQL_HOST_PORT:-3307}:3306"
 
     volumes:
       - mysql-data:/var/lib/mysql
+
+    healthcheck:
+      test:
+        - CMD-SHELL
+        - 'MYSQL_PWD="$${MYSQL_ROOT_PASSWORD}" mysqladmin ping -h 127.0.0.1 -uroot --silent'
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
+
+    networks:
+      - seatunnel-web-network
 
   seatunnel-web-api:
     image: ${SEATUNNEL_WEB_API_IMAGE:-seatunnel-web-api:latest}
@@ -39,24 +53,34 @@ services:
     environment:
       TZ: Asia/Shanghai
 
+      # JVM 配置
       JAVA_OPTS: ${JAVA_OPTS:--Xms512m -Xmx1024m}
+
+      # Spring Boot 额外启动参数
       APP_OPTS: ${APP_OPTS:-}
 
+      # 后端服务端口
       SERVER_PORT: 9527
+
+      # Spring Profile
       SPRING_PROFILES_ACTIVE: mysql
 
+      # SeaTunnel Web 数据库配置
       SEATUNNEL_WEB_DATABASE_TYPE: mysql
       SEATUNNEL_WEB_DATABASE_HOST: mysql
       SEATUNNEL_WEB_DATABASE_PORT: 3306
       SEATUNNEL_WEB_DATABASE_NAME: ${MYSQL_DATABASE:-seatunnel_web}
 
+      # Spring 数据源配置
       SPRING_DATASOURCE_URL: "jdbc:mysql://mysql:3306/${MYSQL_DATABASE:-seatunnel_web}?useUnicode=true&characterEncoding=utf8&useSSL=false&serverTimezone=GMT%2B8&allowPublicKeyRetrieval=true"
       SPRING_DATASOURCE_USERNAME: ${MYSQL_USER:-seatunnel}
       SPRING_DATASOURCE_PASSWORD: ${MYSQL_PASSWORD:-change_me}
 
+      # Flyway 数据库初始化
       SPRING_FLYWAY_ENABLED: "true"
 
-      SEATUNNEL_WEB_DATASOURCE_MASTER_KEY: ${SEATUNNEL_WEB_DATASOURCE_MASTER_KEY:?set SEATUNNEL_WEB_DATASOURCE_MASTER_KEY}
+      # 数据源密码加密主密钥
+      SEATUNNEL_WEB_DATASOURCE_MASTER_KEY: ${SEATUNNEL_WEB_DATASOURCE_MASTER_KEY:?Please set SEATUNNEL_WEB_DATASOURCE_MASTER_KEY in .env}
 
     expose:
       - "9527"
@@ -65,6 +89,8 @@ services:
       - seatunnel-web-logs:/opt/seatunnel-web/logs
       - ./jdbc-drivers:/opt/seatunnel-web/jdbc-drivers
 
+    networks:
+      - seatunnel-web-network
 
   seatunnel-web:
     image: ${SEATUNNEL_WEB_IMAGE:-seatunnel-web:latest}
@@ -76,14 +102,29 @@ services:
       dockerfile: Dockerfile
       target: frontend-runtime
 
+    healthcheck:
+      disable: true
+
     depends_on:
       seatunnel-web-api:
-        condition: service_healthy
+        condition: service_started
 
     ports:
       - "${SEATUNNEL_WEB_PORT:-9527}:80"
 
+    networks:
+      - seatunnel-web-network
+
 
 volumes:
   mysql-data:
+    name: seatunnel-web-mysql-data
+
   seatunnel-web-logs:
+    name: seatunnel-web-logs
+
+
+networks:
+  seatunnel-web-network:
+    name: seatunnel-web-network
+    driver: bridge
