@@ -1,6 +1,6 @@
--- JDBC Connector 参数元数据初始化脚本
--- 生成内容：Jdbc Source + Jdbc Sink
--- 注意：参数名以用户提供的 SeaTunnel 配置项为准，例如 fetch_size、split.size。
+-- JDBC Connector parameter metadata initialization script
+-- Generated content: JDBC Source + JDBC Sink
+-- Note: Parameter names follow the SeaTunnel configuration options provided by the user, such as fetch_size and split.size.
 
 ALTER TABLE `t_seatunnel_web_connector_param_meta`
 DROP INDEX `uk_connector_param`,
@@ -39,14 +39,15 @@ VALUES
 ('connector', 'Jdbc', 'source', 'common-options', 'Source 插件通用参数集合，具体字段参见 SeaTunnel Source Common Options。', 'object', 0, NULL, '{"plugin_output":"jdbc_source_result"}', '{"summary":"承载 Source 插件公共能力参数。","coreMeaning":"不是 JDBC 专属业务参数，通常用于结果表名、并行度等公共配置。","recommendationHints":["仅填写当前 SeaTunnel 版本明确支持的公共参数。"],"cautions":["不同版本支持项可能不同。","该项可作为参数组展示，而非直接输出 common-options 键。"]}', '用于AI参数推荐', 0),
 ('connector', 'Jdbc', 'source', 'split.string_split_mode', '字符串分片算法，可选 sample 或 charset_based。', 'string', 0, 'sample', 'charset_based', '{"summary":"选择字符串类型 partition_column 的分片算法。","coreMeaning":"sample 通过采样估算边界；charset_based 按字符集范围计算分片。","recommendationHints":["普通字符串键保持 sample。","字符主要位于 ASCII 32-126 范围时可评估 charset_based。"],"cautions":["charset_based 对字符范围有假设。","特殊字符集或排序规则需额外配置 collation。"]}', '用于AI参数推荐', 0),
 ('connector', 'Jdbc', 'source', 'split.string_split_mode_collate', '当 split.string_split_mode=charset_based 且表使用特殊排序规则时指定 collation。', 'string', 0, NULL, 'utf8mb4_bin', '{"summary":"指定字符串字符集分片使用的排序规则。","coreMeaning":"用于保证字符比较顺序与数据库实际 collation 一致。","recommendationHints":["仅在 charset_based 模式且数据库默认排序规则不适用时配置。"],"cautions":["错误 collation 可能造成分片边界不准确。"]}', '用于AI参数推荐', 0)
-    ON DUPLICATE KEY UPDATE
-                         `param_desc` = VALUES(`param_desc`),
-                         `param_type` = VALUES(`param_type`),
-                         `required_flag` = VALUES(`required_flag`),
-                         `default_value` = VALUES(`default_value`),
-                         `example_value` = VALUES(`example_value`),
-                         `param_context` = VALUES(`param_context`),
-                         `remark` = VALUES(`remark`),
+AS incoming
+ON DUPLICATE KEY UPDATE
+                         `param_desc` = incoming.`param_desc`,
+                         `param_type` = incoming.`param_type`,
+                         `required_flag` = incoming.`required_flag`,
+                         `default_value` = incoming.`default_value`,
+                         `example_value` = incoming.`example_value`,
+                         `param_context` = incoming.`param_context`,
+                         `remark` = incoming.`remark`,
                          `update_time` = CURRENT_TIMESTAMP;
 
 -- ==================== Jdbc Sink：31 个参数 ====================
@@ -74,20 +75,20 @@ VALUES
 ('connector', 'Jdbc', 'sink', 'data_save_mode', '任务启动前目标表已有数据的处理策略。', 'enum', 0, 'APPEND_DATA', 'APPEND_DATA', '{"summary":"控制目标端已有数据如何处理。","coreMeaning":"可选 DROP_DATA、APPEND_DATA、CUSTOM_PROCESSING、ERROR_WHEN_DATA_EXISTS。","recommendationHints":["增量同步通常使用 APPEND_DATA。","全量重灌可在确认风险后使用 DROP_DATA。"],"cautions":["DROP_DATA 会清空数据。","CUSTOM_PROCESSING 必须同时配置 custom_sql。"]}', '用于AI参数推荐', 0),
 ('connector', 'Jdbc', 'sink', 'custom_sql', '当 data_save_mode=CUSTOM_PROCESSING 时，在同步前执行的自定义 SQL。', 'string', 0, NULL, 'TRUNCATE TABLE test.user', '{"summary":"定义同步任务开始前的自定义数据处理 SQL。","coreMeaning":"适合清理分区、删除时间窗口数据或执行业务化预处理。","recommendationHints":["仅在 CUSTOM_PROCESSING 模式使用。","应保证 SQL 可重复执行或具备明确幂等性。"],"cautions":["高风险 DDL/DML 可能造成不可逆数据损失。","需要严格限制权限并记录审计日志。"]}', '用于AI参数推荐', 0),
 ('connector', 'Jdbc', 'sink', 'enable_upsert', '存在 primary_keys 时是否启用 Upsert；无重复键场景关闭可提升导入性能。', 'boolean', 0, 'true', 'true', '{"summary":"控制基于主键的插入或更新语义。","coreMeaning":"开启后相同主键记录可更新目标数据；关闭后通常按纯插入处理。","recommendationHints":["CDC、去重或幂等同步保持开启。","确认数据绝无重复且追求纯插入性能时可关闭。"],"cautions":["关闭后重复键可能导致失败。","开启 Upsert 通常比纯 INSERT 开销更高。"]}', '用于AI参数推荐', 0),
-('connector', 'Jdbc', 'sink', 'use_copy_statement', '是否使用 COPY ${table} FROM STDIN 导入；仅支持提供 Copy API 的驱动，例如 PostgreSQL。', 'boolean', 0, 'false', 'true', '{"summary":"控制是否使用数据库 COPY 协议进行高速批量导入。","coreMeaning":"COPY 通常比逐批 INSERT 更高效，主要用于 PostgreSQL 等支持 Copy API 的驱动。","recommendationHints":["PostgreSQL 大批量追加写入可评估开启。"],"cautions":["不支持 MAP、ARRAY、ROW 类型。","仅驱动连接提供 getCopyAPI() 时可用。"]}', '用于AI参数推荐', 0),
+('connector', 'Jdbc', 'sink', 'use_copy_statement', '是否使用 COPY <table> FROM STDIN 导入；仅支持提供 Copy API 的驱动，例如 PostgreSQL。', 'boolean', 0, 'false', 'true', '{"summary":"控制是否使用数据库 COPY 协议进行高速批量导入。","coreMeaning":"COPY 通常比逐批 INSERT 更高效，主要用于 PostgreSQL 等支持 Copy API 的驱动。","recommendationHints":["PostgreSQL 大批量追加写入可评估开启。"],"cautions":["不支持 MAP、ARRAY、ROW 类型。","仅驱动连接提供 getCopyAPI() 时可用。"]}', '用于AI参数推荐', 0),
 ('connector', 'Jdbc', 'sink', 'create_index', '自动建表时是否创建主键及其他索引。关闭可提升大表迁移写入速度，迁移后可手动补建索引。', 'boolean', 0, 'true', 'false', '{"summary":"控制自动创建目标表时是否同步创建索引。","coreMeaning":"索引可提升后续查询和约束能力，但会增加写入维护成本。","recommendationHints":["大批量全量迁移可暂时关闭，完成后手动创建索引。","在线增量或依赖主键约束时保持开启。"],"cautions":["关闭后查询性能和唯一性约束可能不足。","开启索引会降低批量写入吞吐。"]}', '用于AI参数推荐', 0),
-('connector', 'Jdbc', 'sink', 'access_key_id', 'AWS 认证 Access Key ID，仅 dialect=dsql 时有效。', 'string', 0, NULL, '${AWS_ACCESS_KEY_ID}', '{"summary":"配置 Amazon Aurora DSQL 认证 Access Key ID。","coreMeaning":"仅在 JDBC dialect=dsql 时参与 AWS 身份认证。","recommendationHints":["通过 IAM 角色或环境变量注入。"],"cautions":["不要明文保存到数据库或代码仓库。","非 dsql 方言不生效。"]}', '用于AI参数推荐', 0),
-('connector', 'Jdbc', 'sink', 'secret_access_key', 'AWS 认证 Secret Access Key，仅 dialect=dsql 时有效。', 'string', 0, NULL, '${AWS_SECRET_ACCESS_KEY}', '{"summary":"配置 Amazon Aurora DSQL 认证 Secret Access Key。","coreMeaning":"与 access_key_id 配合完成 AWS 身份认证。","recommendationHints":["通过安全密钥服务或环境变量注入。"],"cautions":["属于高敏感凭据，禁止明文展示。","非 dsql 方言不生效。"]}', '用于AI参数推荐', 0),
+('connector', 'Jdbc', 'sink', 'access_key_id', 'AWS 认证 Access Key ID，仅 dialect=dsql 时有效。', 'string', 0, NULL, '<AWS_ACCESS_KEY_ID>', '{"summary":"配置 Amazon Aurora DSQL 认证 Access Key ID。","coreMeaning":"仅在 JDBC dialect=dsql 时参与 AWS 身份认证。","recommendationHints":["通过 IAM 角色或环境变量注入。"],"cautions":["不要明文保存到数据库或代码仓库。","非 dsql 方言不生效。"]}', '用于AI参数推荐', 0),
+('connector', 'Jdbc', 'sink', 'secret_access_key', 'AWS 认证 Secret Access Key，仅 dialect=dsql 时有效。', 'string', 0, NULL, '<AWS_SECRET_ACCESS_KEY>', '{"summary":"配置 Amazon Aurora DSQL 认证 Secret Access Key。","coreMeaning":"与 access_key_id 配合完成 AWS 身份认证。","recommendationHints":["通过安全密钥服务或环境变量注入。"],"cautions":["属于高敏感凭据，禁止明文展示。","非 dsql 方言不生效。"]}', '用于AI参数推荐', 0),
 ('connector', 'Jdbc', 'sink', 'region', 'Amazon Aurora DSQL 所在区域，仅 dialect=dsql 时有效。', 'string', 0, NULL, 'us-east-1', '{"summary":"指定 Amazon Aurora DSQL 的 AWS Region。","coreMeaning":"用于访问正确区域的 DSQL 服务端点。","recommendationHints":["填写目标 DSQL 集群实际所在区域。"],"cautions":["区域错误会导致认证或连接失败。","非 dsql 方言不生效。"]}', '用于AI参数推荐', 0)
-    ON DUPLICATE KEY UPDATE
-                         `param_desc` = VALUES(`param_desc`),
-                         `param_type` = VALUES(`param_type`),
-                         `required_flag` = VALUES(`required_flag`),
-                         `default_value` = VALUES(`default_value`),
-                         `example_value` = VALUES(`example_value`),
-                         `param_context` = VALUES(`param_context`),
-                         `remark` = VALUES(`remark`),
+AS incoming
+ON DUPLICATE KEY UPDATE
+                         `param_desc` = incoming.`param_desc`,
+                         `param_type` = incoming.`param_type`,
+                         `required_flag` = incoming.`required_flag`,
+                         `default_value` = incoming.`default_value`,
+                         `example_value` = incoming.`example_value`,
+                         `param_context` = incoming.`param_context`,
+                         `remark` = incoming.`remark`,
                          `update_time` = CURRENT_TIMESTAMP;
 
 COMMIT;
-
