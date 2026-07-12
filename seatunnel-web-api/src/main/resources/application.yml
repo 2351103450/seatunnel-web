@@ -38,7 +38,9 @@ spring:
     validate-on-migrate: true
     out-of-order: false
     clean-disabled: true
-    baseline-on-migrate: false
+    baseline-on-migrate: ${SPRING_FLYWAY_BASELINE_ON_MIGRATE:false}
+    baseline-version: ${SPRING_FLYWAY_BASELINE_VERSION:1.0.0}
+    baseline-description: SeaTunnel Web legacy schema baseline
   application:
     name: seatunnel-web
   main:
