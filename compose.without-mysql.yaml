@@ -11,7 +11,6 @@ services:
 
     environment:
       TZ: Asia/Shanghai
-
       JAVA_OPTS: ${JAVA_OPTS:--Xms512m -Xmx1024m}
       APP_OPTS: ${APP_OPTS:-}
 
@@ -43,17 +42,12 @@ services:
 
     healthcheck:
       test:
-        [
-            "CMD",
-            "bash",
-            "-c",
-            "</dev/tcp/127.0.0.1/9527"
-        ]
+        - CMD-SHELL
+        - curl -fsS http://127.0.0.1:9527/actuator/health || exit 1
       interval: 10s
-      timeout: 3s
+      timeout: 5s
       retries: 12
       start_period: 30s
-
 
   seatunnel-web:
     image: ${SEATUNNEL_WEB_IMAGE:-seatunnel-web:latest}
@@ -65,13 +59,15 @@ services:
       dockerfile: Dockerfile
       target: frontend-runtime
 
+    healthcheck:
+      disable: true
+
     depends_on:
       seatunnel-web-api:
         condition: service_healthy
 
     ports:
       - "${SEATUNNEL_WEB_PORT:-9001}:80"
-
 
 volumes:
   seatunnel-web-logs:

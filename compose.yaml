@@ -24,14 +24,15 @@ services:
 
     healthcheck:
       test:
-        [
-            "CMD-SHELL",
-            "mysqladmin ping -h 127.0.0.1 -u$${MYSQL_USER} -p$${MYSQL_PASSWORD} --silent"
-        ]
+        - CMD-SHELL
+        - 'MYSQL_PWD="$${MYSQL_ROOT_PASSWORD}" mysqladmin ping -h 127.0.0.1 -uroot --silent'
       interval: 10s
       timeout: 5s
-      retries: 12
+      retries: 10
       start_period: 30s
+
+    networks:
+      - seatunnel-web-network
 
 
   seatunnel-web-api:
@@ -52,9 +53,11 @@ services:
       TZ: Asia/Shanghai
 
       JAVA_OPTS: ${JAVA_OPTS:--Xms512m -Xmx1024m}
+
       APP_OPTS: ${APP_OPTS:-}
 
       SERVER_PORT: 9527
+
       SPRING_PROFILES_ACTIVE: mysql
 
       SEATUNNEL_WEB_DATABASE_TYPE: mysql
@@ -68,27 +71,26 @@ services:
 
       SPRING_FLYWAY_ENABLED: "true"
 
-      SEATUNNEL_WEB_DATASOURCE_MASTER_KEY: ${SEATUNNEL_WEB_DATASOURCE_MASTER_KEY:?set SEATUNNEL_WEB_DATASOURCE_MASTER_KEY}
+      SEATUNNEL_WEB_DATASOURCE_MASTER_KEY: ${SEATUNNEL_WEB_DATASOURCE_MASTER_KEY:?Please set SEATUNNEL_WEB_DATASOURCE_MASTER_KEY in .env}
 
     expose:
       - "9527"
 
     volumes:
       - seatunnel-web-logs:/opt/seatunnel-web/logs
-      - ./jdbc-drivers:/opt/seatunnel-web/jdbc-drivers
+      - seatunnel-web-jdbc-drivers:/opt/seatunnel-web/jdbc-drivers
 
     healthcheck:
       test:
-        [
-            "CMD",
-            "bash",
-            "-c",
-            "</dev/tcp/127.0.0.1/9527"
-        ]
+        - CMD-SHELL
+        - 'bash -c "</dev/tcp/127.0.0.1/9527"'
       interval: 10s
-      timeout: 3s
+      timeout: 5s
       retries: 12
       start_period: 30s
+
+    networks:
+      - seatunnel-web-network
 
 
   seatunnel-web:
@@ -101,6 +103,9 @@ services:
       dockerfile: Dockerfile
       target: frontend-runtime
 
+    healthcheck:
+      disable: true
+
     depends_on:
       seatunnel-web-api:
         condition: service_healthy
@@ -108,7 +113,22 @@ services:
     ports:
       - "${SEATUNNEL_WEB_PORT:-9527}:80"
 
+    networks:
+      - seatunnel-web-network
+
 
 volumes:
   mysql-data:
+    name: seatunnel-web-mysql-data
+
   seatunnel-web-logs:
+    name: seatunnel-web-logs
+
+  seatunnel-web-jdbc-drivers:
+    name: seatunnel-web-jdbc-drivers
+
+
+networks:
+  seatunnel-web-network:
+    name: seatunnel-web-network
+    driver: bridge
