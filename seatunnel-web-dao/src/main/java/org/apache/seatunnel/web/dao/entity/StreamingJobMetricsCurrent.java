@@ -1,5 +1,7 @@
 package org.apache.seatunnel.web.dao.entity;
 
+import com.baomidou.mybatisplus.annotation.IdType;
+import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableName;
 import lombok.Data;
 
@@ -10,6 +12,7 @@ import java.util.Date;
 @TableName("t_seatunnel_web_streaming_job_metrics_current")
 public class StreamingJobMetricsCurrent {
 
+    @TableId(value = "job_instance_id", type = IdType.INPUT)
     private Long jobInstanceId;
 
     private Long jobDefinitionId;
