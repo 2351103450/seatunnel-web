@@ -5,7 +5,7 @@ spring:
 
   datasource:
     driver-class-name: org.postgresql.Driver
-    url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://127.0.0.1:5432/seatunnel_web}
+    url: "${SPRING_DATASOURCE_URL:jdbc:postgresql://${SEATUNNEL_WEB_DATABASE_HOST:127.0.0.1}:${SEATUNNEL_WEB_DATABASE_PORT:5432}/${SEATUNNEL_WEB_DATABASE_NAME:seatunnel_web}}"
     username: ${SPRING_DATASOURCE_USERNAME:seatunnel}
     password: ${SPRING_DATASOURCE_PASSWORD:change_me}
 

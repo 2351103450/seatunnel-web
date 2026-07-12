@@ -38,11 +38,36 @@
                 <include>logback-spring.xml</include>
             </includes>
         </fileSet>
+        <!-- MySQL migration scripts -->
         <fileSet>
-            <directory>../seatunnel-web-api/src/main/resources/sql</directory>
-            <outputDirectory>sql</outputDirectory>
+            <directory>
+                ../seatunnel-web-dao-plugin/seatunnel-web-dao-mysql/src/main/resources/db/migration/mysql
+            </directory>
+            <outputDirectory>sql/mysql</outputDirectory>
             <includes>
-                <include>**/*</include>
+                <include>**/*.sql</include>
+            </includes>
+        </fileSet>
+
+        <!-- PostgreSQL migration scripts -->
+        <fileSet>
+            <directory>
+                ../seatunnel-web-dao-plugin/seatunnel-web-dao-postgresql/src/main/resources/db/migration/postgresql
+            </directory>
+            <outputDirectory>sql/postgresql</outputDirectory>
+            <includes>
+                <include>**/*.sql</include>
+            </includes>
+        </fileSet>
+
+        <!-- H2 migration scripts -->
+        <fileSet>
+            <directory>
+                ../seatunnel-web-dao-plugin/seatunnel-web-dao-h2/src/main/resources/db/migration/h2
+            </directory>
+            <outputDirectory>sql/h2</outputDirectory>
+            <includes>
+                <include>**/*.sql</include>
             </includes>
         </fileSet>
         <fileSet>

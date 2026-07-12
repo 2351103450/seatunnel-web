@@ -6,7 +6,7 @@ services:
 
     environment:
       MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-change_me}
-      MYSQL_DATABASE: seatunnel_web
+      MYSQL_DATABASE: ${MYSQL_DATABASE:-seatunnel_web}
       MYSQL_USER: ${MYSQL_USER:-seatunnel}
       MYSQL_PASSWORD: ${MYSQL_PASSWORD:-change_me}
       TZ: Asia/Shanghai
@@ -17,7 +17,7 @@ services:
       - --default-time-zone=+08:00
 
     ports:
-      - "${MYSQL_PORT:-3306}:3306"
+      - "${MYSQL_HOST_PORT:-3306}:3306"
 
     volumes:
       - mysql-data:/var/lib/mysql
@@ -36,30 +36,39 @@ services:
 
   seatunnel-web-api:
     image: ${SEATUNNEL_WEB_API_IMAGE:-seatunnel-web-api:latest}
+    container_name: seatunnel-web-api
+    restart: unless-stopped
 
     build:
       context: .
       dockerfile: Dockerfile
       target: backend-runtime
 
-    container_name: seatunnel-web-api
-    restart: unless-stopped
-
     depends_on:
       mysql:
         condition: service_healthy
 
     environment:
+      TZ: Asia/Shanghai
+
       JAVA_OPTS: ${JAVA_OPTS:--Xms512m -Xmx1024m}
       APP_OPTS: ${APP_OPTS:-}
 
       SERVER_PORT: 9527
       SPRING_PROFILES_ACTIVE: mysql
-      SPRING_DATASOURCE_URL: jdbc:mysql://${MYSQL_HOST:-mysql}:${MYSQL_PORT:-3306}/${MYSQL_DATABASE:-seatunnel_web}?useUnicode=true&characterEncoding=utf8&useSSL=false&serverTimezone=GMT%2B8&allowPublicKeyRetrieval=true
 
+      SEATUNNEL_WEB_DATABASE_TYPE: mysql
+      SEATUNNEL_WEB_DATABASE_HOST: mysql
+      SEATUNNEL_WEB_DATABASE_PORT: 3306
+      SEATUNNEL_WEB_DATABASE_NAME: ${MYSQL_DATABASE:-seatunnel_web}
+
+      SPRING_DATASOURCE_URL: "jdbc:mysql://mysql:3306/${MYSQL_DATABASE:-seatunnel_web}?useUnicode=true&characterEncoding=utf8&useSSL=false&serverTimezone=GMT%2B8&allowPublicKeyRetrieval=true"
       SPRING_DATASOURCE_USERNAME: ${MYSQL_USER:-seatunnel}
-      SEATUNNEL_WEB_DATASOURCE_MASTER_KEY: ${SEATUNNEL_WEB_DATASOURCE_MASTER_KEY:?set SEATUNNEL_WEB_DATASOURCE_MASTER_KEY}
       SPRING_DATASOURCE_PASSWORD: ${MYSQL_PASSWORD:-change_me}
+
+      SPRING_FLYWAY_ENABLED: "true"
+
+      SEATUNNEL_WEB_DATASOURCE_MASTER_KEY: ${SEATUNNEL_WEB_DATASOURCE_MASTER_KEY:?set SEATUNNEL_WEB_DATASOURCE_MASTER_KEY}
 
     expose:
       - "9527"
@@ -69,7 +78,13 @@ services:
       - ./jdbc-drivers:/opt/seatunnel-web/jdbc-drivers
 
     healthcheck:
-      test: ["CMD", "bash", "-c", "</dev/tcp/127.0.0.1/9527"]
+      test:
+        [
+            "CMD",
+            "bash",
+            "-c",
+            "</dev/tcp/127.0.0.1/9527"
+        ]
       interval: 10s
       timeout: 3s
       retries: 12
@@ -78,14 +93,13 @@ services:
 
   seatunnel-web:
     image: ${SEATUNNEL_WEB_IMAGE:-seatunnel-web:latest}
+    container_name: seatunnel-web
+    restart: unless-stopped
 
     build:
       context: .
       dockerfile: Dockerfile
       target: frontend-runtime
-
-    container_name: seatunnel-web
-    restart: unless-stopped
 
     depends_on:
       seatunnel-web-api:
