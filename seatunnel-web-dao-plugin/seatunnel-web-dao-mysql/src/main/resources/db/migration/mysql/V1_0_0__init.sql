@@ -1,5 +1,6 @@
 -- SeaTunnel Web MySQL Flyway initialization script.
 -- Do not add DROP TABLE, CREATE DATABASE, or USE statements to Flyway migrations.
+-- All tables use utf8mb4 with utf8mb4_unicode_ci.
 SET NAMES utf8mb4;
 
 -- ============================================================
@@ -110,7 +111,7 @@ CREATE TABLE `t_seatunnel_web_cdc_server_id_pool`
 (
     `id`            bigint                                                  NOT NULL COMMENT 'primary key',
     `datasource_id` bigint                                                  NOT NULL COMMENT 'datasource id for this MySQL CDC server-id pool',
-    `instance_key`  varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL COMMENT 'unique MySQL instance or cluster key',
+    `instance_key`  varchar(255) NOT NULL COMMENT 'unique MySQL instance or cluster key',
     `min_server_id` bigint                                                  NOT NULL DEFAULT 5400 COMMENT 'minimum allocatable server-id',
     `max_server_id` bigint                                                  NOT NULL DEFAULT 6400 COMMENT 'maximum allocatable server-id',
     `status`        tinyint(4) NOT NULL DEFAULT 1 COMMENT '1 enabled, 0 disabled',
@@ -128,7 +129,7 @@ CREATE TABLE `t_seatunnel_web_cdc_server_id_allocation`
     `server_id`         bigint                                                 NOT NULL COMMENT 'allocated MySQL CDC server-id',
     `job_definition_id` bigint                                                 NOT NULL COMMENT 'job definition id',
     `job_instance_id`   bigint NULL DEFAULT NULL COMMENT 'job instance id',
-    `source`            varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'MANUAL' COMMENT 'MANUAL or AUTO',
+    `source`            varchar(32) NOT NULL DEFAULT 'MANUAL' COMMENT 'MANUAL or AUTO',
     `active`            tinyint(4) NULL DEFAULT 1 COMMENT '1 currently occupied, NULL released',
     `allocated_time`    datetime NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT 'allocated time',
     `released_time`     datetime NULL DEFAULT NULL COMMENT 'released time',
@@ -496,137 +497,137 @@ CREATE TABLE `t_seatunnel_web_streaming_job_table_metrics_current`
 
 CREATE TABLE `QRTZ_JOB_DETAILS`
 (
-    `sched_name`        varchar(120) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL,
-    `job_name`          varchar(200) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL,
-    `job_group`         varchar(200) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL,
-    `description`       varchar(250) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL,
-    `job_class_name`    varchar(250) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL,
-    `is_durable`        varchar(1) CHARACTER SET utf8 COLLATE utf8_general_ci   NOT NULL,
-    `is_nonconcurrent`  varchar(1) CHARACTER SET utf8 COLLATE utf8_general_ci   NOT NULL,
-    `is_update_data`    varchar(1) CHARACTER SET utf8 COLLATE utf8_general_ci   NOT NULL,
-    `requests_recovery` varchar(1) CHARACTER SET utf8 COLLATE utf8_general_ci   NOT NULL,
+    `sched_name`        varchar(120) NOT NULL,
+    `job_name`          varchar(200) NOT NULL,
+    `job_group`         varchar(200) NOT NULL,
+    `description`       varchar(250) NULL DEFAULT NULL,
+    `job_class_name`    varchar(250) NOT NULL,
+    `is_durable`        varchar(1)   NOT NULL,
+    `is_nonconcurrent`  varchar(1)   NOT NULL,
+    `is_update_data`    varchar(1)   NOT NULL,
+    `requests_recovery` varchar(1)   NOT NULL,
     `job_data`          blob NULL,
     PRIMARY KEY (`sched_name`, `job_name`, `job_group`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_general_ci ROW_FORMAT = Dynamic;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci ROW_FORMAT=DYNAMIC;
 
 CREATE TABLE `QRTZ_TRIGGERS`
 (
-    `sched_name`     varchar(120) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL,
-    `trigger_name`   varchar(200) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL,
-    `trigger_group`  varchar(200) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL,
-    `job_name`       varchar(200) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL,
-    `job_group`      varchar(200) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL,
-    `description`    varchar(250) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL,
+    `sched_name`     varchar(120) NOT NULL,
+    `trigger_name`   varchar(200) NOT NULL,
+    `trigger_group`  varchar(200) NOT NULL,
+    `job_name`       varchar(200) NOT NULL,
+    `job_group`      varchar(200) NOT NULL,
+    `description`    varchar(250) NULL DEFAULT NULL,
     `next_fire_time` bigint(0) NULL DEFAULT NULL,
     `prev_fire_time` bigint(0) NULL DEFAULT NULL,
     `priority`       int(0) NULL DEFAULT NULL,
-    `trigger_state`  varchar(16) CHARACTER SET utf8 COLLATE utf8_general_ci  NOT NULL,
-    `trigger_type`   varchar(8) CHARACTER SET utf8 COLLATE utf8_general_ci   NOT NULL,
+    `trigger_state`  varchar(16)  NOT NULL,
+    `trigger_type`   varchar(8)   NOT NULL,
     `start_time`     bigint(0) NOT NULL,
     `end_time`       bigint(0) NULL DEFAULT NULL,
-    `calendar_name`  varchar(200) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL,
+    `calendar_name`  varchar(200) NULL DEFAULT NULL,
     `misfire_instr`  smallint(0) NULL DEFAULT NULL,
     `job_data`       blob NULL,
     PRIMARY KEY (`sched_name`, `trigger_name`, `trigger_group`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_general_ci ROW_FORMAT = Dynamic;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci ROW_FORMAT=DYNAMIC;
 
 CREATE TABLE `QRTZ_SIMPLE_TRIGGERS`
 (
-    `sched_name`      varchar(120) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL,
-    `trigger_name`    varchar(200) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL,
-    `trigger_group`   varchar(200) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL,
+    `sched_name`      varchar(120) NOT NULL,
+    `trigger_name`    varchar(200) NOT NULL,
+    `trigger_group`   varchar(200) NOT NULL,
     `repeat_count`    bigint(0) NOT NULL,
     `repeat_interval` bigint(0) NOT NULL,
     `times_triggered` bigint(0) NOT NULL,
     PRIMARY KEY (`sched_name`, `trigger_name`, `trigger_group`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_general_ci ROW_FORMAT = Dynamic;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci ROW_FORMAT=DYNAMIC;
 
 CREATE TABLE `QRTZ_CRON_TRIGGERS`
 (
-    `sched_name`      varchar(120) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL,
-    `trigger_name`    varchar(200) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL,
-    `trigger_group`   varchar(200) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL,
-    `cron_expression` varchar(200) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL,
-    `time_zone_id`    varchar(80) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL,
+    `sched_name`      varchar(120) NOT NULL,
+    `trigger_name`    varchar(200) NOT NULL,
+    `trigger_group`   varchar(200) NOT NULL,
+    `cron_expression` varchar(200) NOT NULL,
+    `time_zone_id`    varchar(80) NULL DEFAULT NULL,
     PRIMARY KEY (`sched_name`, `trigger_name`, `trigger_group`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_general_ci ROW_FORMAT = Dynamic;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci ROW_FORMAT=DYNAMIC;
 
 CREATE TABLE `QRTZ_SIMPROP_TRIGGERS`
 (
-    `sched_name`    varchar(120) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL,
-    `trigger_name`  varchar(200) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL,
-    `trigger_group` varchar(200) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL,
-    `str_prop_1`    varchar(512) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL,
-    `str_prop_2`    varchar(512) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL,
-    `str_prop_3`    varchar(512) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL,
+    `sched_name`    varchar(120) NOT NULL,
+    `trigger_name`  varchar(200) NOT NULL,
+    `trigger_group` varchar(200) NOT NULL,
+    `str_prop_1`    varchar(512) NULL DEFAULT NULL,
+    `str_prop_2`    varchar(512) NULL DEFAULT NULL,
+    `str_prop_3`    varchar(512) NULL DEFAULT NULL,
     `int_prop_1`    int(0) NULL DEFAULT NULL,
     `int_prop_2`    int(0) NULL DEFAULT NULL,
     `long_prop_1`   bigint(0) NULL DEFAULT NULL,
     `long_prop_2`   bigint(0) NULL DEFAULT NULL,
     `dec_prop_1`    decimal(13, 4) NULL DEFAULT NULL,
     `dec_prop_2`    decimal(13, 4) NULL DEFAULT NULL,
-    `bool_prop_1`   varchar(1) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL,
-    `bool_prop_2`   varchar(1) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL,
+    `bool_prop_1`   varchar(1) NULL DEFAULT NULL,
+    `bool_prop_2`   varchar(1) NULL DEFAULT NULL,
     PRIMARY KEY (`sched_name`, `trigger_name`, `trigger_group`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_general_ci ROW_FORMAT = Dynamic;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci ROW_FORMAT=DYNAMIC;
 
 CREATE TABLE `QRTZ_BLOB_TRIGGERS`
 (
-    `sched_name`    varchar(120) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL,
-    `trigger_name`  varchar(200) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL,
-    `trigger_group` varchar(200) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL,
+    `sched_name`    varchar(120) NOT NULL,
+    `trigger_name`  varchar(200) NOT NULL,
+    `trigger_group` varchar(200) NOT NULL,
     `blob_data`     blob NULL,
     PRIMARY KEY (`sched_name`, `trigger_name`, `trigger_group`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_general_ci ROW_FORMAT = Dynamic;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci ROW_FORMAT=DYNAMIC;
 
 CREATE TABLE `QRTZ_CALENDARS`
 (
-    `sched_name`    varchar(120) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL,
-    `calendar_name` varchar(200) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL,
+    `sched_name`    varchar(120) NOT NULL,
+    `calendar_name` varchar(200) NOT NULL,
     `calendar`      blob                                                    NOT NULL,
     PRIMARY KEY (`sched_name`, `calendar_name`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_general_ci ROW_FORMAT = Dynamic;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci ROW_FORMAT=DYNAMIC;
 
 CREATE TABLE `QRTZ_PAUSED_TRIGGER_GRPS`
 (
-    `sched_name`    varchar(120) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL,
-    `trigger_group` varchar(200) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL,
+    `sched_name`    varchar(120) NOT NULL,
+    `trigger_group` varchar(200) NOT NULL,
     PRIMARY KEY (`sched_name`, `trigger_group`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_general_ci ROW_FORMAT = Dynamic;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci ROW_FORMAT=DYNAMIC;
 
 CREATE TABLE `QRTZ_FIRED_TRIGGERS`
 (
-    `sched_name`        varchar(120) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL,
-    `entry_id`          varchar(95) CHARACTER SET utf8 COLLATE utf8_general_ci  NOT NULL,
-    `trigger_name`      varchar(200) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL,
-    `trigger_group`     varchar(200) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL,
-    `instance_name`     varchar(200) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL,
+    `sched_name`        varchar(120) NOT NULL,
+    `entry_id`          varchar(95)  NOT NULL,
+    `trigger_name`      varchar(200) NOT NULL,
+    `trigger_group`     varchar(200) NOT NULL,
+    `instance_name`     varchar(200) NOT NULL,
     `fired_time`        bigint(0) NOT NULL,
     `sched_time`        bigint(0) NOT NULL,
     `priority`          int(0) NOT NULL,
-    `state`             varchar(16) CHARACTER SET utf8 COLLATE utf8_general_ci  NOT NULL,
-    `job_name`          varchar(200) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL,
-    `job_group`         varchar(200) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL,
-    `is_nonconcurrent`  varchar(1) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL,
-    `requests_recovery` varchar(1) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL,
+    `state`             varchar(16)  NOT NULL,
+    `job_name`          varchar(200) NULL DEFAULT NULL,
+    `job_group`         varchar(200) NULL DEFAULT NULL,
+    `is_nonconcurrent`  varchar(1) NULL DEFAULT NULL,
+    `requests_recovery` varchar(1) NULL DEFAULT NULL,
     PRIMARY KEY (`sched_name`, `entry_id`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_general_ci ROW_FORMAT = Dynamic;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci ROW_FORMAT=DYNAMIC;
 
 CREATE TABLE `QRTZ_SCHEDULER_STATE`
 (
-    `sched_name`        varchar(120) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL,
-    `instance_name`     varchar(200) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL,
+    `sched_name`        varchar(120) NOT NULL,
+    `instance_name`     varchar(200) NOT NULL,
     `last_checkin_time` bigint(0) NOT NULL,
     `checkin_interval`  bigint(0) NOT NULL,
     PRIMARY KEY (`sched_name`, `instance_name`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_general_ci ROW_FORMAT = Dynamic;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci ROW_FORMAT=DYNAMIC;
 
 CREATE TABLE `QRTZ_LOCKS`
 (
-    `sched_name` varchar(120) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL,
-    `lock_name`  varchar(40) CHARACTER SET utf8 COLLATE utf8_general_ci  NOT NULL,
+    `sched_name` varchar(120) NOT NULL,
+    `lock_name`  varchar(40)  NOT NULL,
     PRIMARY KEY (`sched_name`, `lock_name`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_general_ci ROW_FORMAT = Dynamic;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci ROW_FORMAT=DYNAMIC;
 
 -- ============================================================
 -- 3. Initial data
@@ -648,4 +649,4 @@ VALUES (10001, 'now', '当前时间', 'SYSTEM', 'DYNAMIC', 'yyyy-MM-dd HH:mm:ss'
 
 INSERT INTO `t_seatunnel_web_user`
 (`id`, `user_name`, `user_password`, `user_type`, `email`, `phone`, `create_time`, `update_time`, `state`)
-VALUES (1, 'admin', '$2a$10$7EqJtq98hPqEX7fNZaFWoOhi4iFP1Zc2l1N9CifJmJ4PrGiHeq.8K', 0, NULL, NULL, NULL, NULL, 1);
+VALUES (1, 'admin', '$2a$10$eAi7g2tWHTf3ukdlyM9uw.d/MIYbkfjZY4B1PIEvfmrlPi7XRvb4K', 0, NULL, NULL, NULL, NULL, 1);

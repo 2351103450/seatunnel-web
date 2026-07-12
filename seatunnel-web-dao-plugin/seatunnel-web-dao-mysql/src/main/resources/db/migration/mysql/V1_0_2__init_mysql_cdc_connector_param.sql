@@ -1,10 +1,10 @@
--- MySQL CDC Source 参数元数据初始化脚本
--- 参数数量：32
--- 说明：
--- 1. 不显式写入 id，由 AUTO_INCREMENT 自动生成。
--- 2. server-id 使用平台建议默认值 5600；SeaTunnel 原生未配置时会随机生成。
--- 3. 使用 ON DUPLICATE KEY UPDATE，可重复执行并更新已有参数元数据。
--- 4. 依赖唯一索引能够唯一标识 connector_name + connector_type + param_name。
+-- MySQL CDC Source parameter metadata initialization script
+-- Number of parameters: 32
+-- Notes:
+-- 1. The id field is not explicitly inserted; it is generated automatically by AUTO_INCREMENT.
+-- 2. The server-id uses the platform-recommended default value of 5600; SeaTunnel generates one randomly when it is not configured.
+-- 3. ON DUPLICATE KEY UPDATE is used so the script can be executed repeatedly and existing parameter metadata can be updated.
+-- 4. A unique index is required to uniquely identify records by connector_name + connector_type + param_name.
 
 START TRANSACTION;
 
@@ -33,14 +33,15 @@ VALUES
 ('connector', 'MySQL-CDC', 'source', 'debezium', '透传给 Debezium Embedded Engine 的配置项。', 'map', 0, NULL, '{"snapshot.locking.mode":"none","include.schema.changes":"false"}', '{"summary":"配置底层 Debezium 引擎的高级参数。","coreMeaning":"用于覆盖快照锁、心跳、Binlog 解析和其他 Debezium 行为。","recommendationHints":["仅在 SeaTunnel 标准参数无法满足需求时使用。","配置前应核对当前内置 Debezium 版本。"],"cautions":["错误参数可能导致数据不一致或任务无法启动。","不同 Debezium 版本的参数支持存在差异。"]}', '用于AI参数推荐', 0),
 ('connector', 'MySQL-CDC', 'source', 'int_type_narrowing', '是否在无精度损失时进行整数类型缩窄，例如将 MySQL tinyint(1) 映射为 boolean。', 'boolean', 0, 'true', 'true', '{"summary":"控制 MySQL 整数类型的语义化缩窄。","coreMeaning":"开启后 tinyint(1) 等类型可能被识别为 BOOLEAN。","recommendationHints":["字段确实表达布尔含义时保持开启。"],"cautions":["若 tinyint(1) 实际存储数值而非布尔值，应关闭。"]}', '用于AI参数推荐', 0),
 ('connector', 'MySQL-CDC', 'source', 'common-options', 'Source 插件通用参数集合，具体字段参见 SeaTunnel Source Common Options。', 'object', 0, NULL, '{"plugin_output":"mysql_cdc_result","parallelism":4}', '{"summary":"承载 Source 插件公共配置。","coreMeaning":"通常包括结果表名、并行度等非 MySQL CDC 专属参数。","recommendationHints":["仅配置当前 SeaTunnel 版本明确支持的公共参数。"],"cautions":["该项更适合作为参数组展示，而非直接输出 common-options 键。"]}', '用于AI参数推荐', 0)
-    ON DUPLICATE KEY UPDATE
-                         `param_desc` = VALUES(`param_desc`),
-                         `param_type` = VALUES(`param_type`),
-                         `required_flag` = VALUES(`required_flag`),
-                         `default_value` = VALUES(`default_value`),
-                         `example_value` = VALUES(`example_value`),
-                         `param_context` = VALUES(`param_context`),
-                         `remark` = VALUES(`remark`),
-                         `update_time` = CURRENT_TIMESTAMP;
+AS incoming
+ON DUPLICATE KEY UPDATE
+    `param_desc` = incoming.`param_desc`,
+    `param_type` = incoming.`param_type`,
+    `required_flag` = incoming.`required_flag`,
+    `default_value` = incoming.`default_value`,
+    `example_value` = incoming.`example_value`,
+    `param_context` = incoming.`param_context`,
+    `remark` = incoming.`remark`,
+    `update_time` = CURRENT_TIMESTAMP;
 
 COMMIT;
