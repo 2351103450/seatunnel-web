@@ -455,30 +455,6 @@ INSERT INTO `t_seatunnel_web_user`
 (`id`, `user_name`, `user_password`, `user_type`, `email`, `phone`, `create_time`, `update_time`, `state`)
 VALUES (1, 'admin', '$2a$10$7EqJtq98hPqEX7fNZaFWoOhi4iFP1Zc2l1N9CifJmJ4PrGiHeq.8K', 0, NULL, NULL, NULL, NULL, 1);
 
-
-INSERT INTO `t_seatunnel_web_connector_param_meta`
-(`id`, `type`, `connector_name`, `connector_type`, `param_name`, `param_desc`, `param_type`, `required_flag`,
- `default_value`, `example_value`, `param_context`, `remark`, `create_time`, `update_time`, `deleted`)
-VALUES (1, 'connector', 'Jdbc', 'source', 'fetch.size', '控制单次从数据库拉取结果集的批量大小，用于平衡查询效率、网络传输与内存占用。', 'number', 0, '1024',
-        '2048', '{
-  "summary": "控制 JDBC 结果集读取时的单次抓取批量。",
-  "coreMeaning": "影响结果集分批拉取节奏，不等于返回总条数。",
-  "processingLogic": [
-    "值小：单批更轻，但往返更多。",
-    "值大：往返更少，但单批压力更高。"
-  ],
-  "recommendationHints": [
-    "大结果集、轻量行数据可适当调大。",
-    "宽表、大字段、内存敏感场景应谨慎调大。",
-    "稳定性优先时，可适当调小。"
-  ],
-  "cautions": [
-    "不等于 limit。",
-    "不是越大越好。"
-  ]
-}', '用于AI参数推荐', '2026-04-09 20:48:01', '2026-04-10 10:23:36', 0);
-
-
 DROP TABLE IF EXISTS `QRTZ_BLOB_TRIGGERS`;
 CREATE TABLE `QRTZ_BLOB_TRIGGERS`
 (
