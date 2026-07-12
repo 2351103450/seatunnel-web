@@ -8,7 +8,7 @@
 
 START TRANSACTION;
 
-INSERT INTO `seatunnel_web`.`t_seatunnel_web_connector_param_meta`
+INSERT INTO `t_seatunnel_web_connector_param_meta`
 (`type`, `connector_name`, `connector_type`, `param_name`, `param_desc`,
  `param_type`, `required_flag`, `default_value`, `example_value`, `param_context`,
  `remark`, `deleted`)
@@ -44,12 +44,3 @@ VALUES
                          `update_time` = CURRENT_TIMESTAMP;
 
 COMMIT;
-
--- 校验 MySQL-CDC Source 参数数量
-SELECT `connector_name`, `connector_type`, COUNT(*) AS `param_count`
-FROM `seatunnel_web`.`t_seatunnel_web_connector_param_meta`
-WHERE `type` = 'connector'
-  AND `connector_name` = 'MySQL-CDC'
-  AND `connector_type` = 'source'
-  AND `deleted` = 0
-GROUP BY `connector_name`, `connector_type`;

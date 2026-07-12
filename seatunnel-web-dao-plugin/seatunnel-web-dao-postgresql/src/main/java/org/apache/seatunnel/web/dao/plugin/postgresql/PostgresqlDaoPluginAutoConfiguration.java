@@ -6,18 +6,22 @@ import org.apache.seatunnel.web.dao.plugin.api.dialect.DatabaseDialect;
 import org.apache.seatunnel.web.dao.plugin.api.monitor.DatabaseMonitor;
 import org.apache.seatunnel.web.dao.plugin.postgresql.dialect.PostgresqlDialect;
 import org.apache.seatunnel.web.dao.plugin.postgresql.monitor.PostgresqlMonitor;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.context.annotation.Conditional;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.annotation.Configuration;
 
 import javax.sql.DataSource;
 
-@Conditional(PostgresqlDatabaseEnvironmentCondition.class)
 @Configuration(proxyBeanMethods = false)
+@ConditionalOnProperty(prefix = "seatunnel.web.database", name = "type", havingValue = "postgresql")
 public class PostgresqlDaoPluginAutoConfiguration implements DaoPluginConfiguration {
 
-    @Autowired
-    private DataSource dataSource;
+    private final DatabaseMonitor databaseMonitor;
+    private final DatabaseDialect databaseDialect;
+
+    public PostgresqlDaoPluginAutoConfiguration(DataSource dataSource) {
+        this.databaseMonitor = new PostgresqlMonitor(dataSource);
+        this.databaseDialect = new PostgresqlDialect(dataSource);
+    }
 
     @Override
     public DbType dbType() {
@@ -26,11 +30,11 @@ public class PostgresqlDaoPluginAutoConfiguration implements DaoPluginConfigurat
 
     @Override
     public DatabaseMonitor databaseMonitor() {
-        return new PostgresqlMonitor(dataSource);
+        return databaseMonitor;
     }
 
     @Override
     public DatabaseDialect databaseDialect() {
-        return new PostgresqlDialect(dataSource);
+        return databaseDialect;
     }
 }
