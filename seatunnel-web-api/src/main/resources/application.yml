@@ -5,9 +5,9 @@ server:
     max-connections: 10000
 springdoc:
   api-docs:
-    enabled: true
+    enabled: ${SPRINGDOC_API_DOCS_ENABLED:true}
   swagger-ui:
-    enabled: true
+    enabled: ${SPRINGDOC_SWAGGER_UI_ENABLED:true}
 
 spring:
   profiles:
@@ -19,15 +19,15 @@ spring:
     date-format: "yyyy-MM-dd HH:mm:ss"
   servlet:
     multipart:
-      max-file-size: 1024MB
-      max-request-size: 1024MB
+      max-file-size: ${SEATUNNEL_WEB_MAX_FILE_SIZE:200MB}
+      max-request-size: ${SEATUNNEL_WEB_MAX_REQUEST_SIZE:200MB}
   messages:
     basename: i18n/messages
   datasource:
     driver-class-name: com.mysql.cj.jdbc.Driver
     url: jdbc:mysql://127.0.0.1:3306/seatunnel_web?useUnicode=true&characterEncoding=utf8&useSSL=false&serverTimezone=GMT%2B8&allowPublicKeyRetrieval=true
     username: root
-    password: 123456
+    password: ${SPRING_DATASOURCE_PASSWORD:change_me}
     hikari:
       connection-test-query: select 1
       pool-name: seatunnel-web

@@ -15,13 +15,13 @@ Security fixes are provided for actively maintained release lines. Until the fir
 
 Please do **not** create a public GitHub issue for security vulnerabilities.
 
-Instead, report issues through the Apache Software Foundation security process:
+Instead, report issues through this project security process:
 
-- Email: `security@apache.org`
-- Include `SeaTunnel Web` in the subject line.
+- Use GitHub Private Vulnerability Reporting from the repository Security tab.
+- If private reporting is unavailable, open a minimal public advisory issue without exploit details and request a private contact channel.
 - Provide a description, affected versions or commits, reproduction steps, impact, and any suggested mitigation.
 
-The project will acknowledge reports as soon as possible and will coordinate disclosure according to ASF security practices.
+The project will acknowledge reports as soon as possible and will coordinate disclosure through this repository's maintainer-managed security process.
 
 ## Security Best Practices for Deployments
 

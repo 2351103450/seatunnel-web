@@ -55,3 +55,9 @@ spark-warehouse
 /seatunnel-web-it/profile/*
 /deploy/docker/dist/
 /node_modules/.yarn-integrity
+
+# Local environment files
+.env
+.env.*
+!.env.example
+!.env.*.example

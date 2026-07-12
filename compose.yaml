@@ -1,14 +1,14 @@
 services:
   mysql:
-    image: mysql:8.0
+    image: mysql:8.0.39
     container_name: seatunnel-web-mysql
     restart: unless-stopped
 
     environment:
-      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-seatunnel_root}
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-change_me}
       MYSQL_DATABASE: seatunnel_web
       MYSQL_USER: ${MYSQL_USER:-seatunnel}
-      MYSQL_PASSWORD: ${MYSQL_PASSWORD:-seatunnel}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD:-change_me}
       TZ: Asia/Shanghai
 
     command:
@@ -56,10 +56,11 @@ services:
 
       SERVER_PORT: 9527
       SPRING_PROFILES_ACTIVE: mysql
-      SPRING_DATASOURCE_URL: jdbc:mysql://${MYSQL_HOST}:${MYSQL_PORT:-3306}/${MYSQL_DATABASE:-seatunnel_web}?useUnicode=true&characterEncoding=utf8&useSSL=false&serverTimezone=GMT%2B8&allowPublicKeyRetrieval=true
+      SPRING_DATASOURCE_URL: jdbc:mysql://${MYSQL_HOST:-mysql}:${MYSQL_PORT:-3306}/${MYSQL_DATABASE:-seatunnel_web}?useUnicode=true&characterEncoding=utf8&useSSL=false&serverTimezone=GMT%2B8&allowPublicKeyRetrieval=true
 
       SPRING_DATASOURCE_USERNAME: ${MYSQL_USER:-seatunnel}
-      SPRING_DATASOURCE_PASSWORD: ${MYSQL_PASSWORD:-seatunnel}
+      SEATUNNEL_WEB_DATASOURCE_MASTER_KEY: ${SEATUNNEL_WEB_DATASOURCE_MASTER_KEY:?set SEATUNNEL_WEB_DATASOURCE_MASTER_KEY}
+      SPRING_DATASOURCE_PASSWORD: ${MYSQL_PASSWORD:-change_me}
 
     expose:
       - "9527"
@@ -67,6 +68,13 @@ services:
     volumes:
       - seatunnel-web-logs:/opt/seatunnel-web/logs
       - ./jdbc-drivers:/opt/seatunnel-web/jdbc-drivers
+
+    healthcheck:
+      test: ["CMD", "bash", "-c", "</dev/tcp/127.0.0.1/9527"]
+      interval: 10s
+      timeout: 3s
+      retries: 12
+      start_period: 30s
 
 
   seatunnel-web:

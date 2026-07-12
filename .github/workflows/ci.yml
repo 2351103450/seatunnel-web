@@ -77,5 +77,11 @@ jobs:
       - name: Install dependencies
         run: yarn install --frozen-lockfile
 
+      - name: Lint and type-check
+        run: yarn lint
+
+      - name: Test
+        run: yarn test --runInBand
+
       - name: Build
         run: yarn build

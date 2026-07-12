@@ -61,6 +61,9 @@ public class LoginController extends BaseController {
         for (Map.Entry<String, String> cookieEntry : cookieMap.entrySet()) {
             Cookie cookie = new Cookie(cookieEntry.getKey(), cookieEntry.getValue());
             cookie.setHttpOnly(true);
+            cookie.setSecure(request.isSecure());
+            cookie.setPath("/");
+            cookie.setAttribute("SameSite", "Lax");
             response.addCookie(cookie);
         }
 
