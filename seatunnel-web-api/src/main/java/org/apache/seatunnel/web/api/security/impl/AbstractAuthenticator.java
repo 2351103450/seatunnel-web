@@ -44,7 +44,6 @@ public abstract class AbstractAuthenticator implements Authenticator {
             throw new RuntimeException("create session failed!");
         }
 
-        logger.info("sessionId : {}", sessionId);
         Map<String, String> data = new HashMap<>();
         data.put(Constants.SESSION_ID, sessionId);
         data.put(Constants.SECURITY_CONFIG_TYPE, securityConfig.getType());
