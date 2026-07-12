@@ -15,6 +15,7 @@ FROM eclipse-temurin:21-jre-jammy AS backend-runtime
 ARG VERSION=dev
 ARG VCS_REF=unknown
 ARG BUILD_DATE=unknown
+
 LABEL org.opencontainers.image.title="SeaTunnel Web API" \
       org.opencontainers.image.description="SeaTunnel Web backend service" \
       org.opencontainers.image.licenses="Apache-2.0" \
@@ -27,6 +28,10 @@ ENV SEATUNNEL_WEB_HOME=/opt/seatunnel-web \
     APP_OPTS="" \
     SERVER_PORT=9527 \
     SPRING_PROFILES_ACTIVE=mysql \
+    SEATUNNEL_WEB_DATABASE_TYPE=mysql \
+    SEATUNNEL_WEB_DATABASE_HOST=mysql \
+    SEATUNNEL_WEB_DATABASE_PORT=3306 \
+    SEATUNNEL_WEB_DATABASE_NAME=seatunnel_web \
     SPRING_DATASOURCE_URL="jdbc:mysql://mysql:3306/seatunnel_web?useUnicode=true&characterEncoding=utf8&useSSL=false&serverTimezone=GMT%2B8&allowPublicKeyRetrieval=true" \
     SPRING_DATASOURCE_USERNAME=seatunnel \
     SPRING_DATASOURCE_PASSWORD=seatunnel
@@ -51,7 +56,7 @@ RUN set -eux; \
 
 EXPOSE 9527
 
-VOLUME ["/opt/seatunnel-web/logs", "/opt/seatunnel-web/jdbc-drivers"]
+VOLUME ["/opt/seatunnel-web/logs","/opt/seatunnel-web/jdbc-drivers"]
 
 ENTRYPOINT ["/opt/seatunnel-web/bin/run-seatunnel-web.sh"]
 
@@ -64,6 +69,7 @@ FROM nginx:latest AS frontend-runtime
 ARG VERSION=dev
 ARG VCS_REF=unknown
 ARG BUILD_DATE=unknown
+
 LABEL org.opencontainers.image.title="SeaTunnel Web" \
       org.opencontainers.image.description="SeaTunnel Web frontend and reverse proxy" \
       org.opencontainers.image.licenses="Apache-2.0" \
@@ -86,7 +92,9 @@ RUN set -eux; \
     cp -r /tmp/seatunnel-web/web/. /usr/share/nginx/html/; \
     cp /tmp/seatunnel-web/conf/nginx/default.conf \
        /etc/nginx/conf.d/default.conf; \
-    rm -rf /tmp/seatunnel-web /tmp/seatunnel-web.tar.gz
+    rm -rf \
+        /tmp/seatunnel-web \
+        /tmp/seatunnel-web.tar.gz
 
 EXPOSE 80
 

@@ -179,6 +179,7 @@ export default defineConfig({
   mako: {},
   esbuildMinifyIIFE: true,
   requestRecord: {},
-  exportStatic: {},
+   // 当前使用 Nginx SPA 部署，不启用静态路由导出
+//   exportStatic: {},
   tailwindcss: {},
 });

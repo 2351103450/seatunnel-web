@@ -1,26 +1,38 @@
 services:
   seatunnel-web-api:
     image: ${SEATUNNEL_WEB_API_IMAGE:-seatunnel-web-api:latest}
+    container_name: seatunnel-web-api
+    restart: unless-stopped
 
     build:
       context: .
       dockerfile: Dockerfile
       target: backend-runtime
 
-    container_name: seatunnel-web-api
-    restart: unless-stopped
-
     environment:
+      TZ: Asia/Shanghai
+
       JAVA_OPTS: ${JAVA_OPTS:--Xms512m -Xmx1024m}
       APP_OPTS: ${APP_OPTS:-}
 
       SERVER_PORT: 9527
       SPRING_PROFILES_ACTIVE: mysql
 
-      SPRING_DATASOURCE_URL: jdbc:mysql://${MYSQL_HOST:-host.docker.internal}:${MYSQL_PORT:-3306}/${MYSQL_DATABASE:-seatunnel_web}?useUnicode=true&characterEncoding=utf8&useSSL=false&serverTimezone=GMT%2B8&allowPublicKeyRetrieval=true
-      SPRING_DATASOURCE_USERNAME: ${MYSQL_USER}
+      SEATUNNEL_WEB_DATABASE_TYPE: mysql
+      SEATUNNEL_WEB_DATABASE_HOST: ${MYSQL_HOST:-host.docker.internal}
+      SEATUNNEL_WEB_DATABASE_PORT: ${MYSQL_PORT:-3306}
+      SEATUNNEL_WEB_DATABASE_NAME: ${MYSQL_DATABASE:-seatunnel_web}
+
+      SPRING_DATASOURCE_URL: "jdbc:mysql://${MYSQL_HOST:-host.docker.internal}:${MYSQL_PORT:-3306}/${MYSQL_DATABASE:-seatunnel_web}?useUnicode=true&characterEncoding=utf8&useSSL=false&serverTimezone=GMT%2B8&allowPublicKeyRetrieval=true"
+      SPRING_DATASOURCE_USERNAME: ${MYSQL_USER:?set MYSQL_USER}
+      SPRING_DATASOURCE_PASSWORD: ${MYSQL_PASSWORD:?set MYSQL_PASSWORD}
+
+      SPRING_FLYWAY_ENABLED: "true"
+
       SEATUNNEL_WEB_DATASOURCE_MASTER_KEY: ${SEATUNNEL_WEB_DATASOURCE_MASTER_KEY:?set SEATUNNEL_WEB_DATASOURCE_MASTER_KEY}
-      SPRING_DATASOURCE_PASSWORD: ${MYSQL_PASSWORD}
+
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
 
     expose:
       - "9527"
@@ -30,22 +42,28 @@ services:
       - seatunnel-web-jdbc-drivers:/opt/seatunnel-web/jdbc-drivers
 
     healthcheck:
-      test: ["CMD", "bash", "-c", "</dev/tcp/127.0.0.1/9527"]
+      test:
+        [
+            "CMD",
+            "bash",
+            "-c",
+            "</dev/tcp/127.0.0.1/9527"
+        ]
       interval: 10s
       timeout: 3s
       retries: 12
       start_period: 30s
 
+
   seatunnel-web:
     image: ${SEATUNNEL_WEB_IMAGE:-seatunnel-web:latest}
+    container_name: seatunnel-web
+    restart: unless-stopped
 
     build:
       context: .
       dockerfile: Dockerfile
       target: frontend-runtime
-
-    container_name: seatunnel-web
-    restart: unless-stopped
 
     depends_on:
       seatunnel-web-api:
@@ -53,6 +71,7 @@ services:
 
     ports:
       - "${SEATUNNEL_WEB_PORT:-9001}:80"
+
 
 volumes:
   seatunnel-web-logs:
