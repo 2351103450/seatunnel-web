@@ -113,6 +113,11 @@
             </dependency>
             <dependency>
                 <groupId>org.apache.seatunnel.web</groupId>
+                <artifactId>seatunnel-web-datasource-kingbase</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.apache.seatunnel.web</groupId>
                 <artifactId>seatunnel-web-datasource-all</artifactId>
                 <version>${project.version}</version>
             </dependency>

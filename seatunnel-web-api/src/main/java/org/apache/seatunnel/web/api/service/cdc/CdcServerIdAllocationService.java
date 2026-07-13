@@ -58,11 +58,11 @@ public class CdcServerIdAllocationService {
         }
 
         List<SourceConfigAccessor> sources = resolveCdcSources(command);
-        allocationMapper.releaseActiveByJobDefinitionId(jobDefinitionId);
-
         if (sources.isEmpty()) {
             return;
         }
+
+        allocationMapper.releaseActiveByJobDefinitionId(jobDefinitionId);
 
         int parallelism = resolveParallelism(command.getEnv());
         for (SourceConfigAccessor source : sources) {

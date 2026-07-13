@@ -93,6 +93,7 @@ const SearchToolbar: React.FC<SearchToolbarProps> = ({
     createDataSourceOption("MySql", "MYSQL"),
     createDataSourceOption("Oracle", "ORACLE"),
     createDataSourceOption("PostgreSQL", "POSTGRE_SQL"),
+    createDataSourceOption("Kingbase", "KINGBASE"),
   ];
 
   const statusOptions = [

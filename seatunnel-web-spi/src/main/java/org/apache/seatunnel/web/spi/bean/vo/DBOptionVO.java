@@ -28,7 +28,7 @@ public class DBOptionVO {
     @Schema(
             description = "Database type",
             example = "MYSQL",
-            allowableValues = {"MYSQL", "POSTGRESQL", "ORACLE", "SQLSERVER", "CLICKHOUSE", "KAFKA", "ELASTICSEARCH"}
+            allowableValues = {"MYSQL", "POSTGRE_SQL", "KINGBASE", "ORACLE", "SQLSERVER", "CLICKHOUSE", "KAFKA", "ELASTICSEARCH"}
     )
     private Object dbType;
 }
