@@ -22,6 +22,7 @@
         <module>seatunnel-web-datasource-mysql-cdc</module>
         <module>seatunnel-web-datasource-oracle</module>
         <module>seatunnel-web-datasource-postgresql</module>
+        <module>seatunnel-web-datasource-kingbase</module>
     </modules>
 
 
