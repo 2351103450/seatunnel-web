@@ -95,6 +95,7 @@ const AdvancedSearchForm: React.FC<AdvancedSearchFormProps> = ({
     createDataSourceOption("Oracle", "ORACLE"),
     createDataSourceOption("PostgreSQL", "POSTGRE_SQL"),
     createDataSourceOption("Kingbase", "KINGBASE"),
+    createDataSourceOption("Dameng", "DAMENG"),
   ];
 
   const statusOptions = [

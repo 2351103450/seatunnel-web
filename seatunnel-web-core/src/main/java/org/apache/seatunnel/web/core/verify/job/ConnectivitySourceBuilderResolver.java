@@ -11,6 +11,7 @@ public class ConnectivitySourceBuilderResolver {
             case MYSQL -> "JDBC-MYSQL";
             case POSTGRE_SQL -> "JDBC-POSTGRESQL";
             case KINGBASE -> "JDBC-KINGBASE";
+            case DAMENG -> "JDBC-DAMENG";
             case ORACLE -> "JDBC-ORACLE";
             default -> throw new IllegalArgumentException("暂不支持该数据源类型的 Source Builder 解析: " + dbType);
         };
