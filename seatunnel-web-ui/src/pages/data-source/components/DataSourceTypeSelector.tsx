@@ -63,7 +63,7 @@ const DataSourceTypeSelector: React.FC<DataSourceTypeSelectorProps> = ({
         connectorType: matched?.connectorType,
         groupName: matched?.groupName,
       };
-    }).filter((item) => item.dbType);
+    }).filter((item) => item.dbType).slice(0, 3);;
   }, [flatDatasourceList]);
 
   const showSuggested = !keyword && suggestedDatasourceList.length > 0;
