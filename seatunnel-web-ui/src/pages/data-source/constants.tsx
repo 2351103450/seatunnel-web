@@ -13,6 +13,7 @@ export const COMMON_DB_OPTIONS: DataSourceOptionItem[] = [
   { label: "ORACLE", value: "ORACLE" },
   { label: "POSTGRE_SQL", value: "POSTGRE_SQL" },
   { label: "KINGBASE", value: "KINGBASE" },
+  { label: "DAMENG", value: "DAMENG" },
 ];
 
 export const ENVIRONMENT_OPTIONS: DataSourceOptionItem[] = [
@@ -47,6 +48,12 @@ export const dataSourceGroupList: DataSourceGroup[] = [
         onlyDiScript: false,
         dbType: "KINGBASE",
         type: "KINGBASE",
+        connectorType: "Jdbc",
+      },
+      {
+        onlyDiScript: false,
+        dbType: "DAMENG",
+        type: "DAMENG",
         connectorType: "Jdbc",
       },
     ],

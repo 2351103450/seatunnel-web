@@ -47,6 +47,12 @@ export const sourceList = [
         type: "KINGBASE",
         connectorType: "Jdbc"
       },
+      {
+        onlyDiScript: false,
+        dbType: "DAMENG",
+        type: "DAMENG",
+        connectorType: "Jdbc"
+      },
 
     ],
   }

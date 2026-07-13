@@ -23,6 +23,7 @@
         <module>seatunnel-web-datasource-oracle</module>
         <module>seatunnel-web-datasource-postgresql</module>
         <module>seatunnel-web-datasource-kingbase</module>
+        <module>seatunnel-web-datasource-dameng</module>
     </modules>
 
 
