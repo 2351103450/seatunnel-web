@@ -3,36 +3,49 @@
   "files": {
     "ignoreUnknown": true,
     "includes": [
-      "**/*",
-      "!**/.umi/**",
-      "!**/.umi-production/**",
-      "!**/.umi-test/**",
-      "!**/.umi-test-production/**",
-      "!**/src/services/**",
-      "!**/mock/**",
-      "!**/dist/**",
-      "!**/server/**",
-      "!**/public/**",
-      "!**/coverage/**",
-      "!**/node_modules/**",
-      "!biome.json"
+      "**",
+      "!**/.umi",
+      "!**/.umi-production",
+      "!**/.umi-test",
+      "!**/.umi-test-production",
+      "!**/src/services",
+      "!**/mock",
+      "!!**/dist",
+      "!!**/server",
+      "!!**/public",
+      "!!**/coverage",
+      "!!**/node_modules"
     ]
   },
   "formatter": {
     "enabled": true,
-    "indentStyle": "space"
+    "indentStyle": "space",
+    "indentWidth": 2,
+    "lineEnding": "lf",
+    "lineWidth": 120
   },
   "linter": {
     "enabled": true,
     "rules": {
-      "recommended": true,
+      "recommended": false,
+      "correctness": {
+        "noUnusedImports": "warn",
+        "noUnusedVariables": "warn",
+        "noUnusedFunctionParameters": "warn",
+        "useExhaustiveDependencies": "off"
+      },
       "suspicious": {
         "noExplicitAny": "off"
       },
-      "correctness": {
-        "useExhaustiveDependencies": "off"
+      "style": {
+        "useImportType": "warn"
+      },
+      "complexity": {
+        "noStaticOnlyClass": "warn",
+        "useOptionalChain": "warn"
       },
       "a11y": {
+        "noSvgWithoutTitle": "warn",
         "noStaticElementInteractions": "off",
         "useValidAnchor": "off",
         "useKeyWithClickEvents": "off"
@@ -42,7 +55,10 @@
   "javascript": {
     "jsxRuntime": "reactClassic",
     "formatter": {
-      "quoteStyle": "single"
+      "quoteStyle": "single",
+      "jsxQuoteStyle": "double",
+      "semicolons": "always",
+      "trailingCommas": "all"
     }
   }
 }

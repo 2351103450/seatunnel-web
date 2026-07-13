@@ -67,6 +67,9 @@ public class StreamingJobInstanceServiceImpl implements StreamingJobInstanceServ
     @Value("${seatunnel.job.log-dir:logs}")
     private String baseLogDir;
 
+    @Value("${seatunnel.job.max-log-query-bytes:52428800}")
+    private long maxLogQueryBytes;
+
     @Override
     public JobInstanceVO create(Long jobDefineId, RunMode runMode, JobMode jobMode) {
         validateDefinitionId(jobDefineId);
@@ -147,6 +150,22 @@ public class StreamingJobInstanceServiceImpl implements StreamingJobInstanceServ
             Path path = Paths.get(logPath);
             if (!Files.exists(path)) {
                 throw new ServiceException(Status.BATCH_JOB_INSTANCE_LOG_NOT_EXIST);
+            }
+
+            long fileSize = Files.size(path);
+            if (fileSize > maxLogQueryBytes) {
+                log.warn(
+                        "Streaming job log file is too large, instanceId={}, path={}, fileSize={}, maxLogQueryBytes={}",
+                        instanceId,
+                        path,
+                        fileSize,
+                        maxLogQueryBytes
+                );
+
+                throw new ServiceException(
+                        Status.QUERY_STREAMING_JOB_INSTANCE_LOG_ERROR.getCode(),
+                        "当前日志文件过大（>50MB)，请在服务器上查看"
+                );
             }
 
             byte[] bytes = Files.readAllBytes(path);
@@ -292,6 +311,35 @@ public class StreamingJobInstanceServiceImpl implements StreamingJobInstanceServ
                     instanceId, range, e);
             throw new ServiceException(Status.QUERY_STREAMING_JOB_INSTANCE_ERROR);
         }
+    }
+
+    @Override
+    public StreamingJobInstance lastInstance(Long definitionId) {
+        if (definitionId == null || definitionId <= 0) {
+            return null;
+        }
+
+        try {
+            return streamingJobInstanceDao.lastInstance(definitionId);
+        } catch (Exception e) {
+            log.error("Get streaming job last instance failed, definitionId={}", definitionId, e);
+            throw new ServiceException(Status.QUERY_BATCH_JOB_INSTANCE_ERROR);
+        }
+    }
+
+    @Override
+    public void updateStatus(Long instanceId, JobStatus targetStatus, String errorMessage) {
+        if (instanceId == null || instanceId <= 0) {
+            return;
+        }
+        if (targetStatus == null) {
+            return;
+        }
+        streamingJobInstanceDao.updateStatus(
+                instanceId,
+                targetStatus,
+                errorMessage
+        );
     }
 
     private long resolveStartTimeMs(String range, long endTimeMs) {

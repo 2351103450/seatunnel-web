@@ -1,7 +1,14 @@
 import { ArrowLeftOutlined } from "@ant-design/icons";
-import { Button, Col, Form, message, Popover, Row, Space } from "antd";
+import { Button, Col, Form, message, Popover, Row, Space, Tooltip } from "antd";
 import { Blocks, Braces, Database, Eye, Upload } from "lucide-react";
-import { useEffect, useMemo, useRef, useState } from "react";
+import {
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  type Dispatch,
+  type SetStateAction,
+} from "react";
 import { ReactFlowProvider } from "reactflow";
 import { seatunnelJobDefinitionApi } from "../api";
 import { validateServerIdRange } from "../config/serverId";
@@ -15,9 +22,22 @@ import { useFlowChecks } from "./hooks/useFlowChecks";
 import "./index.less";
 import CodeBlockWithCopy from "./operator/CodeBlockWithCopy";
 import RightConfigPanel from "./RightConfigPanel";
-import RunLog from "./run";
+
+type PageScene = "create" | "edit";
+
+type EditorSyncState = "UNPUBLISHED" | "SYNCED" | "DIRTY";
+
+type JobDefinitionState = {
+  editorSyncState?: EditorSyncState | string;
+  releaseState?: "ONLINE" | "OFFLINE" | string;
+  jobVersion?: number | null;
+  contentVersion?: number | null;
+};
 
 interface WorkflowProps {
+  pageScene: PageScene;
+  contextKey: string;
+
   params: any;
   goBack: () => void;
   sourceType: any;
@@ -25,10 +45,10 @@ interface WorkflowProps {
   targetType: any;
   setTargetType: (value: any) => void;
   basicConfig: BasicConfig;
-  setBasicConfig: React.Dispatch<React.SetStateAction<BasicConfig>>;
-  setParams: React.Dispatch<React.SetStateAction<any>>;
+  setBasicConfig: Dispatch<SetStateAction<BasicConfig>>;
+  setParams: Dispatch<SetStateAction<any>>;
   envConfig: EnvConfig;
-  setEnvConfig: React.Dispatch<React.SetStateAction<EnvConfig>>;
+  setEnvConfig: Dispatch<SetStateAction<EnvConfig>>;
 }
 
 const getInitialWorkflowGraph = (params?: any) => {
@@ -58,7 +78,63 @@ const buildDirtySignature = (data: {
   });
 };
 
+const normalizeInitialState = (
+  state: JobDefinitionState | undefined,
+  pageScene: PageScene
+): JobDefinitionState => {
+  if (pageScene === "create") {
+    return {
+      editorSyncState: "UNPUBLISHED",
+      releaseState: "OFFLINE",
+      jobVersion: null,
+      contentVersion: null,
+    };
+  }
+
+  return {
+    editorSyncState: "SYNCED",
+    releaseState: state?.releaseState || "OFFLINE",
+    jobVersion: state?.jobVersion ?? null,
+    contentVersion: state?.contentVersion ?? null,
+  };
+};
+
+const normalizeSavedState = (
+  state: JobDefinitionState | undefined,
+  currentState: JobDefinitionState
+): JobDefinitionState => {
+  return {
+    editorSyncState: "SYNCED",
+    releaseState: state?.releaseState || currentState?.releaseState || "OFFLINE",
+    jobVersion: state?.jobVersion ?? currentState?.jobVersion ?? null,
+    contentVersion: state?.contentVersion ?? currentState?.contentVersion ?? null,
+  };
+};
+
+const getSaveResponseData = (res: any) => {
+  const data = res?.data;
+
+  /**
+   * 兼容两种后端返回：
+   * 1. 新版：data = { id, state }
+   * 2. 旧版：data = id
+   */
+  if (data && typeof data === "object") {
+    return {
+      id: data?.id,
+      state: data?.state,
+    };
+  }
+
+  return {
+    id: data,
+    state: undefined,
+  };
+};
+
 export default function Workflow({
+  pageScene,
+  contextKey,
   params,
   goBack,
   sourceType,
@@ -77,6 +153,7 @@ export default function Workflow({
   >(null);
 
   const draggingRef = useRef(false);
+  const contextRef = useRef<string>("");
 
   const [workflowGraph, setWorkflowGraph] = useState<{
     nodes: any[];
@@ -87,11 +164,11 @@ export default function Workflow({
   const [previewContent, setPreviewContent] = useState("");
   const [previewLoading, setPreviewLoading] = useState(false);
 
-  const [runVisible, setRunVisible] = useState(false);
+  const [definitionState, setDefinitionState] = useState<JobDefinitionState>(() =>
+    normalizeInitialState(params?.state, pageScene)
+  );
 
-  const [publishedJobDefineId, setPublishedJobDefineId] = useState<
-    number | undefined
-  >(params?.id);
+  const [baselineSignature, setBaselineSignature] = useState<string>("");
 
   const [publishLoading, setPublishLoading] = useState(false);
 
@@ -104,19 +181,70 @@ export default function Workflow({
   }, [basicConfig, envConfig, workflowGraph]);
 
   /**
-   * baselineSignature 表示“已发布版本”的配置快照。
-   *
-   * 编辑页首次进入：
-   * baseline = 当前回显数据
-   * current = 当前回显数据
-   * 所以 isDirty = false，运行按钮可用。
-   *
-   * 用户修改后：
-   * current !== baseline
-   * 所以 isDirty = true，需要重新发布。
+   * id 只是任务标识，不代表当前页面已经发布。
+   * 是否发布，要看 editorSyncState 和当前内容是否等于 baseline。
    */
-  const [_baselineSignature, setBaselineSignature] =
-    useState<string>(currentSignature);
+  const jobDefinitionId = params?.id;
+
+  /**
+   * 进入新的任务上下文时初始化一次 baseline。
+   * 不要在 currentSignature 变化时重置 baseline，否则 dirty 状态会被抹掉。
+   */
+  useEffect(() => {
+    if (!contextKey) return;
+
+    if (contextRef.current === contextKey) {
+      return;
+    }
+
+    contextRef.current = contextKey;
+
+    const nextWorkflowGraph = getInitialWorkflowGraph(params);
+    const nextState = normalizeInitialState(params?.state, pageScene);
+
+    setWorkflowGraph(nextWorkflowGraph);
+    setDefinitionState(nextState);
+
+    setBaselineSignature(
+      buildDirtySignature({
+        basicConfig,
+        envConfig,
+        workflowGraph: nextWorkflowGraph,
+      })
+    );
+  }, [contextKey, params, pageScene, basicConfig, envConfig]);
+
+  const hasSyncedDefinition =
+    !!jobDefinitionId && definitionState?.editorSyncState === "SYNCED";
+
+  const isDirty =
+    hasSyncedDefinition &&
+    !!baselineSignature &&
+    currentSignature !== baselineSignature;
+
+  const editorSyncState: EditorSyncState = !hasSyncedDefinition
+    ? "UNPUBLISHED"
+    : isDirty
+    ? "DIRTY"
+    : "SYNCED";
+
+  const publishStatusView = {
+    UNPUBLISHED: {
+      text: "未发布",
+      tooltip: "当前实时任务还没有发布到数据库",
+      className: "border-amber-200 bg-amber-50 text-amber-600",
+    },
+    SYNCED: {
+      text: "已发布",
+      tooltip: "当前内容已同步到数据库",
+      className: "border-emerald-200 bg-emerald-50 text-emerald-600",
+    },
+    DIRTY: {
+      text: "已修改，未发布",
+      tooltip: "当前页面内容已变更，需要重新发布",
+      className: "border-blue-200 bg-blue-50 text-blue-600",
+    },
+  }[editorSyncState];
 
   const { checkStat, checkGroups } = useFlowChecks(workflowGraph.nodes || []);
 
@@ -182,33 +310,10 @@ export default function Workflow({
     };
   }, []);
 
-  /**
-   * params.id 变化时，说明进入了一个新的任务上下文。
-   * 这里只同步发布 id 和 workflow 初始数据。
-   */
-  useEffect(() => {
-    if (!params?.id) return;
-
-    setPublishedJobDefineId(params.id);
-
-    const nextWorkflowGraph = getInitialWorkflowGraph(params);
-    setWorkflowGraph(nextWorkflowGraph);
-  }, [params?.id]);
-
-  /**
-   * 编辑页刚进来时，等当前 props + workflowGraph 形成当前快照后，
-   * 把这份快照作为 baseline。
-   */
-  useEffect(() => {
-    if (!params?.id) return;
-
-    setBaselineSignature(currentSignature);
-  }, [params?.id, currentSignature]);
-
   const buildEnvData = () => {
-    console.log(envConfig);
     return {
       ...envConfig,
+      jobMode: "STREAMING",
     };
   };
 
@@ -233,7 +338,7 @@ export default function Workflow({
 
   const buildFinalPayload = () => {
     return {
-      id: params?.id ?? publishedJobDefineId,
+      id: jobDefinitionId,
       basic: buildBasicData(),
       workflow: buildWorkflowData(),
       env: buildEnvData(),
@@ -275,7 +380,7 @@ export default function Workflow({
       const nextEnv = buildEnvData();
 
       const finalPayload = {
-        id: params?.id ?? publishedJobDefineId,
+        id: jobDefinitionId,
         basic: nextBasic,
         workflow: nextWorkflow,
         env: nextEnv,
@@ -285,37 +390,41 @@ export default function Workflow({
         finalPayload
       );
 
-      const responseData = res?.data as any;
-      const jobDefineId = responseData?.id ?? responseData ?? finalPayload.id;
+      const saveData = getSaveResponseData(res);
+      const nextJobDefinitionId = saveData.id ?? finalPayload.id;
 
-      if (jobDefineId) {
-        setPublishedJobDefineId(jobDefineId);
-
-        const nextSignature = buildDirtySignature({
-          basicConfig: nextBasic,
-          envConfig: nextEnv,
-          workflowGraph: nextWorkflow,
-        });
-
-        setBaselineSignature(nextSignature);
-
-        setParams((prev: any) => ({
-          ...prev,
-          id: jobDefineId,
-
-          // 关键：发布成功后，把当前最新画布同步回 params
-          workflow: nextWorkflow,
-
-          // 关键：同步当前最新配置
-          basic: nextBasic,
-          env: nextEnv,
-
-          // 兼容 useFlowBuilder 里 form.setFieldsValue 用到的字段
-          jobName: nextBasic?.jobName ?? prev?.jobName,
-          jobDesc: nextBasic?.jobDesc ?? prev?.jobDesc,
-          clientId: nextBasic?.clientId ?? prev?.clientId,
-        }));
+      if (!nextJobDefinitionId) {
+        message.error("发布失败：未获取到任务定义ID");
+        return;
       }
+
+      const nextState = normalizeSavedState(saveData.state, definitionState);
+
+      const nextSignature = buildDirtySignature({
+        basicConfig: nextBasic,
+        envConfig: nextEnv,
+        workflowGraph: nextWorkflow,
+      });
+
+      setDefinitionState(nextState);
+      setBaselineSignature(nextSignature);
+
+      setParams((prev: any) => ({
+        ...prev,
+        id: nextJobDefinitionId,
+
+        __pageScene: "edit",
+        state: nextState,
+
+        workflow: nextWorkflow,
+        basic: nextBasic,
+        env: nextEnv,
+
+        jobName: nextBasic?.jobName ?? prev?.jobName,
+        jobDesc: (nextBasic as any)?.jobDesc ?? prev?.jobDesc,
+        description: (nextBasic as any)?.description ?? prev?.description,
+        clientId: nextBasic?.clientId ?? prev?.clientId,
+      }));
 
       message.success("发布成功");
     } catch (error: any) {
@@ -430,6 +539,17 @@ export default function Workflow({
                       </button>
                     </Popover>
 
+                    <Tooltip title={publishStatusView.tooltip}>
+                      <span
+                        className={[
+                          "inline-flex h-[34px] select-none items-center justify-center rounded-full border px-3 text-[13px] font-medium leading-none",
+                          publishStatusView.className,
+                        ].join(" ")}
+                      >
+                        {publishStatusView.text}
+                      </span>
+                    </Tooltip>
+
                     <Button
                       type="default"
                       icon={<Upload size={15} strokeWidth={1.9} />}
@@ -529,19 +649,9 @@ export default function Workflow({
                   </Row>
                 </div>
               </div>
-
-              {runVisible && (
-                <RunLog
-                  runVisible={runVisible}
-                  setRunVisible={setRunVisible}
-                  baseForm={form}
-                  params={params}
-                />
-              )}
             </div>
 
             {activeTab && (
-              // biome-ignore lint/a11y/useSemanticElements: resize handle needs custom drag content
               <div
                 className="relative flex w-[20px] shrink-0 cursor-col-resize items-center justify-center bg-transparent transition-colors duration-100 hover:bg-[rgba(49,94,251,0.04)]"
                 onMouseDown={handleResizeStart}

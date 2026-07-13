@@ -9,6 +9,10 @@ import {
   ScheduleConfig,
 } from "../../workflow/components/ScheduleConfigContent/types";
 import CustomWorkflow from "./CustomWorkflow";
+import {
+  buildUnpublishedJobDefinitionState,
+  normalizeJobDefinitionState,
+} from "./jobDefinitionState";
 
 type CustomBasicConfig = BasicConfig & {
   sourcePluginName?: string;
@@ -50,7 +54,7 @@ const defaultScheduleConfig: ScheduleConfig = {
 
 const defaultBasicConfig: CustomBasicConfig = {
   jobName: "",
-  description: "",
+  jobDesc: "",
   clientId: "",
   mode: "SCRIPT",
   sourceType: "SOURCE",
@@ -116,7 +120,7 @@ const buildInitialBasicConfigForCreate = (
   return {
     ...defaultBasicConfig,
     jobName: rawData?.jobName || "",
-    description: rawData?.description || "",
+    jobDesc: rawData?.jobDesc || "",
     clientId: rawData?.clientId ? String(rawData.clientId) : "",
     mode: "SCRIPT",
 
@@ -144,7 +148,7 @@ const buildInitialBasicConfigForEdit = (
   return {
     ...defaultBasicConfig,
     jobName: basic?.jobName || "",
-    description: basic?.jobDesc || basic?.description || "",
+    jobDesc: basic?.jobDesc || "",
     clientId: basic?.clientId ? String(basic.clientId) : "",
     mode: "SCRIPT",
 
@@ -186,6 +190,31 @@ const buildInitialBasicConfigForEdit = (
   };
 };
 
+const buildPageParamsForCreate = (rawData?: any) => {
+  const hoconContent =
+    rawData?.workflow?.hoconContent ||
+    rawData?.content?.hoconContent ||
+    rawData?.hoconContent ||
+    "";
+
+  return {
+    ...(rawData || {}),
+    mode: "SCRIPT",
+    state: normalizeJobDefinitionState(
+      rawData?.state || buildUnpublishedJobDefinitionState()
+    ),
+    workflow: {
+      ...(rawData?.workflow || {}),
+      hoconContent,
+    },
+    content: {
+      ...(rawData?.content || {}),
+      hoconContent,
+    },
+    hoconContent,
+  };
+};
+
 const buildPageParamsForEdit = (editData?: any) => {
   const basic = editData?.basic || {};
   const workflow = editData?.workflow || {};
@@ -207,8 +236,10 @@ const buildPageParamsForEdit = (editData?: any) => {
     id: editData?.id,
     mode: editData?.mode || basic?.mode || "SCRIPT",
     jobName: basic?.jobName || "",
-    description: basic?.jobDesc || basic?.description || "",
+    jobDesc: basic?.jobDesc || "",
     clientId: basic?.clientId || "",
+
+    state: normalizeJobDefinitionState(editData?.state),
 
     sourceType:
       workflow?.sourceType ||
@@ -280,8 +311,9 @@ export default function CustomConfigPage() {
 
       try {
         const data = JSON.parse(cache);
+        const pageParams = buildPageParamsForCreate(data);
 
-        setParams(data);
+        setParams(pageParams);
         setBasicConfig(buildInitialBasicConfigForCreate(data));
         setScheduleConfig(buildInitialScheduleConfigForCreate(data));
         setEnvConfig(buildInitialEnvConfigForCreate(data));

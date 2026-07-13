@@ -10,14 +10,15 @@ import org.apache.seatunnel.web.api.exceptions.ApiException;
 import org.apache.seatunnel.web.api.service.BatchJobDefinitionService;
 import org.apache.seatunnel.web.common.enums.ReleaseState;
 import org.apache.seatunnel.web.common.utils.CodeGenerateUtils;
-import org.apache.seatunnel.web.spi.bean.dto.*;
+import org.apache.seatunnel.web.spi.bean.dto.BatchJobDefinitionQueryDTO;
 import org.apache.seatunnel.web.spi.bean.dto.batch.BatchGuideMultiJobSaveCommand;
 import org.apache.seatunnel.web.spi.bean.dto.batch.BatchGuideSingleJobSaveCommand;
 import org.apache.seatunnel.web.spi.bean.dto.batch.BatchScriptJobSaveCommand;
-import org.apache.seatunnel.web.spi.bean.dto.command.JobDefinitionSaveCommand;
 import org.apache.seatunnel.web.spi.bean.entity.PaginationResult;
 import org.apache.seatunnel.web.spi.bean.entity.Result;
 import org.apache.seatunnel.web.spi.bean.vo.BatchJobDefinitionVO;
+import org.apache.seatunnel.web.spi.bean.vo.JobDefinitionEditDetailVO;
+import org.apache.seatunnel.web.spi.bean.vo.JobDefinitionSaveResultVO;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
@@ -42,7 +43,7 @@ public class BatchJobDefinitionController {
     @PostMapping("/script/saveOrUpdate")
     @Operation(summary = "saveOrUpdateScriptJobDefinition", description = "SAVE_OR_UPDATE_SCRIPT_JOB_DEFINITION_NOTES")
     @ApiException(SAVE_OR_UPDATE_BATCH_JOB_DEFINITION_ERROR)
-    public Result<Long> saveScript(@RequestBody BatchScriptJobSaveCommand command) {
+    public Result<JobDefinitionSaveResultVO> saveScript(@RequestBody BatchScriptJobSaveCommand command) {
         return Result.buildSuc(batchJobDefinitionService.saveOrUpdate(command));
     }
 
@@ -62,7 +63,7 @@ public class BatchJobDefinitionController {
     @PostMapping("/guide-single/saveOrUpdate")
     @Operation(summary = "saveOrUpdateGuideSingleJobDefinition", description = "SAVE_OR_UPDATE_GUIDE_SINGLE_JOB_DEFINITION_NOTES")
     @ApiException(SAVE_OR_UPDATE_BATCH_JOB_DEFINITION_ERROR)
-    public Result<Long> saveGuideSingle(@RequestBody BatchGuideSingleJobSaveCommand command) {
+    public Result<JobDefinitionSaveResultVO> saveGuideSingle(@RequestBody BatchGuideSingleJobSaveCommand command) {
         return Result.buildSuc(batchJobDefinitionService.saveOrUpdate(command));
     }
 
@@ -82,7 +83,7 @@ public class BatchJobDefinitionController {
     @PostMapping("/guide-multi/saveOrUpdate")
     @Operation(summary = "saveOrUpdateGuideMultiJobDefinition", description = "SAVE_OR_UPDATE_GUIDE_MULTI_JOB_DEFINITION_NOTES")
     @ApiException(SAVE_OR_UPDATE_BATCH_JOB_DEFINITION_ERROR)
-    public Result<Long> saveGuideMulti(@RequestBody BatchGuideMultiJobSaveCommand command) {
+    public Result<JobDefinitionSaveResultVO> saveGuideMulti(@RequestBody BatchGuideMultiJobSaveCommand command) {
         return Result.buildSuc(batchJobDefinitionService.saveOrUpdate(command));
     }
 
@@ -147,7 +148,8 @@ public class BatchJobDefinitionController {
      */
     @GetMapping("/{id}/edit-detail")
     @Operation(summary = "查询任务编辑详情")
-    public Result<JobDefinitionSaveCommand> selectEditDetail(@PathVariable("id") Long id) {
+    @ApiException(QUERY_BATCH_JOB_DEFINITION_ERROR)
+    public Result<JobDefinitionEditDetailVO> selectEditDetail(@PathVariable("id") Long id) {
         return Result.buildSuc(batchJobDefinitionService.selectEditDetail(id));
     }
 

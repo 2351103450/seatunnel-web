@@ -1,11 +1,11 @@
 import { seatunnelClientApi } from "@/pages/batch-link-up/type";
 import {
-  CloseOutlined,
+  CloseOutlined, EditOutlined,
   FileSearchOutlined,
   ReloadOutlined,
 } from "@ant-design/icons";
-import { Spin } from "antd";
-import type { FC, ReactNode } from "react";
+import {Button, Spin, Tooltip} from "antd";
+import React, { FC, ReactNode } from "react";
 import { memo, useCallback, useEffect, useMemo, useState } from "react";
 import { createPortal } from "react-dom";
 
@@ -356,9 +356,11 @@ const RunLogDrawer: FC<RunLogDrawerProps> = ({
         >
           <header className="flex h-[54px] items-center justify-between border-b border-slate-100 bg-white px-5">
             <div className="flex min-w-0 items-center gap-3">
-              <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-[#eef3ff] text-[#315efb]">
-                <FileSearchOutlined className="text-[15px]" />
-              </div>
+              <Tooltip title="需要在log4j2.properties中开启rootLogger.appenderRef.file.ref = routingAppender">
+                <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-[#eef3ff] text-[#315efb]">
+                    <FileSearchOutlined className="text-[15px]" />
+                </div>
+              </Tooltip>
 
               <div className="min-w-0">
                 <div className="truncate text-[15px] font-semibold text-slate-900">

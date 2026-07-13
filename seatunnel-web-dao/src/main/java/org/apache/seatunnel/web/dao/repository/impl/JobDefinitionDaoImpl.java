@@ -85,4 +85,79 @@ public class JobDefinitionDaoImpl
 
         return records;
     }
+
+    @Override
+    public boolean existsByDatasourceId(Long datasourceId) {
+        if (datasourceId == null || datasourceId <= 0) {
+            return false;
+        }
+
+        LambdaQueryWrapper<JobDefinitionEntity> wrapper = new LambdaQueryWrapper<>();
+        wrapper.select(JobDefinitionEntity::getId)
+                // 只有运行状态的任务存在时不允许操作
+                .eq(JobDefinitionEntity::getReleaseState, ReleaseState.ONLINE)
+                .and(w -> w
+                        .eq(JobDefinitionEntity::getSourceDatasourceId, datasourceId)
+                        .or()
+                        .eq(JobDefinitionEntity::getSinkDatasourceId, datasourceId)
+                )
+                .last("LIMIT 1");
+
+        return jobDefinitionMapper.selectOne(wrapper) != null;
+    }
+
+    @Override
+    public List<Long> selectReferencedDatasourceIds(List<Long> datasourceIds) {
+        if (datasourceIds == null || datasourceIds.isEmpty()) {
+            return Collections.emptyList();
+        }
+
+        List<Long> validIds = datasourceIds.stream()
+                .filter(id -> id != null && id > 0)
+                .distinct()
+                .collect(Collectors.toList());
+
+        if (validIds.isEmpty()) {
+            return Collections.emptyList();
+        }
+
+        LambdaQueryWrapper<JobDefinitionEntity> wrapper = new LambdaQueryWrapper<>();
+        wrapper.select(
+                JobDefinitionEntity::getSourceDatasourceId,
+                JobDefinitionEntity::getSinkDatasourceId
+        )
+                .and(w -> w
+                        .in(JobDefinitionEntity::getSourceDatasourceId, validIds)
+                        .or()
+                        .in(JobDefinitionEntity::getSinkDatasourceId, validIds)
+                );
+
+        List<JobDefinitionEntity> records = jobDefinitionMapper.selectList(wrapper);
+        if (records == null || records.isEmpty()) {
+            return Collections.emptyList();
+        }
+
+        return records.stream()
+                .flatMap(record -> java.util.stream.Stream.of(
+                        record.getSourceDatasourceId(),
+                        record.getSinkDatasourceId()
+                ))
+                .filter(id -> id != null && validIds.contains(id))
+                .distinct()
+                .collect(Collectors.toList());
+    }
+
+    @Override
+    public boolean existsByClientId(Long clientId) {
+        if (clientId == null || clientId <= 0) {
+            return false;
+        }
+
+        LambdaQueryWrapper<JobDefinitionEntity> wrapper = new LambdaQueryWrapper<>();
+        wrapper.select(JobDefinitionEntity::getId)
+                .eq(JobDefinitionEntity::getClientId, clientId)
+                .last("LIMIT 1");
+
+        return jobDefinitionMapper.selectOne(wrapper) != null;
+    }
 }

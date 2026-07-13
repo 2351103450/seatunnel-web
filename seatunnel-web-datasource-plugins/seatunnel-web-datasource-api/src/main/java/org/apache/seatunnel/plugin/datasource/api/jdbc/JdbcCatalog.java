@@ -29,9 +29,9 @@ public interface JdbcCatalog {
     /**
      * List columns of the specified table.
      *
-     * @param requestBody  additional parameters such as schema, table, column filter,
-     *                     row filter, or custom SQL fragment; structure is
-     *                     implementation-specific
+     * @param requestBody additional parameters such as schema, table, column filter,
+     *                    row filter, or custom SQL fragment; structure is
+     *                    implementation-specific
      * @return column metadata list
      */
     List<DataSourceTableColumn> listColumns(Map<String, Object> requestBody) throws Exception;
@@ -58,7 +58,13 @@ public interface JdbcCatalog {
     String buildSelectAllColumnsSql(String tablePath, List<DataSourceTableColumn> columns);
 
     /**
+     * Build SELECT all columns sql for the specified table path.
+     */
+    String buildSelectAllColumnsSql(TablePath tablePath, List<DataSourceTableColumn> columns);
+
+    /**
      * Resolve variables inside sql, such as ${var:today_start}.
      */
     String resolveSqlVariables(String sql);
+
 }

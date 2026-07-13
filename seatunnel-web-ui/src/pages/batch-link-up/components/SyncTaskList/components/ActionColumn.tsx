@@ -94,7 +94,7 @@ const ActionColumn: React.FC<ActionColumnProps> = ({
 
   const handleOnline = async () => {
     if (!record?.id) {
-      message.error("任务 ID 不存在");
+      message.error("任务定义ID 不存在");
       return;
     }
 
@@ -116,7 +116,7 @@ const ActionColumn: React.FC<ActionColumnProps> = ({
     }
 
     if (!record?.id) {
-      message.error("任务 ID 不存在");
+      message.error("任务定义ID 不存在");
       return;
     }
 
@@ -218,7 +218,7 @@ const ActionColumn: React.FC<ActionColumnProps> = ({
     }
 
     if (!record?.id) {
-      message.error("任务 ID 不存在");
+      message.error("任务定义ID 不存在");
       return;
     }
 
@@ -283,7 +283,7 @@ const ActionColumn: React.FC<ActionColumnProps> = ({
       key: "log",
       icon: <FileSearchOutlined />,
       label: <span style={{ fontWeight: 500 }}>查看日志</span>,
-      disabled: !canEdit,
+      // disabled: !canEdit,
     },
     {
       type: "divider" as const,

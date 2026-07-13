@@ -26,7 +26,7 @@ interface DataSourceOptionItem {
 
 export type DetailFormValues = {
   jobName?: string;
-  description?: string;
+  jobDesc?: string;
   mode?: SyncMode;
 };
 

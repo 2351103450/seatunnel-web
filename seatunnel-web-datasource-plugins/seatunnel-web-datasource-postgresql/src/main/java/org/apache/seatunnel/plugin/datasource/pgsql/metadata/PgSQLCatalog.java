@@ -1,6 +1,7 @@
 package org.apache.seatunnel.plugin.datasource.pgsql.metadata;
 
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.seatunnel.plugin.datasource.api.jdbc.AbstractJdbcCatalog;
 import org.apache.seatunnel.plugin.datasource.api.jdbc.JdbcConnectionProvider;
 import org.apache.seatunnel.plugin.datasource.api.jdbc.TablePath;
@@ -36,6 +37,7 @@ public class PgSQLCatalog extends AbstractJdbcCatalog {
         return rs.getString(1);
     }
 
+
     @Override
     protected String getListTableSql(String databaseName) {
         return "SELECT table_name AS table_path " +
@@ -65,10 +67,43 @@ public class PgSQLCatalog extends AbstractJdbcCatalog {
                 .build();
     }
 
+
+    private String resolveSchemaName(TablePath tablePath) {
+        String schemaName = tablePath == null ? null : tablePath.getSchemaName();
+
+        if (StringUtils.isBlank(schemaName)) {
+            schemaName = getParam().getSchemaName();
+        }
+
+        if (StringUtils.isBlank(schemaName)) {
+            schemaName = "public";
+        }
+
+        return schemaName;
+    }
+
+    private String escapeSql(String value) {
+        return value == null ? null : value.replace("'", "''");
+    }
+
+    @Override
+    public String buildTableReference(TablePath tablePath) {
+        if (tablePath == null || StringUtils.isBlank(tablePath.getTableName())) {
+            throw new IllegalArgumentException("table is null");
+        }
+
+        String schemaName = resolveSchemaName(tablePath);
+
+        return quoteIdentifier(schemaName) + "." + quoteIdentifier(tablePath.getTableName());
+    }
+
     @Override
     protected String getSelectColumnsSql(TablePath tablePath) {
         return String.format(
-                SELECT_COLUMNS_SQL_TEMPLATE, tablePath.getSchemaName(), tablePath.getTableName());
+                SELECT_COLUMNS_SQL_TEMPLATE,
+                escapeSql(resolveSchemaName(tablePath)),
+                escapeSql(tablePath.getTableName())
+        );
     }
 
     @Override
@@ -78,12 +113,14 @@ public class PgSQLCatalog extends AbstractJdbcCatalog {
                 .collect(Collectors.toList());
 
         String quotedColumnNames = columnNames.stream()
-                .map(name -> "'" + name + "'")
+                .map(name -> "'" + escapeSql(name) + "'")
                 .collect(Collectors.joining(", "));
 
-        return String.format(SELECT_SPECIFIED_COLUMNS_SQL_TEMPLATE,
-                tablePath.getDatabaseName(),
-                tablePath.getTableName(),
-                quotedColumnNames);
+        return String.format(
+                SELECT_SPECIFIED_COLUMNS_SQL_TEMPLATE,
+                escapeSql(resolveSchemaName(tablePath)),
+                escapeSql(tablePath.getTableName()),
+                quotedColumnNames
+        );
     }
 }

@@ -6,18 +6,22 @@ import org.apache.seatunnel.web.dao.plugin.api.dialect.DatabaseDialect;
 import org.apache.seatunnel.web.dao.plugin.api.monitor.DatabaseMonitor;
 import org.apache.seatunnel.web.dao.plugin.mysql.dialect.MysqlDialect;
 import org.apache.seatunnel.web.dao.plugin.mysql.monitor.MysqlMonitor;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.context.annotation.Conditional;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.annotation.Configuration;
 
 import javax.sql.DataSource;
 
 @Configuration(proxyBeanMethods = false)
-@Conditional(MysqlDatabaseEnvironmentCondition.class)
+@ConditionalOnProperty(prefix = "seatunnel.web.database", name = "type", havingValue = "mysql")
 public class MysqlDaoPluginAutoConfiguration implements DaoPluginConfiguration {
 
-    @Autowired
-    private DataSource dataSource;
+    private final DatabaseMonitor databaseMonitor;
+    private final DatabaseDialect databaseDialect;
+
+    public MysqlDaoPluginAutoConfiguration(DataSource dataSource) {
+        this.databaseMonitor = new MysqlMonitor(dataSource);
+        this.databaseDialect = new MysqlDialect(dataSource);
+    }
 
     @Override
     public DbType dbType() {
@@ -26,11 +30,11 @@ public class MysqlDaoPluginAutoConfiguration implements DaoPluginConfiguration {
 
     @Override
     public DatabaseMonitor databaseMonitor() {
-        return new MysqlMonitor(dataSource);
+        return databaseMonitor;
     }
 
     @Override
     public DatabaseDialect databaseDialect() {
-        return new MysqlDialect(dataSource);
+        return databaseDialect;
     }
 }

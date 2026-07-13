@@ -30,4 +30,6 @@ public interface StreamingJobInstanceDao extends IDao<StreamingJobInstance> {
     void updateSubmitResult(Long instanceId, String engineJobId, JobStatus submitStatus, Date submitTime);
 
     List<JobInstanceVO> listRunning();
+
+    StreamingJobInstance lastInstance(Long definitionId);
 }

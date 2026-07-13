@@ -1,6 +1,7 @@
 package org.apache.seatunnel.plugin.datasource.oracle.metadata;
 
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.seatunnel.plugin.datasource.api.jdbc.AbstractJdbcCatalog;
 import org.apache.seatunnel.plugin.datasource.api.jdbc.JdbcConnectionProvider;
 import org.apache.seatunnel.plugin.datasource.api.jdbc.TablePath;
@@ -12,6 +13,7 @@ import java.sql.SQLException;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.stream.Collectors;
 
@@ -54,7 +56,33 @@ public class OracleCatalog extends AbstractJdbcCatalog {
 
     @Override
     protected String getListTableSql(String databaseName) {
-        return String.format("SELECT TABLE_NAME FROM ALL_TABLES WHERE OWNER = '%s'", databaseName);
+        String owner = resolveOwner();
+
+        if (StringUtils.isBlank(owner)) {
+            return "SELECT TABLE_NAME FROM USER_TABLES ORDER BY TABLE_NAME";
+        }
+
+        return String.format(
+                "SELECT TABLE_NAME FROM ALL_TABLES WHERE OWNER = '%s' ORDER BY TABLE_NAME",
+                escapeSql(owner.toUpperCase(Locale.ROOT))
+        );
+    }
+
+    private String resolveOwner() {
+        BaseConnectionParam param = getParam();
+
+        if (StringUtils.isNotBlank(param.getUser())) {
+            return param.getUser().toUpperCase();
+        }
+
+        if (StringUtils.isNotBlank(param.getSchemaName())) {
+            return param.getSchemaName().toUpperCase();
+        }
+        return null;
+    }
+
+    private String escapeSql(String value) {
+        return value == null ? null : value.replace("'", "''");
     }
 
     @Override
@@ -80,8 +108,8 @@ public class OracleCatalog extends AbstractJdbcCatalog {
     protected String getSelectColumnsSql(TablePath tablePath) {
         return String.format(
                 SELECT_COLUMNS_SQL_TEMPLATE,
-                tablePath.getDatabaseName().toUpperCase(),
-                tablePath.getTableName().toUpperCase());
+                resolveOwnerForTablePath(tablePath),
+                tablePath.getTableName());
     }
 
     @Override
@@ -91,12 +119,46 @@ public class OracleCatalog extends AbstractJdbcCatalog {
                 .collect(Collectors.toList());
 
         String quotedColumnNames = columnNames.stream()
-                .map(name -> "'" + name.toUpperCase() + "'")
+                .map(name -> "'" + escapeSql(name.toUpperCase(Locale.ROOT)) + "'")
                 .collect(Collectors.joining(", "));
 
-        return String.format(SELECT_SPECIFIED_COLUMNS_SQL_TEMPLATE,
-                tablePath.getDatabaseName().toUpperCase(),
-                tablePath.getTableName().toUpperCase(),
-                quotedColumnNames);
+        return String.format(
+                SELECT_SPECIFIED_COLUMNS_SQL_TEMPLATE,
+                resolveOwnerForTablePath(tablePath),
+                tablePath.getTableName(),
+                quotedColumnNames
+        );
+    }
+
+    public String buildTableReference(TablePath tablePath) {
+        String tableName = tablePath.getTableName();
+        if (StringUtils.isBlank(tableName)) {
+            throw new IllegalArgumentException("table is null");
+        }
+
+        String owner = tablePath.getSchemaName();
+        if (StringUtils.isBlank(owner)) {
+            owner = resolveOwner();
+        }
+
+        if (StringUtils.isBlank(owner)) {
+            return quoteIdentifier(tableName);
+        }
+
+        return quoteIdentifier(owner.toUpperCase()) + "." + quoteIdentifier(tableName);
+    }
+
+    private String resolveOwnerForTablePath(TablePath tablePath) {
+        String owner = tablePath.getSchemaName();
+
+        if (StringUtils.isBlank(owner)) {
+            owner = resolveOwner();
+        }
+
+        if (StringUtils.isBlank(owner)) {
+            throw new IllegalArgumentException("Oracle owner/schema must not be blank");
+        }
+
+        return escapeSql(owner.toUpperCase(Locale.ROOT));
     }
 }

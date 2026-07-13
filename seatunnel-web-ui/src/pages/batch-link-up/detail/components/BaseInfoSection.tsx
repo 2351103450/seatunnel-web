@@ -78,7 +78,7 @@ const BaseConfigSection: React.FC<Props> = ({
               />
             </Form.Item>
 
-            <Form.Item label="任务描述" name="description" className="mb-0">
+            <Form.Item label="任务描述" name="jobDesc" className="mb-0">
               <TextArea
                 placeholder="描述同步范围、用途、注意事项等"
                 rows={3}

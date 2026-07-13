@@ -7,6 +7,7 @@ import org.apache.seatunnel.web.api.service.SeaTunnelClientService;
 import org.apache.seatunnel.web.dao.entity.SeaTunnelClient;
 import org.apache.seatunnel.web.spi.bean.dto.ClientDatasourceVerifyDTO;
 import org.apache.seatunnel.web.spi.bean.dto.SeaTunnelClientDTO;
+import org.apache.seatunnel.web.spi.bean.dto.SeaTunnelClientEndpointDTO;
 import org.apache.seatunnel.web.spi.bean.dto.SeaTunnelClientPageDTO;
 import org.apache.seatunnel.web.spi.bean.entity.Result;
 import org.apache.seatunnel.web.spi.bean.vo.ClientDatasourceVerifyVO;
@@ -91,5 +92,15 @@ public class SeaTunnelClientController {
                         status
                 )
         );
+    }
+
+    @GetMapping("/{clientId}/nodes")
+    public Result<List<SeaTunnelClientEndpointDTO>> nodes(@PathVariable("clientId") Long clientId) {
+        return Result.buildSuc(seatunnelClientService.nodes(clientId));
+    }
+
+    @PostMapping("/{clientId}/nodes/refresh")
+    public Result<List<SeaTunnelClientEndpointDTO>> refreshNodes(@PathVariable("clientId") Long clientId) {
+        return Result.buildSuc(seatunnelClientService.refreshNodes(clientId));
     }
 }

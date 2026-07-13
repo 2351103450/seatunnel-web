@@ -401,52 +401,26 @@ const CreateDataSourceButton: React.FC<{
       type="default"
       style={{ marginTop: 8 }}
       className={[
-        "group/detail relative h-[32px] overflow-hidden rounded-full p-0",
-        "border border-[#D9D9D9] bg-white font-bold",
-        "transition-all duration-300 ease-out",
+        "h-[32px] rounded-full px-3",
+        "border border-[#D9D9D9] bg-white shadow-none",
+        "text-[13px] font-normal text-slate-700",
         "hover:!border-[hsl(231_48%_48%)]",
+        "hover:!bg-[hsl(231_48%_48%)]",
+        "hover:!text-white",
+        "focus:!border-[hsl(231_48%_48%)]",
+        "focus:!text-[hsl(231_48%_48%)]",
       ].join(" ")}
       onMouseDown={(e) => {
         e.preventDefault();
         e.stopPropagation();
       }}
-      onClick={onClick}
+      onClick={(e) => {
+        e.stopPropagation();
+        onClick();
+      }}
     >
-      <span
-        className={[
-          "absolute inset-0 z-[1] flex items-center justify-center rounded-full bg-white",
-          "transition-all duration-300 ease-out",
-          "group-hover/detail:translate-y-1.5 group-hover/detail:opacity-0",
-        ].join(" ")}
-      >
-        <span style={{ fontWeight: 400, fontSize: 13 }}>{text}</span>
-      </span>
-
-      <span
-        className={[
-          "absolute inset-0 z-[2] flex items-center justify-center gap-2 rounded-full",
-          "bg-[hsl(231_48%_48%)] text-white opacity-0",
-          "transition-all duration-300 ease-out",
-          "group-hover/detail:opacity-100",
-        ].join(" ")}
-      >
-        <span
-          className={[
-            "translate-x-[-4px] transition-transform duration-300 ease-out",
-            "group-hover/detail:translate-x-0",
-          ].join(" ")}
-        >
-          <span style={{ fontWeight: 400, fontSize: 13 }}>{text}</span>
-        </span>
-
-        <span
-          className={[
-            "translate-x-[-8px] opacity-0 transition-all duration-300 ease-out",
-            "group-hover/detail:translate-x-0 group-hover/detail:opacity-100",
-          ].join(" ")}
-        >
-          <PlusCircleIcon size={16} className="mr-1.5" />
-        </span>
+      <span className="inline-flex items-center justify-center gap-1.5">
+        <span>{text}</span>
       </span>
     </Button>
   );

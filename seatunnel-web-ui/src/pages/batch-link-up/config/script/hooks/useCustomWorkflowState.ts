@@ -1,21 +1,72 @@
-import { message, Modal } from "antd";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { message } from "antd";
+import { useEffect, useRef, useState, type Dispatch, type SetStateAction } from "react";
+
 import { seatunnelJobDefinitionApi } from "@/pages/batch-link-up/api";
 import { hoconTemplateApi } from "../hoconTemplateApi";
+import {
+  markJobDefinitionDirty,
+  markJobDefinitionSynced,
+  normalizeJobDefinitionState,
+  type JobDefinitionState,
+} from "../jobDefinitionState";
 
 interface UseCustomWorkflowStateProps {
   params: any;
-  setParams: React.Dispatch<React.SetStateAction<any>>;
+  setParams: Dispatch<SetStateAction<any>>;
   basicConfig: any;
   scheduleConfig: any;
-  envConfig: any;
+  envConfig?: any;
 }
 
-const stableStringify = (value: any) => {
+type SaveResponseData = {
+  id?: number | string;
+  state?: JobDefinitionState;
+};
+
+const getSaveResponseData = (res: any): SaveResponseData => {
+  const data = res?.data;
+
+  /**
+   * 兼容新版后端返回：
+   * data = {
+   *   id: 123,
+   *   state: {
+   *     editorSyncState: "SYNCED",
+   *     releaseState: "OFFLINE",
+   *     jobVersion: 1,
+   *     contentVersion: 1
+   *   }
+   * }
+   */
+  if (data && typeof data === "object") {
+    return {
+      id:
+        data.id ??
+        data.jobDefineId ??
+        data.jobDefinitionId ??
+        data.definitionId,
+      state: data.state,
+    };
+  }
+
+  /**
+   * 兼容旧版后端返回：
+   * data = 123
+   */
+  return {
+    id: data,
+    state: undefined,
+  };
+};
+
+const syncSessionCache = (id: number | string | undefined, data: any) => {
+  if (!id) return;
+
   try {
-    return JSON.stringify(value ?? {});
+    const cacheKey = `batch-link-up-detail-${id}`;
+    sessionStorage.setItem(cacheKey, JSON.stringify(data));
   } catch (error) {
-    return "";
+    console.warn("Update custom workflow session cache failed", error);
   }
 };
 
@@ -40,10 +91,10 @@ export function useCustomWorkflowState({
 
   const [publishLoading, setPublishLoading] = useState(false);
   const [runLoading, setRunLoading] = useState(false);
+  const [isDirty, setIsDirty] = useState(false);
 
-  const initializingRef = useRef(false);
+  const initializedRef = useRef(false);
   const contentInitializedRef = useRef(false);
-  const baselineSignatureRef = useRef("");
 
   useEffect(() => {
     if (params?.id) {
@@ -51,7 +102,46 @@ export function useCustomWorkflowState({
     }
   }, [params?.id]);
 
-  const loadTemplate = useCallback(async () => {
+  useEffect(() => {
+    if (contentInitializedRef.current) return;
+    if (!params) return;
+
+    const initialContent =
+      params?.workflow?.hoconContent ||
+      params?.content?.hoconContent ||
+      params?.jobDefinitionInfo?.hoconContent ||
+      params?.hoconContent ||
+      "";
+
+    if (initialContent?.trim()) {
+      setHoconContent(initialContent);
+      contentInitializedRef.current = true;
+      return;
+    }
+
+    contentInitializedRef.current = true;
+    void loadTemplate();
+  }, [params]);
+
+  useEffect(() => {
+    if (!initializedRef.current) {
+      initializedRef.current = true;
+      return;
+    }
+
+    setIsDirty(true);
+
+    setParams((prev: any) => {
+      if (!prev) return prev;
+
+      return {
+        ...prev,
+        state: markJobDefinitionDirty(prev?.state),
+      };
+    });
+  }, [basicConfig, scheduleConfig, envConfig, hoconContent]);
+
+  const loadTemplate = async () => {
     const sourceDbType = basicConfig?.sourceType;
     const sourcePluginName = basicConfig?.sourcePluginName;
     const targetDbType = basicConfig?.targetType;
@@ -83,115 +173,40 @@ export function useCustomWorkflowState({
     } finally {
       setTemplateLoading(false);
     }
-  }, [
-    basicConfig?.sourceType,
-    basicConfig?.sourcePluginName,
-    basicConfig?.targetType,
-    basicConfig?.targetPluginName,
-  ]);
+  };
 
-  useEffect(() => {
-    if (contentInitializedRef.current) return;
-    if (!params) return;
-
-    initializingRef.current = true;
-
-    const initialContent =
-      params?.workflow?.hoconContent ||
-      params?.content?.hoconContent ||
-      params?.jobDefinitionInfo?.hoconContent ||
-      params?.hoconContent ||
-      "";
-
-    if (initialContent?.trim()) {
-      setHoconContent(initialContent);
-      contentInitializedRef.current = true;
-      initializingRef.current = false;
-      return;
-    }
-
-    contentInitializedRef.current = true;
-
-    loadTemplate().finally(() => {
-      initializingRef.current = false;
-    });
-  }, [params, loadTemplate]);
-
-  const buildFinalPayload = useCallback(() => {
+  const buildFinalPayload = () => {
     return {
       id: params?.id ?? publishedJobDefineId,
+
       basic: {
         ...basicConfig,
         mode: "SCRIPT",
       },
+
       content: {
         scriptType: "HOCON",
         hoconContent,
       },
+
+      workflow: {
+        ...(params?.workflow || {}),
+        hoconContent,
+      },
+
       schedule: {
         ...scheduleConfig,
       },
+
       env: {
-        ...envConfig,
+        jobMode: "BATCH",
+        parallelism: 1,
+        ...(envConfig || {}),
       },
     };
-  }, [
-    params?.id,
-    publishedJobDefineId,
-    basicConfig,
-    hoconContent,
-    scheduleConfig,
-    envConfig,
-  ]);
-
-  const currentSignature = useMemo(() => {
-    return stableStringify({
-      basic: {
-        ...basicConfig,
-        mode: "SCRIPT",
-      },
-      content: {
-        scriptType: "HOCON",
-        hoconContent,
-      },
-      schedule: scheduleConfig,
-      env: envConfig,
-    });
-  }, [basicConfig, hoconContent, scheduleConfig, envConfig]);
-
-  const isDirty =
-    !!publishedJobDefineId &&
-    !!baselineSignatureRef.current &&
-    currentSignature !== baselineSignatureRef.current;
-
-  useEffect(() => {
-    if (!params?.id && !publishedJobDefineId) {
-      baselineSignatureRef.current = "";
-      return;
-    }
-
-    if (!initializingRef.current && !baselineSignatureRef.current) {
-      baselineSignatureRef.current = currentSignature;
-    }
-  }, [params?.id, publishedJobDefineId, currentSignature]);
-
-  const resetBaseline = useCallback(() => {
-    baselineSignatureRef.current = currentSignature;
-  }, [currentSignature]);
+  };
 
   const validateBeforeSubmit = async () => {
-    if (!basicConfig?.jobName?.trim()) {
-      message.warning("请先填写任务名称");
-      setActiveTab("basic");
-      return false;
-    }
-
-    if (!basicConfig?.clientId) {
-      message.warning("请选择运行客户端");
-      setActiveTab("basic");
-      return false;
-    }
-
     if (!hoconContent?.trim()) {
       message.warning("请先填写 HOCON 配置");
       return false;
@@ -208,7 +223,6 @@ export function useCustomWorkflowState({
       !basicConfig?.targetPluginName
     ) {
       message.warning("请先完成来源和目标类型配置");
-      setActiveTab("basic");
       return;
     }
 
@@ -227,35 +241,59 @@ export function useCustomWorkflowState({
         finalPayload
       );
 
-      const jobDefineId = res?.data?.id ?? res?.data ?? finalPayload.id;
+      if (res?.code !== 0) {
+        return;
+      }
 
-      if (jobDefineId) {
-        setPublishedJobDefineId(jobDefineId);
+      const saveData = getSaveResponseData(res);
+      const jobDefineId = saveData.id ?? finalPayload.id;
 
-        setParams((prev: any) => ({
+      if (!jobDefineId) {
+        message.error("发布成功但未返回任务定义ID");
+        return;
+      }
+
+      const syncedState = saveData.state
+        ? normalizeJobDefinitionState(saveData.state)
+        : markJobDefinitionSynced(params?.state);
+
+      setPublishedJobDefineId(jobDefineId);
+      setIsDirty(false);
+
+      setParams((prev: any) => {
+        const nextParams = {
           ...(prev || {}),
           id: jobDefineId,
+          state: syncedState,
+
           workflow: {
             ...(prev?.workflow || {}),
             hoconContent,
           },
+
           content: {
             ...(prev?.content || {}),
             scriptType: "HOCON",
             hoconContent,
           },
-          hoconContent,
-          scheduleConfig,
-          env: envConfig,
-        }));
 
-        resetBaseline();
-      }
+          hoconContent,
+        };
+
+        /**
+         * create 场景下页面数据来自 sessionStorage。
+         * 发布成功后同步缓存，避免刷新后又回到 UNPUBLISHED。
+         */
+        syncSessionCache(prev?.id, nextParams);
+        syncSessionCache(jobDefineId, nextParams);
+
+        return nextParams;
+      });
 
       message.success("发布成功");
-    } catch (error: any) {
+    } catch (error) {
       console.error(error);
-      message.error(error?.message || "发布失败");
+      message.error("发布失败");
     } finally {
       setPublishLoading(false);
     }
@@ -275,8 +313,9 @@ export function useCustomWorkflowState({
 
       setPreviewContent(res?.data || hoconContent);
       setPreviewOpen(true);
-    } catch (error: any) {
+    } catch (error) {
       console.error(error);
+      message.error("预览失败");
     } finally {
       setPreviewLoading(false);
     }
@@ -288,8 +327,8 @@ export function useCustomWorkflowState({
   const runDisabledReason = !publishedJobDefineId
     ? "请先发布任务，再执行"
     : isDirty
-      ? "当前内容已变更，请重新发布后再执行"
-      : "";
+    ? "当前内容已变更，请重新发布后再执行"
+    : "";
 
   const handleRun = async () => {
     const pass = await validateBeforeSubmit();
@@ -305,19 +344,11 @@ export function useCustomWorkflowState({
       return;
     }
 
-    try {
-      setRunLoading(true);
-
-      // TODO: 后续接入真正执行接口 / RunLog。
-      // await seatunnelJobDefinitionApi.execute(publishedJobDefineId);
-
-      message.success("运行校验通过，可继续接入执行逻辑");
-    } catch (error: any) {
-      console.error(error);
-      message.error(error?.message || "运行失败");
-    } finally {
-      setRunLoading(false);
-    }
+    /**
+     * 这里先保留原逻辑。
+     * 后续可以替换成真实执行接口，比如 execute / run API。
+     */
+    message.success("运行校验通过，可继续接入执行逻辑");
   };
 
   return {
@@ -344,8 +375,5 @@ export function useCustomWorkflowState({
     handlePreview,
     handleReloadTemplate,
     handleRun,
-
-    buildFinalPayload,
-    resetBaseline,
   };
 }

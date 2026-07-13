@@ -4,6 +4,7 @@ import com.baomidou.mybatisplus.core.metadata.IPage;
 import org.apache.seatunnel.web.dao.entity.SeaTunnelClient;
 import org.apache.seatunnel.web.spi.bean.dto.ClientDatasourceVerifyDTO;
 import org.apache.seatunnel.web.spi.bean.dto.SeaTunnelClientDTO;
+import org.apache.seatunnel.web.spi.bean.dto.SeaTunnelClientEndpointDTO;
 import org.apache.seatunnel.web.spi.bean.dto.SeaTunnelClientPageDTO;
 import org.apache.seatunnel.web.spi.bean.vo.*;
 
@@ -35,4 +36,8 @@ public interface SeaTunnelClientService {
             Integer limit,
             String status
     );
+
+    List<SeaTunnelClientEndpointDTO> nodes(Long clientId);
+
+    List<SeaTunnelClientEndpointDTO> refreshNodes(Long clientId);
 }

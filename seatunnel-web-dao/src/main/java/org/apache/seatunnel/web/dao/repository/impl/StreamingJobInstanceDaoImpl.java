@@ -107,6 +107,7 @@ public class StreamingJobInstanceDaoImpl
                         JobStatus.CANCELING);
 
         Long count = streamingJobInstanceMapper.selectCount(wrapper);
+
         return count != null && count > 0;
     }
 
@@ -202,6 +203,18 @@ public class StreamingJobInstanceDaoImpl
         return records.stream()
                 .map(item -> ConvertUtil.sourceToTarget(item, JobInstanceVO.class))
                 .collect(Collectors.toList());
+    }
+
+    @Override
+    public StreamingJobInstance lastInstance(Long definitionId) {
+        if (definitionId == null || definitionId <= 0) {
+            return null;
+        }
+        LambdaQueryWrapper<StreamingJobInstance> wrapperLast = new LambdaQueryWrapper<>();
+        wrapperLast.eq(StreamingJobInstance::getJobDefinitionId, definitionId)
+                .orderByDesc(StreamingJobInstance::getUpdateTime)
+                .last("limit 1");
+        return streamingJobInstanceMapper.selectOne(wrapperLast);
     }
 
     private String truncate(String text, int maxLength) {

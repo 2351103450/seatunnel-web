@@ -98,7 +98,7 @@ const App: React.FC<Props> = ({ goDetail }) => {
         document.body.removeChild(textarea);
       }
 
-      message.success("JobId 已复制");
+      message.success("任务定义ID已复制");
     } catch {
       message.error("复制失败，请手动复制");
     }
@@ -203,14 +203,14 @@ const App: React.FC<Props> = ({ goDetail }) => {
             <em style={{ fontWeight: 500 }}>
               {intl.formatMessage({
                 id: "pages.job.table.label.jobId",
-                defaultMessage: "JobId",
+                defaultMessage: "Job Definition ID",
               })}
             </em>
             :{" "}
             <span style={{ fontSize: "12px", color: "gray" }}>
               {record?.id}
             </span>{" "}
-            <Tooltip title="复制 JobId">
+            <Tooltip title="复制任务定义ID">
               <button
                 type="button"
                 style={{
@@ -245,18 +245,21 @@ const App: React.FC<Props> = ({ goDetail }) => {
         <DataSourceSyncPlan record={record} />
       ),
     },
+
     {
       title: intl.formatMessage({
         id: "pages.job.table.col.status",
         defaultMessage: "Status",
       }),
       dataIndex: "taskParams",
-      width: "10%",
+      width: "7%",
       render: (_content: any, record: any) => (
-        <TaskStatus
-          status={record?.lastJobStatus}
-          errorMessage={record?.errorMessage}
-        />
+        <div className="flex w-full justify-center">
+          <TaskStatus
+            status={record?.lastJobStatus}
+            errorMessage={record?.lastErrorMessage}
+          />
+        </div>
       ),
     },
     {
@@ -293,7 +296,7 @@ const App: React.FC<Props> = ({ goDetail }) => {
         defaultMessage: "Operate",
       }),
       dataIndex: "",
-      width: "16%",
+      width: "14%",
       fixed: "right" as const,
       render: (record: any) => (
         <ActionColumn record={record} cbk={fetchTaskList} goDetail={goDetail} />
@@ -493,7 +496,7 @@ const App: React.FC<Props> = ({ goDetail }) => {
         setSelectedRowKeys([]);
         fetchTaskList();
       } else {
-        message.error(data?.message || data?.msg || "Start all failed");
+        
       }
     } catch (error: any) {
       message.error(getErrorMessage(error, "Start all failed"));
