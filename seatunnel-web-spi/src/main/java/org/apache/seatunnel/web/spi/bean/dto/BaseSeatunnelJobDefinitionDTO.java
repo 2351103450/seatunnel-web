@@ -101,7 +101,7 @@ public abstract class BaseSeatunnelJobDefinitionDTO extends PaginationBaseDTO {
     @Schema(
             description = "Source data type",
             example = "MYSQL",
-            allowableValues = {"MYSQL", "POSTGRESQL", "ORACLE", "KAFKA", "FILE", "HIVE", "ELASTICSEARCH"}
+            allowableValues = {"MYSQL", "POSTGRE_SQL", "KINGBASE", "ORACLE", "KAFKA", "FILE", "HIVE", "ELASTICSEARCH"}
     )
     private String sourceType;
 
@@ -111,7 +111,7 @@ public abstract class BaseSeatunnelJobDefinitionDTO extends PaginationBaseDTO {
     @Schema(
             description = "Sink data type",
             example = "HIVE",
-            allowableValues = {"HIVE", "MYSQL", "POSTGRESQL", "ORACLE", "KAFKA", "FILE", "ELASTICSEARCH"}
+            allowableValues = {"HIVE", "MYSQL", "POSTGRE_SQL", "KINGBASE", "ORACLE", "KAFKA", "FILE", "ELASTICSEARCH"}
     )
     private String sinkType;
 

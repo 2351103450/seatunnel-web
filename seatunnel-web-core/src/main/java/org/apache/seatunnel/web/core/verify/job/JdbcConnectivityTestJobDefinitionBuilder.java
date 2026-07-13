@@ -21,6 +21,7 @@ public class JdbcConnectivityTestJobDefinitionBuilder implements ConnectivityTes
     private static final Set<DbType> SUPPORTED = new HashSet<>(Arrays.asList(
             DbType.MYSQL,
             DbType.POSTGRE_SQL,
+            DbType.KINGBASE,
             DbType.ORACLE
     ));
 

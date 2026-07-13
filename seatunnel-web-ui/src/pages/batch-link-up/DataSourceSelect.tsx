@@ -4,6 +4,7 @@ import { useMemo } from "react";
 import MysqlIcon from "../data-source/icon/MysqlIcon";
 import OracleIcon from "../data-source/icon/OracleIcon";
 import PostgreSQL from "../data-source/icon/PsSqlIcon";
+import KingBaseIcon from "../data-source/icon/KingBaseIcon";
 import "./index.less";
 // 类型定义
 interface DataSourceType {
@@ -45,6 +46,17 @@ export const generateDataSourceOptions = (): DataSourceType[] => [
       <div style={{ display: "flex", alignItems: "center" }}>
         <PostgreSQL />
         <span style={{ marginLeft: 8 }}>PostGreSQL</span>
+      </div>
+    ),
+  },
+  {
+    value: "KINGBASE",
+    connectorType: "Jdbc",
+    pluginName: "JDBC-KINGBASE",
+    label: (
+      <div style={{ display: "flex", alignItems: "center" }}>
+        <KingBaseIcon />
+        <span style={{ marginLeft: 8 }}>KINGBASE</span>
       </div>
     ),
   },

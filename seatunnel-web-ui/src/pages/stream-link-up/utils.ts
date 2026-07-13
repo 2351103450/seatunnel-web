@@ -3,6 +3,8 @@ export const getTypeIcon = (type?: string) => {
 
   if (normalized.includes("MYSQL")) return "🐬";
   if (normalized.includes("POSTGRESQL")) return "🐘";
+  if (normalized.includes("POSTGRE_SQL")) return "🐘";
+  if (normalized.includes("KINGBASE")) return "KB";
   if (normalized.includes("KAFKA")) return "✣";
   if (normalized.includes("STARROCKS")) return "◆";
   if (normalized.includes("ELASTICSEARCH")) return "◒";

@@ -54,6 +54,20 @@ class JdbcSourceTargetBuilderTest {
     }
 
     @Test
+    void singleKingbaseTableNameUsesSchemaNameFromConnection() {
+        Map<String, Object> map = new HashMap<>();
+
+        singleBuilder.build(
+                config("table = \"sys_user\""),
+                kingbaseConnection("database = test\nschemaName = public"),
+                map,
+                HoconBuildStage.DEFINITION);
+
+        assertEquals("test", map.get(DATABASE));
+        assertEquals("test.public.sys_user", map.get(TABLE_PATH));
+    }
+
+    @Test
     void singleMysqlTableNameUsesConnectionDatabase() {
         Map<String, Object> map = new HashMap<>();
 
@@ -222,6 +236,15 @@ class JdbcSourceTargetBuilderTest {
         return ConfigFactory.parseString(
                 "url = \"jdbc:oracle:thin:@localhost:1521:XE\"\n"
                         + "driver = \"oracle.jdbc.OracleDriver\"\n"
+                        + "user = st\n"
+                        + "password = st_pass\n"
+                        + body);
+    }
+
+    private Config kingbaseConnection(String body) {
+        return ConfigFactory.parseString(
+                "url = \"jdbc:kingbase8://localhost:54321/test\"\n"
+                        + "driver = \"com.kingbase8.Driver\"\n"
                         + "user = st\n"
                         + "password = st_pass\n"
                         + body);

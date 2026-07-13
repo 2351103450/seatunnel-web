@@ -69,12 +69,20 @@ final class JdbcSinkSchemaResolver {
     private static boolean isPostgreSql(Config config, Config conn) {
         return containsIgnoreCase(config, PLUGIN_NAME, "postgres")
                 || containsIgnoreCase(conn, PLUGIN_NAME, "postgres")
+                || containsIgnoreCase(config, PLUGIN_NAME, "kingbase")
+                || containsIgnoreCase(conn, PLUGIN_NAME, "kingbase")
                 || containsIgnoreCase(config, DB_TYPE, "postgre")
                 || containsIgnoreCase(conn, DB_TYPE, "postgre")
+                || containsIgnoreCase(config, DB_TYPE, "kingbase")
+                || containsIgnoreCase(conn, DB_TYPE, "kingbase")
                 || containsIgnoreCase(config, DRIVER, "postgresql")
                 || containsIgnoreCase(conn, DRIVER, "postgresql")
+                || containsIgnoreCase(config, DRIVER, "kingbase")
+                || containsIgnoreCase(conn, DRIVER, "kingbase")
                 || startsWithIgnoreCase(config, URL, "jdbc:postgresql:")
-                || startsWithIgnoreCase(conn, URL, "jdbc:postgresql:");
+                || startsWithIgnoreCase(conn, URL, "jdbc:postgresql:")
+                || startsWithIgnoreCase(config, URL, "jdbc:kingbase8:")
+                || startsWithIgnoreCase(conn, URL, "jdbc:kingbase8:");
     }
 
     private static boolean containsIgnoreCase(Config config, String path, String searchText) {
