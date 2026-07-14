@@ -47,6 +47,16 @@
             <artifactId>seatunnel-web-datasource-all</artifactId>
         </dependency>
 
+        <dependency>
+            <groupId>org.apache.seatunnel.web</groupId>
+            <artifactId>seatunnel-web-alarm-api</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>org.apache.seatunnel.web</groupId>
+            <artifactId>seatunnel-web-alarm-all</artifactId>
+        </dependency>
+
         <!-- spring-boot -->
         <dependency>
             <groupId>org.springframework.boot</groupId>
