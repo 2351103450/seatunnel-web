@@ -47,7 +47,6 @@ class AlarmRuleTargetRepositoryImplTest {
     void ruleExcludingThisTaskShouldBeSkipped() {
         // Rule matches FAILED but explicitly excludes job definition 200.
         AlarmRuleEntity rule = AlarmRuleEntity.builder()
-                .id(1L)
                 .name("all-but-noisy")
                 .jobDefinitionId(null)
                 .triggerStatuses("FAILED")
@@ -55,6 +54,7 @@ class AlarmRuleTargetRepositoryImplTest {
                 .severity("CRITICAL")
                 .enabled(1)
                 .build();
+        rule.setId(1L);
         when(ruleMapper.selectList(any())).thenReturn(List.of(rule));
 
         List<AlarmTarget> targets = repository.findMatchedTargets(200L, "FAILED");
@@ -65,7 +65,6 @@ class AlarmRuleTargetRepositoryImplTest {
     @Test
     void ruleExcludingOtherTaskShouldStillFire() {
         AlarmRuleEntity rule = AlarmRuleEntity.builder()
-                .id(1L)
                 .name("all")
                 .jobDefinitionId(null)
                 .triggerStatuses("FAILED")
@@ -73,11 +72,16 @@ class AlarmRuleTargetRepositoryImplTest {
                 .severity("CRITICAL")
                 .enabled(1)
                 .build();
+        rule.setId(1L);
         when(ruleMapper.selectList(any())).thenReturn(List.of(rule));
         when(ruleChannelMapper.selectList(any())).thenReturn(List.of(
                 AlarmRuleChannelEntity.builder().ruleId(1L).channelId(10L).build()));
-        when(channelMapper.selectList(any())).thenReturn(List.of(
-                AlarmChannelEntity.builder().id(10L).channelType("WEBHOOK").enabled(1).build()));
+        AlarmChannelEntity channel = AlarmChannelEntity.builder()
+                .channelType("WEBHOOK")
+                .enabled(1)
+                .build();
+        channel.setId(10L);
+        when(channelMapper.selectList(any())).thenReturn(List.of(channel));
 
         List<AlarmTarget> targets = repository.findMatchedTargets(200L, "FAILED");
 
@@ -88,10 +92,10 @@ class AlarmRuleTargetRepositoryImplTest {
     @Test
     void disabledStatusShouldNotMatch() {
         AlarmRuleEntity rule = AlarmRuleEntity.builder()
-                .id(1L)
                 .triggerStatuses("FAILED")
                 .enabled(1)
                 .build();
+        rule.setId(1L);
         when(ruleMapper.selectList(any())).thenReturn(List.of(rule));
 
         List<AlarmTarget> targets = repository.findMatchedTargets(200L, "FINISHED");
