@@ -40,6 +40,13 @@ public class DataSourceConstants {
     public static final String MONGODB_VALIDATION_QUERY = "{\"ping\": 1}";
     public static final String MONGODB_DEFAULT_DRIVER = "com.mongodb.client.MongoClient";
 
+    // Doris
+    public static final String JDBC_DORIS = "jdbc:mysql://";
+    public static final String JDBC_DORIS_LOADBALANCE = "jdbc:mysql:loadbalance://";
+    public static final String DORIS_VALIDATION_QUERY = "select 1";
+    public static final int DORIS_DEFAULT_QUERY_PORT = 9030;
+    public static final int DORIS_DEFAULT_HTTP_PORT = 8030;
+
     public static final String JDBC_SQLITE = "jdbc:sqlite:";
     public static final String JDBC_MYSQL = "jdbc:mysql://";
     public static final String JDBC_MYSQL_LOADBALANCE = "jdbc:mysql:loadbalance://";
