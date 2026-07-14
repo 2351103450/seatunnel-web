@@ -32,6 +32,10 @@
         </dependency>
         <dependency>
             <groupId>org.apache.seatunnel.web</groupId>
+            <artifactId>seatunnel-web-datasource-doris</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.seatunnel.web</groupId>
             <artifactId>seatunnel-web-datasource-kingbase</artifactId>
         </dependency>
         <dependency>

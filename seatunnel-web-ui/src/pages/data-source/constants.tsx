@@ -12,6 +12,7 @@ export const COMMON_DB_OPTIONS: DataSourceOptionItem[] = [
   { label: "MYSQL", value: "MYSQL" },
   { label: "ORACLE", value: "ORACLE" },
   { label: "POSTGRE_SQL", value: "POSTGRE_SQL" },
+  { label: "DORIS", value: "DORIS" },
   { label: "KINGBASE", value: "KINGBASE" },
   { label: "DAMENG", value: "DAMENG" },
 ];
@@ -55,6 +56,17 @@ export const dataSourceGroupList: DataSourceGroup[] = [
         dbType: "DAMENG",
         type: "DAMENG",
         connectorType: "Jdbc",
+      },
+    ],
+  },
+  {
+    groupName: "OLAP 数据库",
+    datasourceList: [
+      {
+        onlyDiScript: false,
+        dbType: "DORIS",
+        type: "DORIS",
+        connectorType: "Doris",
       },
     ],
   },

@@ -156,6 +156,11 @@ public class DataSourceSourceBuilder implements SourceNodeConfigBuilder {
 
     @Override
     public String connectorName(Config data) {
+        String dbTypeValue = getTrimmedString(data, KEY_DB_TYPE);
+        if ("DORIS".equalsIgnoreCase(dbTypeValue)) {
+            return "Doris";
+        }
+
         String connectorType = getTrimmedString(data, KEY_CONNECTOR_TYPE);
         if (StringUtils.isNotBlank(connectorType)) {
             return connectorType;
@@ -209,7 +214,7 @@ public class DataSourceSourceBuilder implements SourceNodeConfigBuilder {
             throw new IllegalArgumentException(
                     "Missing required field '" + KEY_PLUGIN_NAME + "' in source node config");
         }
-        return pluginName;
+        return pluginName.toUpperCase();
     }
 
     private void validateSourceConfig(DataSourceProcessor processor,
