@@ -2,11 +2,13 @@ package org.apache.seatunnel.web.api.metrics;
 
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.seatunnel.web.api.alarm.event.JobStatusChangedEvent;
 import org.apache.seatunnel.web.api.service.BatchJobInstanceService;
 import org.apache.seatunnel.web.api.utils.JobUtils;
 import org.apache.seatunnel.web.common.enums.JobResult;
 import org.apache.seatunnel.web.common.enums.JobStatus;
 import org.apache.seatunnel.web.dao.entity.JobInstance;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Component;
 
 import java.util.Date;
@@ -30,10 +32,14 @@ public class JobResultHandler {
 
     private final JobMetricsMonitor jobMetricsMonitor;
 
+    private final ApplicationEventPublisher eventPublisher;
+
     public JobResultHandler(BatchJobInstanceService instanceService,
-                            JobMetricsMonitor jobMetricsMonitor) {
+                            JobMetricsMonitor jobMetricsMonitor,
+                            ApplicationEventPublisher eventPublisher) {
         this.instanceService = instanceService;
         this.jobMetricsMonitor = jobMetricsMonitor;
+        this.eventPublisher = eventPublisher;
     }
 
     /**
@@ -198,6 +204,17 @@ public class JobResultHandler {
         }
 
         instanceService.updateById(po);
+
+        // Publish a status-change event so the alarm sub-system (and any other
+        // listener) can react. oldStatus / engineJobId are unknown here; the
+        // alarm engine enriches them via JobInstanceLookup.
+        try {
+            eventPublisher.publishEvent(new JobStatusChangedEvent(
+                    this, jobInstanceId, null, status, null,
+                    errorMessage, null));
+        } catch (Exception e) {
+            log.warn("Publish job status change event failed, instanceId={}", jobInstanceId, e);
+        }
 
         log.info(
                 "Batch job instance final status updated, instanceId={}, status={}, errorMessage={}",

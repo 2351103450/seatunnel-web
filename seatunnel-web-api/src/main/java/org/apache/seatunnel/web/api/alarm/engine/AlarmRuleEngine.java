@@ -1,0 +1,192 @@
+package org.apache.seatunnel.web.api.alarm.engine;
+
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import lombok.extern.slf4j.Slf4j;
+import org.apache.seatunnel.plugin.alarm.api.AlarmChannel;
+import org.apache.seatunnel.plugin.alarm.api.AlarmData;
+import org.apache.seatunnel.plugin.alarm.api.AlarmInfo;
+import org.apache.seatunnel.plugin.alarm.api.AlarmResult;
+import org.apache.seatunnel.plugin.alarm.api.AlarmSeverity;
+import org.apache.seatunnel.web.api.alarm.event.JobStatusChangedEvent;
+import org.apache.seatunnel.web.api.alarm.plugin.AlarmPluginManager;
+import org.apache.seatunnel.web.api.alarm.repository.AlarmRuleTargetRepository;
+import org.apache.seatunnel.web.api.alarm.repository.AlarmTarget;
+import org.apache.seatunnel.web.api.alarm.repository.JobInstanceBasic;
+import org.apache.seatunnel.web.api.alarm.repository.JobInstanceLookup;
+import org.apache.seatunnel.web.dao.entity.AlarmRecordEntity;
+import org.springframework.context.event.EventListener;
+import org.springframework.scheduling.annotation.Async;
+import org.springframework.stereotype.Component;
+
+import java.util.Date;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
+/**
+ * Core alarm dispatch engine (the "sender"), mirroring DolphinScheduler's
+ * {@code AlertSender}: on a status-change event it matches rules, builds an
+ * {@link AlarmInfo} (channel params + {@link AlarmData}) and delegates to the
+ * resolved {@link AlarmChannel}, persisting the result of every attempt.
+ *
+ * <p>
+ * Runs on a dedicated executor so a slow webhook can never block the job
+ * status-write thread; any exception is swallowed so alarms never break the
+ * job lifecycle.
+ * </p>
+ */
+@Component
+@Slf4j
+public class AlarmRuleEngine {
+
+    private static final TypeReference<Map<String, Object>> CONFIG_TYPE = new TypeReference<>() {
+    };
+
+    private final AlarmRuleTargetRepository ruleRepository;
+
+    private final JobInstanceLookup jobInstanceLookup;
+
+    private final ObjectMapper objectMapper;
+
+    private final AlarmPluginManager alarmPluginManager;
+
+    public AlarmRuleEngine(AlarmRuleTargetRepository ruleRepository,
+                           JobInstanceLookup jobInstanceLookup,
+                           ObjectMapper objectMapper,
+                           AlarmPluginManager alarmPluginManager) {
+        this.ruleRepository = ruleRepository;
+        this.jobInstanceLookup = jobInstanceLookup;
+        this.objectMapper = objectMapper;
+        this.alarmPluginManager = alarmPluginManager;
+    }
+
+    @EventListener
+    @Async("alarmExecutor")
+    public void onJobStatusChanged(JobStatusChangedEvent event) {
+        dispatch(event);
+    }
+
+    public void dispatch(JobStatusChangedEvent event) {
+        try {
+            if (event == null || event.getNewStatus() == null || event.getJobInstanceId() == null) {
+                return;
+            }
+
+            JobInstanceBasic basic = null;
+            Long jobDefinitionId = event.getJobDefinitionId();
+            if (jobDefinitionId == null) {
+                basic = jobInstanceLookup.lookup(event.getJobInstanceId());
+                if (basic != null) {
+                    jobDefinitionId = basic.getJobDefinitionId();
+                }
+            }
+
+            String newStatus = event.getNewStatus().name();
+            List<AlarmTarget> targets = ruleRepository.findMatchedTargets(jobDefinitionId, newStatus);
+            if (targets == null || targets.isEmpty()) {
+                return;
+            }
+
+            for (AlarmTarget target : targets) {
+                dispatchTarget(event, basic, jobDefinitionId, target, newStatus);
+            }
+        } catch (Exception e) {
+            log.warn("Alarm dispatch failed, jobInstanceId={}", event.getJobInstanceId(), e);
+        }
+    }
+
+    private void dispatchTarget(JobStatusChangedEvent event,
+                               JobInstanceBasic basic,
+                               Long jobDefinitionId,
+                               AlarmTarget target,
+                               String newStatus) {
+        if (target == null || target.getChannels() == null || target.getChannels().isEmpty()) {
+            return;
+        }
+        AlarmSeverity severity = AlarmDataBuilder.parseSeverity(target.getSeverity());
+        AlarmData alarmData = AlarmDataBuilder.build(event, basic, severity);
+
+        for (AlarmTarget.AlarmTargetChannel ch : target.getChannels()) {
+            deliverToChannel(event, basic, jobDefinitionId, target, ch, alarmData, newStatus);
+        }
+    }
+
+    private void deliverToChannel(JobStatusChangedEvent event,
+                                  JobInstanceBasic basic,
+                                  Long jobDefinitionId,
+                                  AlarmTarget target,
+                                  AlarmTarget.AlarmTargetChannel ch,
+                                  AlarmData alarmData,
+                                  String newStatus) {
+        AlarmChannel channel = alarmPluginManager.getChannel(ch.getChannelType());
+        AlarmResult result;
+        if (channel == null) {
+            result = AlarmResult.fail("alarm channel type not registered: " + ch.getChannelType());
+            log.warn("No alarm channel registered for type {}, jobId={}", ch.getChannelType(),
+                    event.getJobInstanceId());
+        } else {
+            Map<String, String> params = parseConfigToParams(ch.getConfigJson());
+            AlarmInfo info = AlarmInfo.builder()
+                    .alarmParams(params)
+                    .alarmData(alarmData)
+                    .alarmChannelId(ch.getChannelId())
+                    .build();
+            result = channel.process(info);
+        }
+
+        try {
+            AlarmRecordEntity record = AlarmRecordEntity.builder()
+                    .ruleId(target.getRuleId())
+                    .channelId(ch.getChannelId())
+                    .channelType(ch.getChannelType())
+                    .jobInstanceId(event.getJobInstanceId())
+                    .jobDefinitionId(jobDefinitionId)
+                    .jobName(basic != null ? basic.getJobName() : null)
+                    .newStatus(newStatus)
+                    .severity(alarmData.getSeverity() == null ? null : alarmData.getSeverity().name())
+                    .success(result.isSuccess() ? 1 : 0)
+                    .errorMessage(result.getMessage())
+                    .content(alarmData.getContent())
+                    .sentTime(new Date())
+                    .build();
+            ruleRepository.saveRecord(record);
+        } catch (Exception e) {
+            log.warn("Persist alarm record failed, jobId={}, channelId={}",
+                    event.getJobInstanceId(), ch.getChannelId(), e);
+        }
+    }
+
+    /**
+     * Convert the stored channel config JSON into a flat string map (DS
+     * AlertInfo#alertParams style): scalars become their string form, nested
+     * maps/lists are kept as JSON strings.
+     */
+    private Map<String, String> parseConfigToParams(String configJson) {
+        if (configJson == null || configJson.isBlank()) {
+            return new HashMap<>();
+        }
+        try {
+            Map<String, Object> raw = objectMapper.readValue(configJson, CONFIG_TYPE);
+            Map<String, String> params = new HashMap<>();
+            raw.forEach((k, v) -> {
+                if (v == null) {
+                    return;
+                }
+                if (v instanceof CharSequence || v instanceof Number || v instanceof Boolean) {
+                    params.put(k, v.toString());
+                } else {
+                    try {
+                        params.put(k, objectMapper.writeValueAsString(v));
+                    } catch (Exception e) {
+                        params.put(k, v.toString());
+                    }
+                }
+            });
+            return params;
+        } catch (Exception e) {
+            log.warn("Failed to parse alarm channel config: {}", configJson, e);
+            return new HashMap<>();
+        }
+    }
+}
