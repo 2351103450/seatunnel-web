@@ -1,4 +1,4 @@
-package org.apache.seatunnel.web.api.alarm.controller;
+package org.apache.seatunnel.web.api.controller;
 
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -6,9 +6,9 @@ import jakarta.annotation.Resource;
 import lombok.Data;
 import org.apache.seatunnel.plugin.alarm.api.AlarmChannelFactory;
 import org.apache.seatunnel.web.api.alarm.plugin.AlarmPluginManager;
-import org.apache.seatunnel.web.api.alarm.service.AlarmChannelService;
-import org.apache.seatunnel.web.api.alarm.service.AlarmRecordService;
-import org.apache.seatunnel.web.api.alarm.service.AlarmRuleService;
+import org.apache.seatunnel.web.api.service.AlarmChannelService;
+import org.apache.seatunnel.web.api.service.AlarmRecordService;
+import org.apache.seatunnel.web.api.service.AlarmRuleService;
 import org.apache.seatunnel.web.dao.entity.AlarmChannelEntity;
 import org.apache.seatunnel.web.dao.entity.AlarmRecordEntity;
 import org.apache.seatunnel.web.dao.entity.AlarmRuleEntity;

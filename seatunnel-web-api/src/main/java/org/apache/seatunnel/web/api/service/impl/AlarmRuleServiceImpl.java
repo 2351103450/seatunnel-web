@@ -1,8 +1,8 @@
-package org.apache.seatunnel.web.api.alarm.service;
+package org.apache.seatunnel.web.api.service.impl;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import jakarta.annotation.Resource;
-import lombok.Data;
+import org.apache.seatunnel.web.api.service.AlarmRuleService;
 import org.apache.seatunnel.web.dao.entity.AlarmRuleChannelEntity;
 import org.apache.seatunnel.web.dao.entity.AlarmRuleEntity;
 import org.apache.seatunnel.web.dao.mapper.AlarmRuleChannelMapper;
@@ -15,7 +15,7 @@ import java.util.Date;
 import java.util.List;
 
 @Service
-public class AlarmRuleService {
+public class AlarmRuleServiceImpl implements AlarmRuleService {
 
     @Resource
     private AlarmRuleMapper alarmRuleMapper;
@@ -23,14 +23,17 @@ public class AlarmRuleService {
     @Resource
     private AlarmRuleChannelMapper alarmRuleChannelMapper;
 
+    @Override
     public AlarmRuleEntity getById(Long id) {
         return alarmRuleMapper.selectById(id);
     }
 
+    @Override
     public List<AlarmRuleEntity> list() {
         return alarmRuleMapper.selectList(null);
     }
 
+    @Override
     @Transactional
     public Long create(AlarmRuleCommand command) {
         AlarmRuleEntity entity = toEntity(command);
@@ -46,6 +49,7 @@ public class AlarmRuleService {
         return entity.getId();
     }
 
+    @Override
     @Transactional
     public boolean update(AlarmRuleCommand command) {
         if (command.getId() == null) {
@@ -60,6 +64,7 @@ public class AlarmRuleService {
         return updated;
     }
 
+    @Override
     @Transactional
     public boolean delete(Long id) {
         if (id == null) {
@@ -71,6 +76,7 @@ public class AlarmRuleService {
         return alarmRuleMapper.deleteById(id) > 0;
     }
 
+    @Override
     public List<AlarmRuleChannelEntity> listChannels(Long ruleId) {
         if (ruleId == null) {
             return Collections.emptyList();
@@ -101,8 +107,9 @@ public class AlarmRuleService {
     }
 
     private AlarmRuleEntity toEntity(AlarmRuleCommand command) {
-        return AlarmRuleEntity.builder()
-                .id(command.getId())
+        // id / createTime / updateTime are inherited from BaseEntity, so they are
+        // not part of AlarmRuleEntity's @Builder; set id via the setter instead.
+        AlarmRuleEntity entity = AlarmRuleEntity.builder()
                 .name(command.getName())
                 .jobDefinitionId(command.getJobDefinitionId())
                 .triggerStatuses(command.getTriggerStatuses())
@@ -111,18 +118,7 @@ public class AlarmRuleService {
                 .enabled(command.getEnabled())
                 .description(command.getDescription())
                 .build();
-    }
-
-    @Data
-    public static class AlarmRuleCommand {
-        private Long id;
-        private String name;
-        private Long jobDefinitionId;
-        private String triggerStatuses;
-        private String excludes;
-        private String severity;
-        private Integer enabled;
-        private String description;
-        private List<Long> channelIds;
+        entity.setId(command.getId());
+        return entity;
     }
 }

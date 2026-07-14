@@ -1,12 +1,11 @@
 package org.apache.seatunnel.web.dao.entity;
 
-import com.baomidou.mybatisplus.annotation.IdType;
-import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableName;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import lombok.ToString;
 
 import java.util.Date;
 
@@ -17,11 +16,9 @@ import java.util.Date;
 @Builder
 @AllArgsConstructor
 @NoArgsConstructor
+@ToString
 @TableName("t_seatunnel_web_alarm_record")
-public class AlarmRecordEntity {
-
-    @TableId(type = IdType.AUTO)
-    private Long id;
+public class AlarmRecordEntity extends BaseEntity {
 
     private Long ruleId;
 
@@ -47,6 +44,4 @@ public class AlarmRecordEntity {
     private String content;
 
     private Date sentTime;
-
-    private Date createTime;
 }

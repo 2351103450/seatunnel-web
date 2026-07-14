@@ -1,19 +1,21 @@
-package org.apache.seatunnel.web.api.alarm.service;
+package org.apache.seatunnel.web.api.service.impl;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import jakarta.annotation.Resource;
+import org.apache.seatunnel.web.api.service.AlarmRecordService;
 import org.apache.seatunnel.web.dao.entity.AlarmRecordEntity;
 import org.apache.seatunnel.web.dao.mapper.AlarmRecordMapper;
 import org.springframework.stereotype.Service;
 
 @Service
-public class AlarmRecordService {
+public class AlarmRecordServiceImpl implements AlarmRecordService {
 
     @Resource
     private AlarmRecordMapper alarmRecordMapper;
 
+    @Override
     public IPage<AlarmRecordEntity> page(int pageNo, int pageSize, Long jobInstanceId) {
         Page<AlarmRecordEntity> page = new Page<>(pageNo < 1 ? 1 : pageNo, pageSize < 1 ? 10 : pageSize);
         LambdaQueryWrapper<AlarmRecordEntity> w = new LambdaQueryWrapper<>();

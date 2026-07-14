@@ -1,4 +1,4 @@
-package org.apache.seatunnel.web.api.alarm.config;
+package org.apache.seatunnel.web.api.config;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;

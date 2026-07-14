@@ -1,14 +1,11 @@
 package org.apache.seatunnel.web.dao.entity;
 
-import com.baomidou.mybatisplus.annotation.IdType;
-import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableName;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-
-import java.util.Date;
+import lombok.ToString;
 
 /**
  * A configured alarm channel instance (e.g. a specific webhook endpoint).
@@ -19,11 +16,9 @@ import java.util.Date;
 @Builder
 @AllArgsConstructor
 @NoArgsConstructor
+@ToString
 @TableName("t_seatunnel_web_alarm_channel")
-public class AlarmChannelEntity {
-
-    @TableId(type = IdType.AUTO)
-    private Long id;
+public class AlarmChannelEntity extends BaseEntity {
 
     private String name;
 
@@ -37,8 +32,4 @@ public class AlarmChannelEntity {
     private Integer enabled;
 
     private String description;
-
-    private Date createTime;
-
-    private Date updateTime;
 }

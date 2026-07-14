@@ -4,7 +4,7 @@
 
 CREATE TABLE `t_seatunnel_web_alarm_channel`
 (
-    `id`          bigint       NOT NULL AUTO_INCREMENT COMMENT '主键ID',
+    `id`          bigint       NOT NULL COMMENT '主键ID',
     `name`        varchar(128) NOT NULL COMMENT '渠道名称',
     `channel_type` varchar(64) NOT NULL COMMENT '渠道类型(SPI key)，如 WEBHOOK/DINGTALK',
     `config_json` text COMMENT '渠道配置(JSON)',
@@ -19,7 +19,7 @@ CREATE TABLE `t_seatunnel_web_alarm_channel`
 
 CREATE TABLE `t_seatunnel_web_alarm_rule`
 (
-    `id`                bigint       NOT NULL AUTO_INCREMENT COMMENT '主键ID',
+    `id`                bigint       NOT NULL COMMENT '主键ID',
     `name`              varchar(128) NOT NULL COMMENT '规则名称',
     `job_definition_id` bigint                DEFAULT NULL COMMENT '任务定义ID，NULL表示全部任务',
     `trigger_statuses`  varchar(256) NOT NULL COMMENT '触发的状态(JobStatus名)，逗号分隔，如 FAILED,CANCELED',
@@ -36,7 +36,7 @@ CREATE TABLE `t_seatunnel_web_alarm_rule`
 
 CREATE TABLE `t_seatunnel_web_alarm_rule_channel`
 (
-    `id`          bigint   NOT NULL AUTO_INCREMENT COMMENT '主键ID',
+    `id`          bigint   NOT NULL COMMENT '主键ID',
     `rule_id`     bigint   NOT NULL COMMENT '规则ID',
     `channel_id`  bigint   NOT NULL COMMENT '渠道ID',
     `create_time` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
@@ -47,7 +47,7 @@ CREATE TABLE `t_seatunnel_web_alarm_rule_channel`
 
 CREATE TABLE `t_seatunnel_web_alarm_record`
 (
-    `id`                bigint       NOT NULL AUTO_INCREMENT COMMENT '主键ID',
+    `id`                bigint       NOT NULL COMMENT '主键ID',
     `rule_id`           bigint                DEFAULT NULL COMMENT '规则ID',
     `channel_id`        bigint                DEFAULT NULL COMMENT '渠道ID',
     `channel_type`      varchar(64)           DEFAULT NULL COMMENT '渠道类型',

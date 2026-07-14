@@ -63,7 +63,7 @@ public class AlarmRuleTargetRepositoryImpl implements AlarmRuleTargetRepository 
                 .filter(r -> statusMatches(r.getTriggerStatuses(), newStatus))
                 // Exclude rules that explicitly black-list this task definition.
                 .filter(r -> !excludesContains(r.getExcludes(), jobDefinitionId))
-                .collect(Collectors.toList());
+                .toList();
         if (matched.isEmpty()) {
             return Collections.emptyList();
         }
