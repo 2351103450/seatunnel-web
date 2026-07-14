@@ -11,6 +11,7 @@ import org.apache.seatunnel.web.api.alarm.repository.AlarmTarget;
 import org.apache.seatunnel.web.api.alarm.repository.JobInstanceBasic;
 import org.apache.seatunnel.web.api.alarm.repository.JobInstanceLookup;
 import org.apache.seatunnel.web.common.enums.JobStatus;
+import org.apache.seatunnel.web.common.enums.ReleaseState;
 import org.apache.seatunnel.web.dao.entity.AlarmRecordEntity;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -74,6 +75,7 @@ class AlarmRuleEngineE2ETest {
                 .jobName("etl_order")
                 .jobMode("BATCH")
                 .engineJobId("engine-9")
+                .releaseState(ReleaseState.ONLINE)
                 .build();
 
         // Real SPI manager: ServiceLoader discovers WebhookAlarmChannelFactory
@@ -123,6 +125,36 @@ class AlarmRuleEngineE2ETest {
         assertEquals(200L, record.getJobDefinitionId());
         assertNotNull(record.getContent());
         assertTrue(record.getContent().contains("etl_order"));
+    }
+
+    @Test
+    void shouldNotDispatchWhenTaskOffline() {
+        // Rules only apply to ONLINE tasks; an OFFLINE task must not trigger alarms.
+        AlarmPluginManager manager = new AlarmPluginManager();
+        JobInstanceLookup offlineLookup = instanceId -> JobInstanceBasic.builder()
+                .jobInstanceId(instanceId)
+                .jobDefinitionId(200L)
+                .jobName("etl_order")
+                .jobMode("BATCH")
+                .releaseState(ReleaseState.OFFLINE)
+                .build();
+        AlarmRuleEngine offlineEngine = new AlarmRuleEngine(
+                ruleRepository, offlineLookup, new ObjectMapper(), manager);
+
+        ruleRepository.setTargets(List.of(AlarmTarget.builder()
+                .ruleId(1L).severity("CRITICAL")
+                .channels(List.of(AlarmTarget.AlarmTargetChannel.builder()
+                        .channelId(10L).channelType("WEBHOOK")
+                        .configJson("{\"url\":\"http://127.0.0.1:" + server.getAddress().getPort()
+                                + "/alarm\"}")
+                        .build()))
+                .build()));
+
+        offlineEngine.dispatch(new JobStatusChangedEvent(
+                this, 1001L, 200L, JobStatus.FAILED, JobStatus.RUNNING, "boom", null));
+
+        assertEquals(0, webhookHits.get(), "offline task should not trigger alarms");
+        assertEquals(0, ruleRepository.records.size());
     }
 
     @Test

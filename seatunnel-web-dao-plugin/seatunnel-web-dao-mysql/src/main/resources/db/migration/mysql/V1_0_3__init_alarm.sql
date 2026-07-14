@@ -23,6 +23,7 @@ CREATE TABLE `t_seatunnel_web_alarm_rule`
     `name`              varchar(128) NOT NULL COMMENT '规则名称',
     `job_definition_id` bigint                DEFAULT NULL COMMENT '任务定义ID，NULL表示全部任务',
     `trigger_statuses`  varchar(256) NOT NULL COMMENT '触发的状态(JobStatus名)，逗号分隔，如 FAILED,CANCELED',
+    `excludes`          varchar(512)          DEFAULT NULL COMMENT '排除的任务定义ID，逗号分隔',
     `severity`          varchar(32)          DEFAULT 'WARN' COMMENT '严重级别：INFO/WARN/CRITICAL',
     `enabled`           tinyint(1) NOT NULL DEFAULT 1 COMMENT '是否启用：0否 1是',
     `description`       varchar(512)          DEFAULT NULL COMMENT '备注',

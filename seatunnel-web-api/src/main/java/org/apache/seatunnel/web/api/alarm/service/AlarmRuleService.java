@@ -106,6 +106,7 @@ public class AlarmRuleService {
                 .name(command.getName())
                 .jobDefinitionId(command.getJobDefinitionId())
                 .triggerStatuses(command.getTriggerStatuses())
+                .excludes(command.getExcludes())
                 .severity(command.getSeverity())
                 .enabled(command.getEnabled())
                 .description(command.getDescription())
@@ -118,6 +119,7 @@ public class AlarmRuleService {
         private String name;
         private Long jobDefinitionId;
         private String triggerStatuses;
+        private String excludes;
         private String severity;
         private Integer enabled;
         private String description;

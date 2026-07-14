@@ -73,14 +73,23 @@ public class AlarmRuleEngine {
                 return;
             }
 
-            JobInstanceBasic basic = null;
-            Long jobDefinitionId = event.getJobDefinitionId();
-            if (jobDefinitionId == null) {
-                basic = jobInstanceLookup.lookup(event.getJobInstanceId());
-                if (basic != null) {
-                    jobDefinitionId = basic.getJobDefinitionId();
-                }
+            // Always resolve the instance: we need the definition's release
+            // state to enforce "alarms only for online tasks".
+            JobInstanceBasic basic = jobInstanceLookup.lookup(event.getJobInstanceId());
+            if (basic == null) {
+                log.warn("Skip alarm: job instance not found, jobInstanceId={}",
+                        event.getJobInstanceId());
+                return;
             }
+            if (basic.getReleaseState() == null || !basic.getReleaseState().isOnline()) {
+                log.info("Skip alarm: task is not online, jobInstanceId={}, releaseState={}",
+                        event.getJobInstanceId(), basic.getReleaseState());
+                return;
+            }
+
+            Long jobDefinitionId = basic.getJobDefinitionId() != null
+                    ? basic.getJobDefinitionId()
+                    : event.getJobDefinitionId();
 
             String newStatus = event.getNewStatus().name();
             List<AlarmTarget> targets = ruleRepository.findMatchedTargets(jobDefinitionId, newStatus);

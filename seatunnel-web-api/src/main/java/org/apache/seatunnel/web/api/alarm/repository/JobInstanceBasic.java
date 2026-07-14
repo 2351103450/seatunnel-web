@@ -4,10 +4,11 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import org.apache.seatunnel.web.common.enums.ReleaseState;
 
 /**
  * Lightweight, decoupled view of a job instance, used by the alarm engine to
- * enrich an {@link org.apache.seatunnel.plugin.alarm.api.AlarmMessage} without
+ * enrich an {@link org.apache.seatunnel.plugin.alarm.api.AlarmData} without
  * depending on the full {@code JobInstance} entity.
  */
 @Data
@@ -25,4 +26,7 @@ public class JobInstanceBasic {
     private String jobMode;
 
     private String engineJobId;
+
+    /** Release state of the job definition; alarms only fire for ONLINE tasks. */
+    private ReleaseState releaseState;
 }

@@ -37,6 +37,13 @@ public class AlarmRuleEntity {
      */
     private String triggerStatuses;
 
+    /**
+     * Comma-separated job definition ids to exclude from this rule, even when
+     * the rule otherwise matches (e.g. a null job_definition_id "all jobs" rule
+     * that should skip a few noisy tasks). Nullable.
+     */
+    private String excludes;
+
     /** INFO / WARN / CRITICAL */
     private String severity;
 

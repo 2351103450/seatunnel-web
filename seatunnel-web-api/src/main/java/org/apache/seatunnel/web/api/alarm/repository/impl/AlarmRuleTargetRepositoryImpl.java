@@ -61,6 +61,8 @@ public class AlarmRuleTargetRepositoryImpl implements AlarmRuleTargetRepository 
         // Precise status matching in Java to avoid SQL LIKE false positives.
         List<AlarmRuleEntity> matched = rules.stream()
                 .filter(r -> statusMatches(r.getTriggerStatuses(), newStatus))
+                // Exclude rules that explicitly black-list this task definition.
+                .filter(r -> !excludesContains(r.getExcludes(), jobDefinitionId))
                 .collect(Collectors.toList());
         if (matched.isEmpty()) {
             return Collections.emptyList();
@@ -133,5 +135,15 @@ public class AlarmRuleTargetRepositoryImpl implements AlarmRuleTargetRepository 
         return Arrays.stream(triggerStatuses.split(","))
                 .map(String::trim)
                 .anyMatch(newStatus::equals);
+    }
+
+    private boolean excludesContains(String excludes, Long jobDefinitionId) {
+        if (excludes == null || excludes.isBlank() || jobDefinitionId == null) {
+            return false;
+        }
+        return Arrays.stream(excludes.split(","))
+                .map(String::trim)
+                .filter(s -> !s.isEmpty())
+                .anyMatch(s -> s.equals(jobDefinitionId.toString()));
     }
 }
