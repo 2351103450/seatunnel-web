@@ -1,6 +1,7 @@
 package org.apache.seatunnel.plugin.datasource.mysql.metadata;
 
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.seatunnel.plugin.datasource.api.jdbc.AbstractJdbcCatalog;
 import org.apache.seatunnel.plugin.datasource.api.jdbc.JdbcConnectionProvider;
 import org.apache.seatunnel.plugin.datasource.api.jdbc.TablePath;
@@ -37,6 +38,56 @@ public class MySQLCatalog extends AbstractJdbcCatalog {
         return rs.getString("TABLE_NAME");
     }
 
+    @Override
+    public String buildTableReference(TablePath tablePath) {
+        if (tablePath == null || StringUtils.isBlank(tablePath.getTableName())) {
+            throw new IllegalArgumentException("table is null");
+        }
+
+        String databaseName = tablePath.getDatabaseName();
+
+        if (StringUtils.isBlank(databaseName)) {
+            databaseName = getParam().getDatabase();
+        }
+
+        String tableName = tablePath.getTableName();
+
+        if (StringUtils.isBlank(databaseName)) {
+            return quoteIdentifier(tableName);
+        }
+
+        return quoteIdentifier(databaseName) + "." + quoteIdentifier(tableName);
+    }
+
+    @Override
+    protected TablePath resolveTablePath(String tablePath) {
+        if (StringUtils.isBlank(tablePath)) {
+            throw new IllegalArgumentException("tablePath must not be blank");
+        }
+
+        String[] parts = java.util.Arrays.stream(tablePath.split("\\."))
+                .map(String::trim)
+                .filter(StringUtils::isNotBlank)
+                .toArray(String[]::new);
+
+        if (parts.length == 1) {
+            return TablePath.of(
+                    getParam().getDatabase(),
+                    null,
+                    parts[0]
+            );
+        }
+
+        if (parts.length == 2) {
+            return TablePath.of(
+                    parts[0],
+                    null,
+                    parts[1]
+            );
+        }
+
+        throw new IllegalArgumentException("Invalid MySQL tablePath: " + tablePath);
+    }
 
     @Override
     protected String getListTableSql(String databaseName) {

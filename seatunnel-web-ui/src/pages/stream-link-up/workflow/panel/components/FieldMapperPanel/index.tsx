@@ -16,15 +16,7 @@ import {
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import type { MenuProps, TableColumnsType } from "antd";
-import {
-  Button,
-  Dropdown,
-  Input,
-  Space,
-  Table,
-  Typography,
-  message,
-} from "antd";
+import { Button, Dropdown, Input, Space, Table, message } from "antd";
 import React, {
   memo,
   useCallback,
@@ -35,7 +27,9 @@ import React, {
   useState,
 } from "react";
 import PanelShell from "../PanelShell";
+
 import "./index.less";
+import FieldMapperInitGuide from "@/pages/batch-link-up/workflow/panel/components/FieldMapperPanel/FieldMapperInitGuide";
 
 interface FieldMapperLinkedNodeIds {
   sourceNodeId?: string;
@@ -81,7 +75,6 @@ interface RowProps extends React.HTMLAttributes<HTMLTableRowElement> {
   "data-row-key": string;
 }
 
-const { Text } = Typography;
 const RowContext = React.createContext<RowContextProps>({});
 
 const buildFieldId = (prefix: string, index: number, name?: string) =>
@@ -91,15 +84,17 @@ const normalizeSchemaToList = (
   schema: any[] = [],
   prefix: string
 ): SchemaField[] =>
-  schema.map((field: any, index: number) => ({
-    id:
-      field?.id ||
-      buildFieldId(prefix, index, field?.originFieldName || field?.name),
-    name: field?.originFieldName || field?.name || "",
-    type: field?.type || "",
-    nullable: field?.nullable,
-    comment: field?.comment || "",
-  }));
+  schema
+    .map((field: any, index: number) => ({
+      id:
+        field?.id ||
+        buildFieldId(prefix, index, field?.originFieldName || field?.name),
+      name: field?.originFieldName || field?.name || "",
+      type: field?.type || "",
+      nullable: field?.nullable,
+      comment: field?.comment || "",
+    }))
+    .filter((field) => !!field.name);
 
 const buildRowsFromSchema = (schemaFields: SchemaField[]): FieldMappingRow[] =>
   schemaFields.map((field, index) => ({
@@ -132,6 +127,39 @@ const buildRowsFromMappings = (
   }));
 };
 
+function useDebouncedCallback<T extends (...args: any[]) => void>(
+  callback: T,
+  delay = 120
+): T {
+  const callbackRef = useRef(callback);
+  const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(() => {
+    callbackRef.current = callback;
+  }, [callback]);
+
+  useEffect(() => {
+    return () => {
+      if (timerRef.current) {
+        clearTimeout(timerRef.current);
+      }
+    };
+  }, []);
+
+  return useCallback(
+    ((...args: Parameters<T>) => {
+      if (timerRef.current) {
+        clearTimeout(timerRef.current);
+      }
+
+      timerRef.current = setTimeout(() => {
+        callbackRef.current(...args);
+      }, delay);
+    }) as T,
+    [delay]
+  );
+}
+
 const DragHandle: React.FC = () => {
   const { setActivatorNodeRef, listeners } = useContext(RowContext);
 
@@ -140,7 +168,7 @@ const DragHandle: React.FC = () => {
       type="text"
       size="small"
       icon={<HolderOutlined />}
-      style={{ cursor: "move", color: "#667085" }}
+      className="!cursor-move !text-slate-500 hover:!bg-blue-50 hover:!text-blue-600"
       ref={setActivatorNodeRef}
       {...listeners}
     />
@@ -240,8 +268,8 @@ function FieldMapperPanel({
   }, [nodeId, getFieldMapperLinkedNodeIds]);
 
   const pluginInput = linkedNodeIds.sourceNodeId;
-  console.log(pluginInput);
   const pluginOutput = linkedNodeIds.sinkNodeId;
+  const hasInputSchema = inputSchema.length > 0;
 
   useEffect(() => {
     const mappings = selectedNode?.data?.config?.mappings || [];
@@ -256,35 +284,58 @@ function FieldMapperPanel({
     );
   }, []);
 
-  function useDebounce<T extends (...args: any[]) => void>(fn: T, ms = 120): T {
-    const timer = useRef<NodeJS.Timeout | null>(null);
+  const debouncedUpdateSinkFieldName = useDebouncedCallback(
+    updateSinkFieldName,
+    80
+  );
 
-    return useCallback(
-      ((...args: Parameters<T>) => {
-        if (timer.current) clearTimeout(timer.current);
-        timer.current = setTimeout(() => fn(...args), ms);
-      }) as T,
-      [fn, ms]
-    );
-  }
-
-  const debouncedUpdateSinkFieldName = useDebounce(updateSinkFieldName, 80);
-
-  const handleSyncFields = () => {
-    if (!inputSchema.length) {
-      message.warning("暂无输入字段可同步");
+  const handleRefreshSchema = useCallback(() => {
+    if (!nodeId) {
+      message.warning("当前节点不存在");
       return;
     }
 
+    if (!pluginInput) {
+      message.warning("请先连接上游数据源节点");
+      return;
+    }
+
+    refreshNodeSchema(pluginInput);
+    refreshNodeSchema(nodeId);
+    refreshDownstreamSchemas(nodeId);
+
+    message.info(
+      "已重新检测字段。若仍为空，请确认上游节点已选择表或填写 Query，并点击字段解析"
+    );
+  }, [nodeId, pluginInput, refreshNodeSchema, refreshDownstreamSchemas]);
+
+  const handleSyncFields = useCallback(() => {
+    if (!pluginInput) {
+      message.warning("请先连接上游节点");
+      return;
+    }
+
+    if (!pluginOutput) {
+      message.warning("请先连接下游节点");
+      return;
+    }
+
+    if (!inputSchema.length) {
+      message.warning("请先在上游节点选择表或填写 Query，并点击字段解析");
+      return;
+    }
+
+    console.log(inputSchema)
+
     setRows(buildRowsFromSchema(inputSchema));
     message.success("已按输入字段同步");
-  };
+  }, [pluginInput, pluginOutput, inputSchema]);
 
   const handleDeleteRow = useCallback((key: string) => {
     setRows((prev) => prev.filter((item) => item.key !== key));
   }, []);
 
-  const handleDragEnd = ({ active, over }: DragEndEvent) => {
+  const handleDragEnd = useCallback(({ active, over }: DragEndEvent) => {
     if (!over || active.id === over.id) return;
 
     setRows((prev) => {
@@ -297,9 +348,9 @@ function FieldMapperPanel({
 
       return arrayMove(prev, oldIndex, newIndex);
     });
-  };
+  }, []);
 
-  const handleApply = () => {
+  const handleApply = useCallback(() => {
     if (!nodeId) {
       message.warning("当前节点不存在");
       return;
@@ -369,25 +420,38 @@ function FieldMapperPanel({
     refreshDownstreamSchemas(nodeId);
 
     message.success("字段映射已应用");
-  };
+  }, [
+    nodeId,
+    rows,
+    selectedNode?.data?.config,
+    selectedNode?.data?.meta,
+    passThroughUnmapped,
+    inputSchema,
+    syncTransformPluginConfig,
+    onNodeDataChange,
+    refreshNodeSchema,
+    refreshDownstreamSchemas,
+  ]);
 
-  const menuItems: MenuProps["items"] = [
-    {
-      key: "delete",
-      label: "删除",
-      danger: true,
-      onClick: () => {
-        if (!selectedRowKey) return;
+  const menuItems = useMemo<MenuProps["items"]>(
+    () => [
+      {
+        key: "delete",
+        label: "删除",
+        danger: true,
+        onClick: () => {
+          if (!selectedRowKey) return;
 
-        handleDeleteRow(selectedRowKey);
-        setMenuOpen(false);
-        message.success("已删除该字段");
+          handleDeleteRow(selectedRowKey);
+          setMenuOpen(false);
+          message.success("已删除该字段");
+        },
       },
-    },
-  ];
+    ],
+    [selectedRowKey, handleDeleteRow]
+  );
 
   const SinkFieldInput = useMemo(() => {
-    // 定义组件
     const InputComponent: React.FC<{
       value: string;
       onChange: (value: string) => void;
@@ -408,7 +472,7 @@ function FieldMapperPanel({
         <Input
           size="small"
           variant="filled"
-          style={{ width: "100%" }}
+          className="!w-full !rounded-xl"
           value={inputValue}
           placeholder="请输入目标字段名"
           onChange={handleChange}
@@ -416,50 +480,57 @@ function FieldMapperPanel({
         />
       );
     };
-    // 返回组件
+
     return InputComponent;
   }, []);
 
-  const columns: TableColumnsType<FieldMappingRow> = [
-    {
-      key: "sort",
-      align: "center",
-      width: 24,
-      render: () => <DragHandle />,
-    },
-    {
-      title: "Source Field",
-      dataIndex: "sourceFieldName",
-      width: "42%",
-      ellipsis: true,
-      render: (_, record) => (
-        <div className="flex min-w-0 flex-col">
-          <span className="truncate text-[13px] font-medium text-slate-800">
-            {record.sourceFieldName || "-"}
-          </span>
-        </div>
-      ),
-    },
-    {
-      title: "Sink Field",
-      dataIndex: "sinkFieldName",
-      width: "42%",
-      ellipsis: true,
-      render: (_, record) => (
-        <SinkFieldInput
-          value={record.sinkFieldName}
-          onChange={(newValue) => debouncedUpdateSinkFieldName(record.key, newValue)}
-        />
-      ),
-    },
-  ];
+  const columns = useMemo<TableColumnsType<FieldMappingRow>>(
+    () => [
+      {
+        key: "sort",
+        align: "center",
+        width: 24,
+        render: () => <DragHandle />,
+      },
+      {
+        title: "Source Field",
+        dataIndex: "sourceFieldName",
+        width: "42%",
+        ellipsis: true,
+        render: (_, record) => (
+          <div className="flex min-w-0 flex-col">
+            <span className="truncate text-[13px] font-medium text-slate-800">
+              {record.sourceFieldName || "-"}
+            </span>
+
+
+          </div>
+        ),
+      },
+      {
+        title: "Sink Field",
+        dataIndex: "sinkFieldName",
+        width: "42%",
+        ellipsis: true,
+        render: (_, record) => (
+          <SinkFieldInput
+            value={record.sinkFieldName}
+            onChange={(newValue) =>
+              debouncedUpdateSinkFieldName(record.key, newValue)
+            }
+          />
+        ),
+      },
+    ],
+    [SinkFieldInput, debouncedUpdateSinkFieldName]
+  );
 
   return (
     <PanelShell
       eyebrow="Transform Config"
       title="字段映射"
       badge="处理节点"
-      desc="通过拖拽和改名快速配置字段映射"
+      desc="配置来源字段与目标字段的映射关系"
       heroTitle={title}
       heroDesc={description}
       heroTag="FIELDMAPPER"
@@ -474,79 +545,77 @@ function FieldMapperPanel({
         </button>
       }
     >
-      <section className="workflow-panel__section space-y-4">
-        <div className="rounded-2xl border border-slate-200 bg-slate-50/70 px-4 py-3">
-          <div className="flex flex-wrap items-center justify-between gap-3">
-            {/* <div className="space-y-1">
-              <div className="text-sm font-medium text-slate-800">字段信息</div>
+      <section className="mb-2.5 rounded-[22px] border border-blue-100/80 bg-white p-3">
+        {!hasInputSchema ? (
+          <FieldMapperInitGuide onRefresh={handleRefreshSchema} />
+        ) : (
+          <div className="space-y-4">
+            <div className="rounded-2xl border border-slate-200 bg-slate-50/70 px-4 py-3">
+              <div className="flex flex-wrap items-center justify-between gap-3">
+                <Space wrap>
+                  <Button
+                    onClick={handleSyncFields}
+                    className="!rounded-full !px-4 !font-medium"
+                  >
+                    同步字段
+                  </Button>
 
-              <div className="text-xs text-slate-400">
-                当前输入：{pluginInput || "未连接"}；当前输出：
-                {pluginOutput || "未连接"}
+                  <Button
+                    type="primary"
+                    onClick={handleApply}
+                    className="!rounded-full !px-4 !font-medium"
+                  >
+                    应用映射
+                  </Button>
+                </Space>
               </div>
-            </div> */}
 
-            <Space wrap>
-              <Button onClick={handleSyncFields} style={{ borderRadius: 16 }}>
-                同步字段
-              </Button>
-
-              <Button
-                type="primary"
-                onClick={handleApply}
-                style={{ borderRadius: 16 }}
-              >
-                应用映射
-              </Button>
-            </Space>
-          </div>
-
-          <div className="mt-2">
-            <Text className="text-xs text-slate-400">
-              右键某一行可快速删除该映射
-            </Text>
-          </div>
-        </div>
-
-        <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white">
-          <Dropdown
-            trigger={["contextMenu"]}
-            open={menuOpen}
-            onOpenChange={setMenuOpen}
-            menu={{ items: menuItems }}
-          >
-            <div onContextMenu={(e) => e.preventDefault()}>
-              <DndContext
-                sensors={sensors}
-                modifiers={[restrictToVerticalAxis]}
-                onDragEnd={handleDragEnd}
-              >
-                <SortableContext
-                  items={rows.map((item) => item.key)}
-                  strategy={verticalListSortingStrategy}
-                >
-                  <Table<FieldMappingRow>
-                    rowKey="key"
-                    className="field-mapper-table"
-                    components={{ body: { row: Row } }}
-                    columns={columns}
-                    dataSource={rows}
-                    pagination={false}
-                    bordered={false}
-                    size="middle"
-                    onRow={(record) => ({
-                      onContextMenu: (e) => {
-                        e.preventDefault();
-                        setSelectedRowKey(record.key);
-                        setMenuOpen(true);
-                      },
-                    })}
-                  />
-                </SortableContext>
-              </DndContext>
+              <div className="mt-2 text-xs leading-5 text-slate-400">
+                右键某一行可快速删除该映射
+              </div>
             </div>
-          </Dropdown>
-        </div>
+
+            <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white">
+              <Dropdown
+                trigger={["contextMenu"]}
+                open={menuOpen}
+                onOpenChange={setMenuOpen}
+                menu={{ items: menuItems }}
+              >
+                <div onContextMenu={(e) => e.preventDefault()}>
+                  <DndContext
+                    sensors={sensors}
+                    modifiers={[restrictToVerticalAxis]}
+                    onDragEnd={handleDragEnd}
+                  >
+                    <SortableContext
+                      items={rows.map((item) => item.key)}
+                      strategy={verticalListSortingStrategy}
+                    >
+                      <Table<FieldMappingRow>
+                        rowKey="key"
+                        className="field-mapper-table"
+                        components={{ body: { row: Row } }}
+                        columns={columns}
+                        dataSource={rows}
+                        pagination={false}
+                        bordered={false}
+                        size="middle"
+                        onRow={(record) => ({
+                          onContextMenu: (e) => {
+                            e.preventDefault();
+                            setSelectedRowKey(record.key);
+                            setMenuOpen(true);
+                          },
+                        })}
+                      />
+                    </SortableContext>
+                  </DndContext>
+                </div>
+              </Dropdown>
+            </div>
+          </div>
+        )}
       </section>
     </PanelShell>
   );

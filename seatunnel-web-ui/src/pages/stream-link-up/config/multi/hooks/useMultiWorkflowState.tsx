@@ -1,17 +1,11 @@
 import { type FormInstance, message } from 'antd';
 import { debounce } from 'lodash';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-
 import {
   dataSourceCatalogApi,
   fetchDataSourceOptions,
 } from '@/pages/data-source/service';
-
-
 import { seatunnelStremJobDefinitionApi } from '@/pages/stream-link-up/api';
-import { validateServerIdRange } from '../../serverId';
-
-
 
 import {
   buildTableItems,
@@ -20,6 +14,12 @@ import {
   validateServerIdRange,
 } from '../config';
 import type { DbTypeValue, TableItem } from '../types';
+
+import {
+  markJobDefinitionSynced,
+  normalizeJobDefinitionState,
+  type JobDefinitionState,
+} from "../jobDefinitionState";
 
 interface UseMultiWorkflowStateProps {
   form: FormInstance;
@@ -71,6 +71,41 @@ const stableStringify = (value: any) => {
     return JSON.stringify(value ?? {});
   } catch (_error) {
     return '';
+  }
+};
+
+type SaveResponseData = {
+  id?: number | string;
+  state?: JobDefinitionState;
+};
+
+const getSaveResponseData = (res: any): SaveResponseData => {
+  const data = res?.data;
+
+  if (data && typeof data === "object") {
+    return {
+      id:
+        data.id ??
+        data.jobDefineId ??
+        data.jobDefinitionId ??
+        data.definitionId,
+      state: data.state,
+    };
+  }
+
+  return {
+    id: data,
+    state: undefined,
+  };
+};
+
+const syncStreamSessionCache = (id: number | string | undefined, data: any) => {
+  if (!id) return;
+
+  try {
+    sessionStorage.setItem(`stream-link-up-detail-${id}`, JSON.stringify(data));
+  } catch (error) {
+    console.warn("Update stream multi workflow session cache failed", error);
   }
 };
 
@@ -509,57 +544,81 @@ export function useMultiWorkflowState({
     return true;
   };
 
-  const handleSave = async () => {
-    try {
-      const pass = await validateBeforeSubmit();
-      if (!pass) return;
+ const handleSave = async () => {
+  try {
+    const pass = await validateBeforeSubmit();
+    if (!pass) return;
 
-      setPublishLoading(true);
+    setPublishLoading(true);
 
-      const workflowData = buildWorkflowData();
-      const finalPayload = {
-        ...buildFinalPayload(),
+    const workflowData = buildWorkflowData();
+    const finalPayload = {
+      ...buildFinalPayload(),
+      content: workflowData,
+    };
+
+    const res =
+      await seatunnelStremJobDefinitionApi.saveOrUpdateGuideMulti(
+        finalPayload
+      );
+
+    if (res?.code !== 0) {
+      return;
+    }
+
+    const saveData = getSaveResponseData(res);
+    const jobDefineId = saveData.id ?? finalPayload.id;
+
+    if (!jobDefineId) {
+      message.error("发布成功但未返回任务定义ID");
+      return;
+    }
+
+    setPublishedJobDefineId(jobDefineId);
+
+    setParams((prev: any) => {
+      const nextState = saveData.state
+        ? normalizeJobDefinitionState(saveData.state)
+        : markJobDefinitionSynced(prev?.state);
+
+      const nextParams = {
+        ...(prev || {}),
+        id: jobDefineId,
+        state: nextState,
+
+        workflow: workflowData,
         content: workflowData,
+
+        sourceDataSourceId: workflowData.source.datasourceId,
+        targetDataSourceId: workflowData.target.datasourceId,
+
+        scheduleConfig,
+        schedule: finalPayload.schedule,
+
+        env: envConfig,
       };
 
-      const res =
-        await seatunnelStremJobDefinitionApi.saveOrUpdateGuideMulti(
-          finalPayload,
-        );
+      syncStreamSessionCache(prev?.id, nextParams);
+      syncStreamSessionCache(jobDefineId, nextParams);
 
-      const responseData = res?.data as any;
-      const jobDefineId = responseData?.id ?? responseData ?? finalPayload.id;
+      return nextParams;
+    });
 
-      if (jobDefineId) {
-        setPublishedJobDefineId(jobDefineId);
+    baselineSignatureRef.current = stableStringify({
+      basic: finalPayload.basic,
+      content: workflowData,
+      schedule: finalPayload.schedule,
+      env: finalPayload.env,
+    });
 
-        setParams((prev: any) => ({
-          ...(prev || {}),
-          id: jobDefineId,
-          workflow: workflowData,
-          content: workflowData,
-          sourceDataSourceId: workflowData.source.datasourceId,
-          targetDataSourceId: workflowData.target.datasourceId,
-          scheduleConfig,
-          env: envConfig,
-        }));
-
-        baselineSignatureRef.current = stableStringify({
-          basic: finalPayload.basic,
-          content: workflowData,
-          schedule: finalPayload.schedule,
-          env: finalPayload.env,
-        });
-      }
-
-      message.success('发布成功');
-    } catch (error: any) {
-      console.error(error);
-      message.error(error?.message || '发布失败');
-    } finally {
-      setPublishLoading(false);
-    }
-  };
+    message.success("发布成功");
+  } catch (error: any) {
+    console.error(error);
+    message.error(error?.message || "发布失败");
+  } finally {
+    setPublishLoading(false);
+  }
+};
 
   const handlePreview = async () => {
     try {

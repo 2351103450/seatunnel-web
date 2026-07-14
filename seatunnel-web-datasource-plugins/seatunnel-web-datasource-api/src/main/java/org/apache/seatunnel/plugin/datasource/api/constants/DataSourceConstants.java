@@ -28,7 +28,8 @@ public class DataSourceConstants {
     public static final String COM_ATHENA_JDBC_DRIVER = "com.simba.athena.jdbc.Driver";
     public static final String COM_TRINO_JDBC_DRIVER = "io.trino.jdbc.TrinoDriver";
     public static final String COM_DAMENG_JDBC_DRIVER = "dm.jdbc.driver.DmDriver";
-    public static final String COM_KINGBASE_JDCB_DRIVER = "com.kingbase8.Driver";
+    public static final String COM_KINGBASE_JDBC_DRIVER = "com.kingbase8.Driver";
+    public static final String COM_KINGBASE_JDCB_DRIVER = COM_KINGBASE_JDBC_DRIVER;
     public static final String ORG_APACHE_KYUUBI_JDBC_DRIVER = "org.apache.kyuubi.jdbc.KyuubiHiveDriver";
     public static final String COM_OCEANBASE_JDBC_DRIVER = "com.oceanbase.jdbc.Driver";
     public static final String NET_SNOWFLAKE_JDBC_DRIVER = "net.snowflake.client.jdbc.SnowflakeDriver";
@@ -75,6 +76,7 @@ public class DataSourceConstants {
 
     public static final String POSTGRESQL_VALIDATION_QUERY = "select version()";
     public static final String OPENGAUSS_VALIDATION_QUERY = "select version()";
+    public static final String KINGBASE_VALIDATION_QUERY = "select 1";
     public static final String MYSQL_VALIDATION_QUERY = "select 1";
     public static final String TIDB_VALIDATION_QUERY = "select 1";
     public static final String HIVE_VALIDATION_QUERY = "select 1";

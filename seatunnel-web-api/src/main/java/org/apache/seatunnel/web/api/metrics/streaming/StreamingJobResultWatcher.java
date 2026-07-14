@@ -40,7 +40,7 @@ public class StreamingJobResultWatcher {
         long start = System.currentTimeMillis();
 
         Long instanceId = context.getInstanceId();
-        Long engineId = context.getEngineId();
+        String engineId = context.getEngineId();
 
         try {
             while (true) {
@@ -116,7 +116,7 @@ public class StreamingJobResultWatcher {
                 || status == JobStatus.SCHEDULED;
     }
 
-    private void checkTimeout(long start, Long engineId) {
+    private void checkTimeout(long start, String engineId) {
         if (pollTimeoutMs <= 0) {
             return;
         }

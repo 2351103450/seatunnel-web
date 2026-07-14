@@ -27,7 +27,7 @@ public class JobInstanceVO {
 
     private Integer retryCount;
 
-    private Long engineJobId;
+    private String engineJobId;
 
     private String runtimeConfig;
 

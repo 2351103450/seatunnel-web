@@ -56,7 +56,7 @@ public class JobInstance {
     /**
      * Engine-side job id
      */
-    private Long engineJobId;
+    private String engineJobId;
 
     /**
      * Runtime config used by this execution

@@ -1,605 +1,107 @@
 package org.apache.seatunnel.web.api.service.impl;
 
-import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
-import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import jakarta.annotation.Resource;
-import lombok.extern.slf4j.Slf4j;
-import org.apache.commons.lang3.StringUtils;
-import org.apache.seatunnel.web.api.service.DataSourceService;
 import org.apache.seatunnel.web.api.service.SeaTunnelClientService;
-import org.apache.seatunnel.web.common.enums.JobMode;
-import org.apache.seatunnel.web.common.enums.SeaTunnelClientHealthStatusEnum;
-import org.apache.seatunnel.web.core.exceptions.ServiceException;
-import org.apache.seatunnel.web.core.utils.MetricValueParser;
-import org.apache.seatunnel.web.core.utils.SeaTunnelClientUrlUtils;
-import org.apache.seatunnel.web.core.verify.DatasourceConnectivityVerificationStrategy;
-import org.apache.seatunnel.web.core.verify.DatasourceConnectivityVerificationStrategyFactory;
-import org.apache.seatunnel.web.core.verify.cache.ClientDatasourceVerifyMemoryCache;
-import org.apache.seatunnel.web.core.verify.modal.DatasourceVerifyContext;
-import org.apache.seatunnel.web.dao.entity.DataSource;
-import org.apache.seatunnel.web.dao.entity.JobInstance;
+import org.apache.seatunnel.web.api.service.impl.client.SeaTunnelClientDatasourceVerifyAppService;
+import org.apache.seatunnel.web.api.service.impl.client.SeaTunnelClientLifecycleAppService;
+import org.apache.seatunnel.web.api.service.impl.client.SeaTunnelClientQueryAppService;
+import org.apache.seatunnel.web.api.service.impl.client.SeaTunnelClientRuntimeAppService;
 import org.apache.seatunnel.web.dao.entity.SeaTunnelClient;
-import org.apache.seatunnel.web.dao.entity.StreamingJobInstance;
-import org.apache.seatunnel.web.dao.repository.JobInstanceDao;
-import org.apache.seatunnel.web.dao.repository.SeaTunnelClientDao;
-import org.apache.seatunnel.web.dao.repository.StreamingJobInstanceDao;
-import org.apache.seatunnel.web.engine.client.modal.SeaTunnelClientAuth;
-import org.apache.seatunnel.web.engine.client.rest.SeaTunnelRestClient;
 import org.apache.seatunnel.web.spi.bean.dto.ClientDatasourceVerifyDTO;
 import org.apache.seatunnel.web.spi.bean.dto.SeaTunnelClientDTO;
+import org.apache.seatunnel.web.spi.bean.dto.SeaTunnelClientEndpointDTO;
 import org.apache.seatunnel.web.spi.bean.dto.SeaTunnelClientPageDTO;
 import org.apache.seatunnel.web.spi.bean.vo.ClientDatasourceVerifyVO;
 import org.apache.seatunnel.web.spi.bean.vo.OptionVO;
 import org.apache.seatunnel.web.spi.bean.vo.SeaTunnelClientMetricsVO;
-import org.apache.seatunnel.web.spi.enums.DbType;
-import org.apache.seatunnel.web.spi.enums.Status;
-import org.springframework.beans.BeanUtils;
 import org.springframework.stereotype.Service;
 
-import java.util.*;
-import java.util.stream.Collectors;
+import java.util.List;
+import java.util.Map;
 
 @Service
-@Slf4j
 public class SeaTunnelClientServiceImpl implements SeaTunnelClientService {
 
-    private static final Set<String> SUPPORTED_CLIENT_VERSIONS =
-            new HashSet<>(Arrays.asList("2.3.12", "2.3.13"));
-
-    private static final long DEFAULT_DATASOURCE_VERIFY_TIMEOUT_MS = 15000L;
-
-    private static final long DEFAULT_DATASOURCE_VERIFY_POLL_INTERVAL_MS = 1000L;
+    @Resource
+    private SeaTunnelClientLifecycleAppService lifecycleAppService;
 
     @Resource
-    private SeaTunnelClientDao seaTunnelClientDao;
+    private SeaTunnelClientQueryAppService queryAppService;
 
     @Resource
-    private SeaTunnelRestClient seaTunnelRestClient;
+    private SeaTunnelClientRuntimeAppService runtimeAppService;
 
     @Resource
-    private DataSourceService dataSourceService;
-
-    @Resource
-    private ClientDatasourceVerifyMemoryCache verifyMemoryCache;
-
-    @Resource
-    private JobInstanceDao jobInstanceDao;
-
-    @Resource
-    private StreamingJobInstanceDao streamingJobInstanceDao;
-
-
-    @Resource
-    private DatasourceConnectivityVerificationStrategyFactory strategyFactory;
+    private SeaTunnelClientDatasourceVerifyAppService datasourceVerifyAppService;
 
     @Override
     public void saveOrUpdate(SeaTunnelClientDTO dto) {
-        validateSaveOrUpdateRequest(dto);
-
-        Date now = new Date();
-        String baseUrl = SeaTunnelClientUrlUtils.buildBaseUrl(
-                dto.getClientAddress(),
-                dto.getClientPort()
-        );
-
-        if (dto.getId() == null) {
-            createClient(dto, baseUrl, now);
-            return;
-        }
-
-        updateClient(dto, baseUrl, now);
-    }
-
-    @Override
-    public SeaTunnelClientMetricsVO metrics(Long id) {
-        getEntity(id);
-
-        List<Map<String, Object>> metricsList =
-                seaTunnelRestClient.systemMonitoringInformation(id);
-
-        Map<String, Object> metricMap =
-                metricsList == null || metricsList.isEmpty() ? null : metricsList.get(0);
-
-        Double cpuUsage = MetricValueParser.parsePercent(
-                metricMap == null ? null : metricMap.get("load.system")
-        );
-        Double memoryUsage = MetricValueParser.parsePercent(
-                metricMap == null ? null : metricMap.get("heap.memory.used/total")
-        );
-        Integer threadCount = MetricValueParser.parseInteger(
-                metricMap == null ? null : metricMap.get("thread.count")
-        );
-        Integer runningOps = MetricValueParser.parseInteger(
-                metricMap == null ? null : metricMap.get("operations.running.count")
-        );
-
-        return new SeaTunnelClientMetricsVO(
-                cpuUsage,
-                memoryUsage,
-                threadCount,
-                runningOps
-        );
-    }
-
-    @Override
-    public List<OptionVO> option() {
-        try {
-            LambdaQueryWrapper<SeaTunnelClient> wrapper = new LambdaQueryWrapper<>();
-            wrapper.eq(
-                    SeaTunnelClient::getHealthStatus,
-                    SeaTunnelClientHealthStatusEnum.LIVE.getCode()
-            );
-            wrapper.orderByDesc(SeaTunnelClient::getCreateTime);
-
-            List<SeaTunnelClient> entities = seaTunnelClientDao.selectList(wrapper);
-
-            return entities.stream()
-                    .map(this::toOptionVO)
-                    .collect(Collectors.toList());
-        } catch (ServiceException e) {
-            throw e;
-        } catch (Exception e) {
-            log.error("Query SeaTunnel client option list failed", e);
-            throw new ServiceException(
-                    Status.INTERNAL_SERVER_ERROR_ARGS,
-                    "查询 SeaTunnel 客户端选项失败"
-            );
-        }
-    }
-
-    @Override
-    public IPage<SeaTunnelClient> page(SeaTunnelClientPageDTO dto) {
-        int pageNo = dto == null || dto.getPageNo() == null || dto.getPageNo() <= 0
-                ? 1
-                : dto.getPageNo();
-        int pageSize = dto == null || dto.getPageSize() == null || dto.getPageSize() <= 0
-                ? 10
-                : dto.getPageSize();
-
-        LambdaQueryWrapper<SeaTunnelClient> wrapper = new LambdaQueryWrapper<>();
-        wrapper.orderByDesc(SeaTunnelClient::getCreateTime);
-
-        return seaTunnelClientDao.selectPage(new Page<>(pageNo, pageSize), wrapper);
+        lifecycleAppService.saveOrUpdate(dto);
     }
 
     @Override
     public void deleteById(Long id) {
-        if (id == null) {
-            throw new ServiceException(
-                    Status.INTERNAL_SERVER_ERROR_ARGS,
-                    "客户端 ID 不能为空"
-            );
-        }
-
-        SeaTunnelClient entity = seaTunnelClientDao.selectById(id);
-        if (entity == null) {
-            throw new ServiceException(
-                    Status.INTERNAL_SERVER_ERROR_ARGS,
-                    "客户端不存在, id=" + id
-            );
-        }
-
-        seaTunnelClientDao.deleteById(id);
+        lifecycleAppService.deleteById(id);
     }
 
     @Override
-    public ClientDatasourceVerifyVO verifyDatasource(Long clientId, ClientDatasourceVerifyDTO dto) {
-        if (clientId == null) {
-            throw new ServiceException(
-                    Status.INTERNAL_SERVER_ERROR_ARGS,
-                    "clientId 不能为空"
-            );
-        }
+    public List<SeaTunnelClientEndpointDTO> refreshNodes(Long clientId) {
+        return lifecycleAppService.refreshNodes(clientId);
+    }
 
-        if (dto == null || dto.getDatasourceId() == null) {
-            throw new ServiceException(
-                    Status.INTERNAL_SERVER_ERROR_ARGS,
-                    "datasourceId 不能为空"
-            );
-        }
+    @Override
+    public List<OptionVO> option() {
+        return queryAppService.option();
+    }
 
-        SeaTunnelClient client = getEntity(clientId);
+    @Override
+    public IPage<SeaTunnelClient> page(SeaTunnelClientPageDTO dto) {
+        return queryAppService.page(dto);
+    }
 
-        if (StringUtils.isBlank(client.getBaseUrl())) {
-            throw new ServiceException(
-                    Status.INTERNAL_SERVER_ERROR_ARGS,
-                    "客户端 baseUrl 不能为空, clientId=" + clientId
-            );
-        }
+    @Override
+    public List<SeaTunnelClientEndpointDTO> nodes(Long clientId) {
+        return queryAppService.nodes(clientId);
+    }
 
-        DataSource datasource = dataSourceService.selectById(dto.getDatasourceId());
-        if (datasource == null) {
-            throw new ServiceException(
-                    Status.INTERNAL_SERVER_ERROR_ARGS,
-                    "数据源不存在, datasourceId=" + dto.getDatasourceId()
-            );
-        }
-
-        DbType dbType = datasource.getDbType();
-        if (dbType == null) {
-            throw new ServiceException(
-                    Status.INTERNAL_SERVER_ERROR_ARGS,
-                    "数据源类型不能为空, datasourceId=" + dto.getDatasourceId()
-            );
-        }
-
-        long timeoutMs = dto.getTimeoutMs() == null || dto.getTimeoutMs() <= 0
-                ? DEFAULT_DATASOURCE_VERIFY_TIMEOUT_MS
-                : dto.getTimeoutMs();
-
-        long pollIntervalMs = dto.getPollIntervalMs() == null || dto.getPollIntervalMs() <= 0
-                ? DEFAULT_DATASOURCE_VERIFY_POLL_INTERVAL_MS
-                : dto.getPollIntervalMs();
-
-        DatasourceVerifyContext context = DatasourceVerifyContext.builder()
-                .client(client)
-                .datasource(datasource)
-                .dbType(dbType)
-                .pluginName(dto.getPluginName())
-                .connectorType(dto.getConnectorType())
-                .role(dto.getRole())
-                .timeoutMs(timeoutMs)
-                .pollIntervalMs(pollIntervalMs)
-                .build();
-
-        boolean autoMode = StringUtils.equalsIgnoreCase(dto.getTriggerMode(), "AUTO");
-        boolean forceRefresh = Boolean.TRUE.equals(dto.getForceRefresh());
-
-        String cacheKey = verifyMemoryCache.buildKey(
-                client,
-                datasource,
-                dto.getPluginName(),
-                dto.getConnectorType(),
-                dto.getRole()
-        );
-
-        /*
-         * 自动模式：优先读缓存。
-         * 手动模式：不读缓存，必须真实提交 SeaTunnel 测试任务。
-         */
-        if (autoMode && !forceRefresh) {
-            ClientDatasourceVerifyVO cached = verifyMemoryCache.get(cacheKey);
-            if (cached != null) {
-                fillBaseInfo(cached, client, datasource);
-                return cached;
-            }
-        }
-
-        DatasourceConnectivityVerificationStrategy strategy =
-                strategyFactory.getStrategy(context);
-
-        ClientDatasourceVerifyVO result = strategy.verify(context);
-
-        fillBaseInfo(result, client, datasource);
-        result.setFromCache(false);
-
-        /*
-         * 只缓存成功结果。
-         * 失败不缓存，避免数据库恢复后仍然被失败结果挡住。
-         */
-        if (autoMode && Boolean.TRUE.equals(result.getSuccess())) {
-            verifyMemoryCache.put(cacheKey, result);
-        }
-
-        return result;
+    @Override
+    public SeaTunnelClientMetricsVO metrics(Long id) {
+        return runtimeAppService.metrics(id);
     }
 
     @Override
     public String logsByInstanceId(Long instanceId, String jobMode) {
-        if (instanceId == null) {
-            throw new IllegalArgumentException("instanceId cannot be empty");
-        }
-
-        JobMode type = JobMode.valueOf(jobMode);
-
-        if (type == JobMode.BATCH) {
-            return getOfflineInstanceLogs(instanceId);
-        }
-
-        if (type == JobMode.STREAMING) {
-            return getStreamingInstanceLogs(instanceId);
-        }
-
-        /*
-         * 兜底逻辑：
-         * 如果前端没有传 instanceType，则先查离线实例，再查实时实例。
-         * 如果你的 ID 是全局雪花 ID，这样一般没问题。
-         * 但更推荐前端明确传 instanceType。
-         */
-        JobInstance offlineInstance = jobInstanceDao.queryById(instanceId);
-        if (offlineInstance != null) {
-            return getEngineLogs(
-                    offlineInstance.getClientId(),
-                    offlineInstance.getEngineJobId(),
-                    "OFFLINE",
-                    instanceId
-            );
-        }
-
-        StreamingJobInstance streamingInstance = streamingJobInstanceDao.queryById(instanceId);
-        if (streamingInstance != null) {
-            return getEngineLogs(
-                    streamingInstance.getClientId(),
-                    streamingInstance.getEngineJobId(),
-                    "STREAMING",
-                    instanceId
-            );
-        }
-
-        throw new IllegalArgumentException("Job instance not found, instanceId=" + instanceId);
+        return runtimeAppService.logsByInstanceId(instanceId, jobMode);
     }
 
-    private String getOfflineInstanceLogs(Long instanceId) {
-        JobInstance instance = jobInstanceDao.queryById(instanceId);
-
-        if (instance == null) {
-            throw new IllegalArgumentException("Offline job instance not found, instanceId=" + instanceId);
-        }
-
-        return getEngineLogs(
-                instance.getClientId(),
-                instance.getEngineJobId(),
-                "OFFLINE",
-                instanceId
-        );
+    @Override
+    public Map<String, Object> checkpointOverview(Long clientId, Long jobId) {
+        return runtimeAppService.checkpointOverview(clientId, jobId);
     }
 
-    private String getStreamingInstanceLogs(Long instanceId) {
-        StreamingJobInstance instance = streamingJobInstanceDao.queryById(instanceId);
-
-        if (instance == null) {
-            throw new IllegalArgumentException("Streaming job instance not found, instanceId=" + instanceId);
-        }
-
-        return getEngineLogs(
-                instance.getClientId(),
-                instance.getEngineJobId(),
-                "STREAMING",
-                instanceId
-        );
-    }
-
-    private String getEngineLogs(
+    @Override
+    public List<Map<String, Object>> checkpointHistory(
             Long clientId,
-            Long engineJobId,
-            String instanceType,
-            Long instanceId
+            Long jobId,
+            Long pipelineId,
+            Integer limit,
+            String status
     ) {
-        if (clientId == null) {
-            throw new IllegalArgumentException(
-                    "clientId is empty, jobMode=" + instanceType + ", instanceId=" + instanceId
-            );
-        }
-
-        if (engineJobId == null) {
-            throw new IllegalArgumentException(
-                    "engineJobId is empty, the job may not have been submitted successfully, jobMode="
-                            + instanceType + ", instanceId=" + instanceId
-            );
-        }
-
-        return seaTunnelRestClient.jobLogs(clientId, engineJobId, "json");
-    }
-
-    private void fillBaseInfo(
-            ClientDatasourceVerifyVO vo,
-            SeaTunnelClient client,
-            DataSource datasource
-    ) {
-        if (vo == null) {
-            return;
-        }
-
-        if (client != null) {
-            vo.setClientId(client.getId());
-            vo.setClientName(client.getClientName());
-            vo.setClientBaseUrl(client.getBaseUrl());
-        }
-
-        if (datasource != null) {
-            vo.setDatasourceId(datasource.getId());
-            vo.setDatasourceName(datasource.getName());
-            vo.setDatasourceType(
-                    datasource.getDbType() == null ? null : datasource.getDbType().name()
-            );
-        }
-
-        if (vo.getItems() == null) {
-            vo.setItems(new ArrayList<>());
-        }
-    }
-
-    private void createClient(SeaTunnelClientDTO dto, String baseUrl, Date now) {
-        SeaTunnelClient entity = new SeaTunnelClient();
-        BeanUtils.copyProperties(dto, entity);
-
-        entity.setBaseUrl(baseUrl);
-
-        verifyClientAndFillVersion(baseUrl, entity);
-
-        entity.setHealthStatus(SeaTunnelClientHealthStatusEnum.LIVE.getCode());
-        entity.setCreateTime(now);
-        entity.setUpdateTime(now);
-
-        seaTunnelClientDao.insert(entity);
-    }
-
-    private void updateClient(SeaTunnelClientDTO dto, String baseUrl, Date now) {
-        SeaTunnelClient entity = getEntity(dto.getId());
-
-        BeanUtils.copyProperties(dto, entity);
-
-        entity.setBaseUrl(baseUrl);
-
-        verifyClientAndFillVersion(baseUrl, entity);
-
-        entity.setHealthStatus(SeaTunnelClientHealthStatusEnum.LIVE.getCode());
-        entity.setUpdateTime(now);
-
-        seaTunnelClientDao.updateById(entity);
-    }
-
-    /**
-     * 校验 SeaTunnel Client 可用性，并从 overview 中填充客户端版本。
-     * <p>
-     * 这里会完成三件事情：
-     * 1. 网络连通性检测：overview 调用失败则不允许保存 / 更新。
-     * 2. 版本识别：必须能从 overview 中获取到 projectVersion。
-     * 3. 版本限制：目前仅支持 2.3.12 和 2.3.13。
-     */
-    private void verifyClientAndFillVersion(String baseUrl, SeaTunnelClient entity) {
-        if (StringUtils.isBlank(baseUrl)) {
-            throw new ServiceException(
-                    Status.INTERNAL_SERVER_ERROR_ARGS,
-                    "SeaTunnel 客户端地址不能为空"
-            );
-        }
-
-        Map<String, Object> overview;
-        try {
-            overview = seaTunnelRestClient.overview(
-                    buildOverviewUrl(baseUrl),
-                    null,
-                    buildAuth(entity)
-            );
-        } catch (Exception e) {
-            log.warn("Fetch SeaTunnel client overview failed, baseUrl={}", baseUrl, e);
-            throw new ServiceException(
-                    Status.INTERNAL_SERVER_ERROR_ARGS,
-                    "SeaTunnel 客户端连接失败，请检查客户端地址、端口、账号密码或 Zeta 引擎是否已启动"
-            );
-        }
-
-        String clientVersion = resolveClientVersion(overview);
-        checkSupportedClientVersion(clientVersion);
-
-        entity.setClientVersion(clientVersion);
-    }
-
-    private SeaTunnelClientAuth buildAuth(SeaTunnelClient entity) {
-        SeaTunnelClientAuth auth = new SeaTunnelClientAuth();
-
-        if (entity == null) {
-            return auth;
-        }
-
-        auth.setAuthEnabled(entity.getAuthEnabled());
-        auth.setUsername(entity.getUsername());
-        auth.setPassword(entity.getPassword());
-
-        return auth;
-    }
-
-    private String resolveClientVersion(Map<String, Object> overview) {
-        Object projectVersion = overview == null ? null : overview.get("projectVersion");
-        if (projectVersion == null || StringUtils.isBlank(String.valueOf(projectVersion))) {
-            throw new ServiceException(
-                    Status.INTERNAL_SERVER_ERROR_ARGS,
-                    "SeaTunnel 客户端连接成功，但未获取到版本信息"
-            );
-        }
-
-        return String.valueOf(projectVersion).trim();
-    }
-
-    private void checkSupportedClientVersion(String clientVersion) {
-        if (SUPPORTED_CLIENT_VERSIONS.contains(clientVersion)) {
-            return;
-        }
-
-        throw new ServiceException(
-                Status.INTERNAL_SERVER_ERROR_ARGS,
-                String.format(
-                        "当前 SeaTunnel 客户端版本为 %s，暂不支持。当前仅支持 %s",
-                        clientVersion,
-                        String.join("、", SUPPORTED_CLIENT_VERSIONS)
-                )
+        return runtimeAppService.checkpointHistory(
+                clientId,
+                jobId,
+                pipelineId,
+                limit,
+                status
         );
     }
 
-    private String buildOverviewUrl(String baseUrl) {
-        return StringUtils.removeEnd(baseUrl, "/") + "/overview";
-    }
-
-    private OptionVO toOptionVO(SeaTunnelClient entity) {
-        OptionVO optionVO = new OptionVO();
-        optionVO.setValue(entity.getId());
-        optionVO.setLabel(entity.getClientName());
-        optionVO.setDescription(entity.getClientVersion());
-        return optionVO;
-    }
-
-    /**
-     * 校验客户端保存参数
-     */
-    private void validateSaveOrUpdateRequest(SeaTunnelClientDTO dto) {
-        if (dto == null) {
-            throw new ServiceException(
-                    Status.INTERNAL_SERVER_ERROR_ARGS,
-                    "客户端参数不能为空"
-            );
-        }
-        if (StringUtils.isBlank(dto.getClientName())) {
-            throw new ServiceException(
-                    Status.INTERNAL_SERVER_ERROR_ARGS,
-                    "客户端名称不能为空"
-            );
-        }
-        if (StringUtils.isBlank(dto.getEngineType())) {
-            throw new ServiceException(
-                    Status.INTERNAL_SERVER_ERROR_ARGS,
-                    "引擎类型不能为空"
-            );
-        }
-        if (StringUtils.isBlank(dto.getClientAddress())) {
-            throw new ServiceException(
-                    Status.INTERNAL_SERVER_ERROR_ARGS,
-                    "客户端地址不能为空"
-            );
-        }
-        if (dto.getClientPort() == null) {
-            throw new ServiceException(
-                    Status.INTERNAL_SERVER_ERROR_ARGS,
-                    "客户端端口不能为空"
-            );
-        }
-
-        if (Boolean.TRUE.equals(dto.getAuthEnabled())) {
-            if (StringUtils.isBlank(dto.getUsername())) {
-                throw new ServiceException(
-                        Status.INTERNAL_SERVER_ERROR_ARGS,
-                        "开启认证后，用户名不能为空"
-                );
-            }
-
-            if (StringUtils.isBlank(dto.getPassword())) {
-                throw new ServiceException(
-                        Status.INTERNAL_SERVER_ERROR_ARGS,
-                        "开启认证后，密码不能为空"
-                );
-            }
-        }
-    }
-
-    /**
-     * 查询客户端实体，不存在则抛异常
-     */
-    private SeaTunnelClient getEntity(Long id) {
-        if (id == null) {
-            throw new ServiceException(
-                    Status.INTERNAL_SERVER_ERROR_ARGS,
-                    "客户端 ID 不能为空"
-            );
-        }
-
-        SeaTunnelClient entity = seaTunnelClientDao.queryById(id);
-        if (entity == null) {
-            throw new ServiceException(
-                    Status.INTERNAL_SERVER_ERROR_ARGS,
-                    "客户端不存在, id=" + id
-            );
-        }
-        return entity;
+    @Override
+    public ClientDatasourceVerifyVO verifyDatasource(
+            Long clientId,
+            ClientDatasourceVerifyDTO dto
+    ) {
+        return datasourceVerifyAppService.verifyDatasource(clientId, dto);
     }
 }

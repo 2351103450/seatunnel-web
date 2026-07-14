@@ -12,7 +12,7 @@ public class SeaTunnelEngineRestClient {
     @Resource
     private SeaTunnelRestClient seatunnelRestClient;
 
-    public Map<String, Object> jobInfo(Long clientId, Long jobEngineId) {
+    public Map<String, Object> jobInfo(Long clientId, String jobEngineId) {
         if (clientId == null) {
             throw new IllegalArgumentException("clientId must not be null");
         }

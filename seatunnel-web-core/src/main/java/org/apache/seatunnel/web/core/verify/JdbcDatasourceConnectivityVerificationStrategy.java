@@ -25,7 +25,8 @@ public class JdbcDatasourceConnectivityVerificationStrategy
             DbType.MYSQL,
             DbType.POSTGRE_SQL,
             DbType.ORACLE,
-            DbType.DORIS
+            DbType.DORIS,
+            DbType.KINGBASE
     ));
 
     @Resource

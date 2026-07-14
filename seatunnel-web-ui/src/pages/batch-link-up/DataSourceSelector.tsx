@@ -23,6 +23,8 @@ type DataSourceType =
   | 'ORACLE'
   | 'POSTGRE_SQL'
   | 'DORIS'
+  | 'KINGBASE'
+  | 'DAMENG'
 
 type DataSourceSelectorProps = {
   type: 'source' | 'target';
@@ -40,7 +42,9 @@ const DATA_SOURCE_CONFIG: Record<
   MYSQL: { icon: MysqlIcon, displayName: 'MySQL' },
   ORACLE: { icon: OracleIcon, displayName: 'ORACLE' },
   POSTGRE_SQL: { icon: PostgreSQL, displayName: 'PostgreSQL' },
-  DORIS: { icon: DorisIcon, displayName: 'Doris' }
+  DORIS: { icon: DorisIcon, displayName: 'Doris' },
+  KINGBASE: { icon: KingBaseIcon, displayName: 'Kingbase' },
+  DAMENG: { icon: DaMengIcon, displayName: 'Dameng' }
 };
 
 // 默认支持的数据源
@@ -48,7 +52,9 @@ const DEFAULT_DATA_SOURCES: DataSourceType[] = [
   'MYSQL',
   'ORACLE',
   'POSTGRE_SQL',
-  'DORIS'
+  'DORIS',
+  'KINGBASE',
+  'DAMENG'
 ];
 
 const DataSourceSelector = ({

@@ -79,4 +79,16 @@ public interface DataSourceProcessor {
     default boolean acceptsURL(String url) {
         return false;
     }
+
+    /**
+     * SQL used by SeaTunnel connectivity test job.
+     *
+     * <p>
+     * Different databases may require different syntax.
+     * For example, Oracle requires "from dual".
+     * </p>
+     */
+    default String connectivityCheckSql() {
+        return "select 1 as connectivity_check";
+    }
 }

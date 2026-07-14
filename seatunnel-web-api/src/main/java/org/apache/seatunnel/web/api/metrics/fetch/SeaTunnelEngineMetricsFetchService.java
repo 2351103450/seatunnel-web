@@ -17,11 +17,11 @@ public class SeaTunnelEngineMetricsFetchService implements EngineMetricsFetchSer
     private SeaTunnelEngineRestClient engineRestClient;
 
     @Override
-    public EngineJobInfo fetchJobInfo(Long clientId, Long engineJobId) {
+    public EngineJobInfo fetchJobInfo(Long clientId, String engineJobId) {
         if (clientId == null || clientId <= 0) {
             throw new IllegalArgumentException("clientId must be positive");
         }
-        if (engineJobId == null || engineJobId <= 0) {
+        if (engineJobId == null ) {
             throw new IllegalArgumentException("engineJobId must be positive");
         }
 

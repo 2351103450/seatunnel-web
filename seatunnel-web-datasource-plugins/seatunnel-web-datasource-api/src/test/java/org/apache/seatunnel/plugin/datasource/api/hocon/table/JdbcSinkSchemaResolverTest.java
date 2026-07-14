@@ -47,6 +47,19 @@ class JdbcSinkSchemaResolverTest {
     }
 
     @Test
+    void singleKingbaseSinkRewritesDatabaseQualifiedTargetTableToSchemaTable() {
+        Map<String, Object> map = new HashMap<>();
+
+        singleBuilder.build(
+                config("targetTableName = \"test.sys_user\""),
+                kingbaseConnection("database = test\nschemaName = public"),
+                map);
+
+        assertEquals("test", map.get(DATABASE));
+        assertEquals("public.sys_user", map.get(TABLE));
+    }
+
+    @Test
     void singlePgSinkKeepsAlreadySchemaQualifiedTable() {
         Map<String, Object> map = new HashMap<>();
 
@@ -234,6 +247,14 @@ class JdbcSinkSchemaResolverTest {
         return ConfigFactory.parseString(
                 "url = \"jdbc:oracle:thin:@localhost:1521:XE\"\n"
                         + "driver = \"oracle.jdbc.OracleDriver\"\n"
+                        + "user = test\n"
+                        + body);
+    }
+
+    private Config kingbaseConnection(String body) {
+        return ConfigFactory.parseString(
+                "url = \"jdbc:kingbase8://localhost:54321/test\"\n"
+                        + "driver = \"com.kingbase8.Driver\"\n"
                         + "user = test\n"
                         + body);
     }

@@ -278,7 +278,7 @@ const RunLog: FC<RunLogProps> = ({
 
   const connect = async () => {
     if (!params?.id) {
-      message.warning("缺少任务ID，请先发布任务");
+      message.warning("缺少任务定义ID，请先发布任务");
       addLogEntry("Missing job definition id.", "error");
       return;
     }

@@ -2,7 +2,9 @@ import type { RealtimeTask, StreamStatus } from "./types";
 
 export const sourceOptions = [
   { label: "MySQL", value: "MYSQL", connectorType: "Jdbc" },
-  { label: "PostgreSQL", value: "POSTGRESQL", connectorType: "Jdbc" },
+  { label: "PostgreSQL", value: "POSTGRE_SQL", connectorType: "Jdbc" },
+  { label: "Kingbase", value: "KINGBASE", connectorType: "Jdbc" },
+  { label: "Dameng", value: "DAMENG", connectorType: "Jdbc" },
   { label: "Kafka", value: "KAFKA", connectorType: "Kafka" },
   { label: "Oracle", value: "ORACLE", connectorType: "Jdbc" },
 ];

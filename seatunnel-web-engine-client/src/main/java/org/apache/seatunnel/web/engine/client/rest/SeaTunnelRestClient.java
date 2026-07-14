@@ -1,5 +1,6 @@
 package org.apache.seatunnel.web.engine.client.rest;
 
+import org.apache.commons.lang3.StringUtils;
 import org.apache.seatunnel.web.engine.client.exceptions.SeaTunnelClientException;
 import org.apache.seatunnel.web.engine.client.modal.SeaTunnelClientAuth;
 import org.springframework.core.io.ByteArrayResource;
@@ -227,9 +228,11 @@ public class SeaTunnelRestClient {
         }
     }
 
-    public Map overview(String baseUrl, Map<String, String> tags, SeaTunnelClientAuth auth) {
+    public Map overview(String baseUrl, String contextPath, Map<String, String> tags, SeaTunnelClientAuth auth) {
         try {
-            UriComponentsBuilder builder = UriComponentsBuilder.fromHttpUrl(baseUrl);
+            String finalUrl = buildFullUrl(baseUrl, contextPath, "/overview");
+
+            UriComponentsBuilder builder = UriComponentsBuilder.fromHttpUrl(finalUrl);
             appendQueryParams(builder, tags);
 
             ResponseEntity<Map> response = restTemplate.exchange(
@@ -243,6 +246,50 @@ public class SeaTunnelRestClient {
         } catch (Exception e) {
             throw wrap(e, "GET /overview failed");
         }
+    }
+
+    /**
+     * 这是个重载，适合没有 clientId 的临时探活场景。
+     * @param baseUrl
+     * @param contextPath
+     * @param auth 认证数据
+     * @return 多节点数据，含所有master + workers
+     */
+    public List systemMonitoringInformation(String baseUrl, String contextPath, SeaTunnelClientAuth auth) {
+        try {
+            String finalUrl = buildFullUrl(baseUrl, contextPath, "/system-monitoring-information");
+
+            UriComponentsBuilder builder = UriComponentsBuilder.fromHttpUrl(finalUrl);
+
+            ResponseEntity<List> response = restTemplate.exchange(
+                    builder.build(true).toUri(),
+                    HttpMethod.GET,
+                    new HttpEntity<Void>(null, getHeaders(auth)),
+                    List.class
+            );
+
+            return response.getBody();
+        } catch (Exception e) {
+            throw wrap(e, "GET /system-monitoring-information failed");
+        }
+    }
+
+    /**
+     * 拼接基础 URL、上下文路径和具体接口路径
+     *
+     * @param baseUrl     基础 URL
+     * @param contextPath 上下文路径
+     * @param apiPath     具体的接口路径
+     * @return 拼接完成的完整 URL
+     */
+    private String buildFullUrl(String baseUrl, String contextPath, String apiPath) {
+        String url = StringUtils.removeEnd(baseUrl, "/");
+
+        if (StringUtils.isNotBlank(contextPath)) {
+            url = url + "/" + StringUtils.removeStart(contextPath, "/");
+        }
+
+        return url + StringUtils.prependIfMissing(apiPath, "/");
     }
 
     private HttpHeaders getHeaders(SeaTunnelClientAuth auth) {
@@ -281,7 +328,7 @@ public class SeaTunnelRestClient {
         );
     }
 
-    public Map jobInfo(Long clientId, long jobId) {
+    public Map jobInfo(Long clientId, String jobId) {
         return get(
                 clientId,
                 url(clientId, "/job-info/" + jobId),
@@ -312,7 +359,7 @@ public class SeaTunnelRestClient {
         );
     }
 
-    public String logs(Long clientId, Long jobIdOrNull, String formatOrNull) {
+    public String logs(Long clientId, String jobIdOrNull, String formatOrNull) {
         try {
             String fullPath = String.format("job-%s.log", jobIdOrNull);
             String path = jobIdOrNull == null ? "/log" : "/log/" + fullPath;
@@ -333,7 +380,7 @@ public class SeaTunnelRestClient {
         }
     }
 
-    public String jobLogs(Long clientId, Long engineJobId, String formatOrNull) {
+    public String jobLogs(Long clientId, String engineJobId, String formatOrNull) {
         if (clientId == null) {
             throw new IllegalArgumentException("clientId cannot be empty");
         }
@@ -476,7 +523,7 @@ public class SeaTunnelRestClient {
         );
     }
 
-    public Map stopJob(Long clientId, long jobId, boolean isStopWithSavePoint) {
+    public Map stopJob(Long clientId, String jobId, boolean isStopWithSavePoint) {
         Map<String, Object> body = new java.util.LinkedHashMap<>();
         body.put("jobId", jobId);
         body.put("isStopWithSavePoint", isStopWithSavePoint);
@@ -488,6 +535,60 @@ public class SeaTunnelRestClient {
                 jsonHeaders(clientId),
                 Map.class,
                 "POST /stop-job failed"
+        );
+    }
+
+    public Map checkpointOverview(Long clientId, Long jobId) {
+        if (clientId == null) {
+            throw new IllegalArgumentException("clientId cannot be empty");
+        }
+
+        if (jobId == null) {
+            throw new IllegalArgumentException("jobId cannot be empty");
+        }
+
+        return get(
+                clientId,
+                url(clientId, "/jobs/checkpoints/" + jobId),
+                Map.class,
+                "GET /jobs/checkpoints/{jobId} failed"
+        );
+    }
+
+    public List checkpointHistory(Long clientId,
+                                  Long jobId,
+                                  Long pipelineId,
+                                  Integer limit,
+                                  String status) {
+        if (clientId == null) {
+            throw new IllegalArgumentException("clientId cannot be empty");
+        }
+
+        if (jobId == null) {
+            throw new IllegalArgumentException("jobId cannot be empty");
+        }
+
+        UriComponentsBuilder builder = UriComponentsBuilder.fromHttpUrl(
+                url(clientId, "/jobs/checkpoints/history/" + jobId)
+        );
+
+        if (pipelineId != null) {
+            builder.queryParam("pipelineId", pipelineId);
+        }
+
+        if (limit != null) {
+            builder.queryParam("limit", limit);
+        }
+
+        if (!isBlank(status)) {
+            builder.queryParam("status", status.trim());
+        }
+
+        return get(
+                clientId,
+                builder.build(true).toUriString(),
+                List.class,
+                "GET /jobs/checkpoints/history/{jobId} failed"
         );
     }
 

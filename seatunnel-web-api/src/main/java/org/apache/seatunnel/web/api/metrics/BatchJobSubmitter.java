@@ -62,7 +62,7 @@ public class BatchJobSubmitter {
         jobLogger.info("Client id: " + clientId);
 
         String configFile = null;
-        Long engineId = null;
+        String engineId = null;
         boolean submitted = false;
 
         try {
@@ -119,13 +119,13 @@ public class BatchJobSubmitter {
             throw new ServiceException(Status.REQUEST_PARAMS_NOT_VALID_ERROR, "clientId");
         }
 
-        if (instance.getEngineJobId() == null || instance.getEngineJobId() <= 0) {
+        if (instance.getEngineJobId() == null ) {
             throw new ServiceException(Status.REQUEST_PARAMS_NOT_VALID_ERROR, "engineJobId");
         }
 
         Long instanceId = instance.getId();
         Long clientId = instance.getClientId();
-        Long engineJobId = instance.getEngineJobId();
+        String engineJobId = instance.getEngineJobId();
 
         log.info("Stopping batch SeaTunnel job: instanceId={}, clientId={}, engineJobId={}",
                 instanceId, clientId, engineJobId);
@@ -180,7 +180,7 @@ public class BatchJobSubmitter {
     }
 
     private JobRuntimeContext buildRuntimeContext(JobInstanceVO instance,
-                                                  Long engineId,
+                                                  String engineId,
                                                   String configFile) {
         JobRuntimeContext ctx = new JobRuntimeContext();
 
@@ -212,7 +212,7 @@ public class BatchJobSubmitter {
 
     private void handlePostSubmitFailure(JobFileLogger jobLogger,
                                          Long instanceId,
-                                         Long engineId,
+                                         String engineId,
                                          Exception e) {
         jobLogger.error(
                 "Batch job was submitted to SeaTunnel Engine, but post-submit handling failed. " +
@@ -237,14 +237,14 @@ public class BatchJobSubmitter {
          */
     }
 
-    private Long extractJobId(Map<?, ?> resp) {
+    private String extractJobId(Map<?, ?> resp) {
         Object jobIdObj = resp == null ? null : resp.get("jobId");
 
         if (jobIdObj == null) {
             throw new IllegalStateException("REST submit response missing jobId, resp=" + resp);
         }
 
-        return Long.valueOf(jobIdObj.toString());
+        return jobIdObj.toString();
     }
 
     private void validate(JobInstanceVO instance) {

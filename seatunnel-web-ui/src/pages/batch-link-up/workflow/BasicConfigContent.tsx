@@ -28,9 +28,11 @@ export default function BasicConfigContent({
   const sourceType = value?.sourceType || "SOURCE";
   const targetType = value?.targetType || "SINK";
   const jobName = value?.jobName || "";
-  const description = value?.description || "";
+  const jobDesc = value?.jobDesc || "";
   const clientId = value?.clientId || "-";
   const modeLabel = getModeLabel(value?.mode);
+
+  console.warn("123" + value)
 
   const handleFieldChange = (field: string, fieldValue: any) => {
     onChange?.((prev: any) => ({
@@ -107,11 +109,11 @@ export default function BasicConfigContent({
           <div>
             <div className="text-[12px] text-slate-400">说明</div>
             <TextArea
-              value={description}
+              value={jobDesc}
               placeholder="请输入任务说明"
               autoSize={{ minRows: 3, maxRows: 5 }}
               onChange={(e) =>
-                handleFieldChange("description", e.target.value)
+                handleFieldChange("jobDesc", e.target.value)
               }
               className="mt-1"
             />

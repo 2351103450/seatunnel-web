@@ -1,34 +1,50 @@
 package org.apache.seatunnel.web.core.utils;
 
-public final class SeaTunnelClientUrlUtils {
+import org.apache.commons.lang3.StringUtils;
+
+public class SeaTunnelClientUrlUtils {
 
     private SeaTunnelClientUrlUtils() {
     }
 
-    /** Build normalized baseUrl from address and port. */
-    public static String buildBaseUrl(String address, String port) {
-        if (port == null) {
-            throw new IllegalArgumentException("clientPort不能为空");
+    public static String buildBaseUrl(String protocol, String host, Object port) {
+        String normalizedProtocol = normalizeProtocol(protocol);
+
+        if (StringUtils.isBlank(host)) {
+            return null;
         }
 
-        if (address == null || address.trim().isEmpty()) {
-            throw new IllegalArgumentException("clientAddress不能为空");
+        String normalizedHost = host.trim();
+
+        if (normalizedHost.startsWith("http://") || normalizedHost.startsWith("https://")) {
+            return removeEndSlash(normalizedHost);
         }
 
-        address = address.trim();
-
-        if (!address.startsWith("http://") && !address.startsWith("https://")) {
-            address = "http://" + address;
+        if (port == null || StringUtils.isBlank(String.valueOf(port))) {
+            return normalizedProtocol + "://" + normalizedHost;
         }
 
-        if (address.endsWith("/")) {
-            address = address.substring(0, address.length() - 1);
+        return normalizedProtocol + "://" + normalizedHost + ":" + String.valueOf(port).trim();
+    }
+
+    public static String normalizeProtocol(String protocol) {
+        if (StringUtils.equalsIgnoreCase(protocol, "https")) {
+            return "https";
+        }
+        return "http";
+    }
+
+    public static String removeEndSlash(String value) {
+        if (value == null) {
+            return null;
         }
 
-        if (!port.trim().isEmpty()) {
-            return address + ":" + port.trim();
+        String result = value.trim();
+
+        while (result.endsWith("/")) {
+            result = result.substring(0, result.length() - 1);
         }
 
-        return address;
+        return result;
     }
 }

@@ -16,6 +16,8 @@ public enum DbType {
     ORACLE("ORACLE", "ORACLE", "ORACLE"),
     POSTGRE_SQL("POSTGRE_SQL", "POSTGRE_SQL", "POSTGRE_SQL"),
     DORIS("DORIS", "DORIS", "DORIS"),
+    KINGBASE("KINGBASE", "KINGBASE", "KINGBASE"),
+    DAMENG("DAMENG", "DAMENG", "DAMENG"),
     H2("H2", "H2", "H2")
     ;
 

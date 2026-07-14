@@ -1,6 +1,7 @@
 package org.apache.seatunnel.web.engine.client.rest;
 
 import jakarta.annotation.Resource;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.seatunnel.web.dao.entity.SeaTunnelClient;
 import org.apache.seatunnel.web.dao.repository.SeaTunnelClientDao;
 import org.apache.seatunnel.web.engine.client.modal.SeaTunnelClientAuth;
@@ -16,7 +17,15 @@ public class SeaTunnelClientResolver {
 
     public String resolveBaseApiUrl(Long clientId) {
         SeaTunnelClient entity = seatunnelClientDao.queryById(clientId);
-        return entity.getBaseUrl();
+        String baseUrl = entity.getBaseUrl();
+        String contextPath = entity.getContextPath();
+
+        // context_path
+        if (StringUtils.isNotBlank(contextPath)) {
+            return baseUrl + "/" + StringUtils.removeStart(contextPath, "/") + contextPath;
+        }
+
+        return baseUrl;
     }
 
     public SeaTunnelClientAuth resolveAuth(Long clientId) {

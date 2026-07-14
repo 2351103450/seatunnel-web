@@ -94,6 +94,8 @@ const AdvancedSearchForm: React.FC<AdvancedSearchFormProps> = ({
     createDataSourceOption("MySql", "MYSQL"),
     createDataSourceOption("Oracle", "ORACLE"),
     createDataSourceOption("PostgreSQL", "POSTGRE_SQL"),
+    createDataSourceOption("Kingbase", "KINGBASE"),
+    createDataSourceOption("Dameng", "DAMENG"),
   ];
 
   const statusOptions = [
@@ -286,7 +288,7 @@ const AdvancedSearchForm: React.FC<AdvancedSearchFormProps> = ({
                 label={fieldLabel(
                   intl.formatMessage({
                     id: "pages.job.search.jobId",
-                    defaultMessage: "Job ID",
+                    defaultMessage: "Job Definition ID",
                   }),
                 )}
               >
@@ -294,7 +296,7 @@ const AdvancedSearchForm: React.FC<AdvancedSearchFormProps> = ({
                   allowClear
                   placeholder={intl.formatMessage({
                     id: "pages.job.search.jobId.placeholder",
-                    defaultMessage: "Enter job id",
+                    defaultMessage: "Enter job definition ID",
                   })}
                   className="h-8"
                   style={{ borderRadius: 16 }}

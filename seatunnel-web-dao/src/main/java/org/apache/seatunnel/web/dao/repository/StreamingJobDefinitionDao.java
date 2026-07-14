@@ -25,4 +25,10 @@ public interface StreamingJobDefinitionDao extends IDao<StreamingJobDefinitionEn
     );
 
     Long count(StreamingJobDefinitionQueryDTO dto);
+
+    boolean existsByDatasourceId(Long datasourceId);
+
+    List<Long> selectReferencedDatasourceIds(List<Long> datasourceIds);
+
+    boolean existsByClientId(Long clientId);
 }

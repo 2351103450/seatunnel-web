@@ -1,23 +1,17 @@
-import { AvatarDropdown, AvatarName, Footer, SelectLang } from "@/components";
-import type { Settings as LayoutSettings } from "@ant-design/pro-components";
-import { SettingDrawer } from "@ant-design/pro-components";
-import "@ant-design/v5-patch-for-react-19";
-import type { RequestConfig, RunTimeLayoutConfig } from "@umijs/max";
-import { history } from "@umijs/max";
-import "d3-transition";
-import defaultSettings from "../config/defaultSettings";
-import {
-  BI,
-  GlobalSearch,
-  Knowledge,
-  OpenAPI,
-} from "./components/RightContent";
-import ThemeSwitch from "./components/RightContent/ThemeSwitch";
-import { errorConfig } from "./requestErrorConfig";
-import HttpUtils from "./utils/HttpUtils";
+import { AvatarDropdown, AvatarName, Footer } from '@/components';
+import type { Settings as LayoutSettings } from '@ant-design/pro-components';
+import { SettingDrawer } from '@ant-design/pro-components';
+import '@ant-design/v5-patch-for-react-19';
+import type { RequestConfig, RunTimeLayoutConfig } from '@umijs/max';
+import { history } from '@umijs/max';
+import 'd3-transition';
+import defaultSettings from '../config/defaultSettings';
+import { GlobalSearch, Knowledge } from './components/RightContent';
+import { errorConfig } from './requestErrorConfig';
+import HttpUtils from './utils/HttpUtils';
 
-const isDev = process.env.NODE_ENV === "development";
-const loginPath = "/login";
+const isDev = process.env.NODE_ENV === 'development';
+const loginPath = '/login';
 
 /**
  * @see https://umijs.org/docs/api/runtime-config#getinitialstate
@@ -31,7 +25,7 @@ export async function getInitialState(): Promise<{
   const fetchUserInfo = async () => {
     try {
       const msg = await HttpUtils.get<API.CurrentUser | undefined>(
-        "/api/v1/users/currentUser"
+        '/api/v1/users/currentUser',
       );
 
       return msg.data;
@@ -42,7 +36,7 @@ export async function getInitialState(): Promise<{
   };
   // 如果不是登录页面，执行
   const { location } = history;
-  if (![loginPath, "/login"].includes(location.pathname)) {
+  if (![loginPath, '/login'].includes(location.pathname)) {
     const currentUser = await fetchUserInfo();
     return {
       fetchUserInfo,
@@ -63,15 +57,15 @@ export const layout: RunTimeLayoutConfig = ({
 }) => {
   return {
     menuProps: {
-      defaultOpenKeys: ["/sync"],
+      defaultOpenKeys: ['/sync'],
     },
     actionsRender: () => [
       <GlobalSearch key="globalsearch" />,
       // <OpenAPI key="open-api" />,
       <Knowledge key="knowledge" />,
       // <BI key="bi" />,
-      <ThemeSwitch key="theme-switch" />,
-      <SelectLang key="SelectLang" />,
+      // <ThemeSwitch key="theme-switch" />,
+      // <SelectLang key="SelectLang" />,
     ],
     avatarProps: {
       src: initialState?.currentUser?.avatar,
@@ -94,22 +88,22 @@ export const layout: RunTimeLayoutConfig = ({
     },
     bgLayoutImgList: [
       {
-        src: "https://mdn.alipayobjects.com/yuyan_qk0oxh/afts/img/D2LWSqNny4sAAAAAAAAAAAAAFl94AQBr",
+        src: 'https://mdn.alipayobjects.com/yuyan_qk0oxh/afts/img/D2LWSqNny4sAAAAAAAAAAAAAFl94AQBr',
         left: 85,
         bottom: 100,
-        height: "303px",
+        height: '303px',
       },
       {
-        src: "https://mdn.alipayobjects.com/yuyan_qk0oxh/afts/img/C2TWRpJpiC0AAAAAAAAAAAAAFl94AQBr",
+        src: 'https://mdn.alipayobjects.com/yuyan_qk0oxh/afts/img/C2TWRpJpiC0AAAAAAAAAAAAAFl94AQBr',
         bottom: -68,
         right: -45,
-        height: "303px",
+        height: '303px',
       },
       {
-        src: "https://mdn.alipayobjects.com/yuyan_qk0oxh/afts/img/F6vSTbj8KpYAAAAAAAAAAAAAFl94AQBr",
+        src: 'https://mdn.alipayobjects.com/yuyan_qk0oxh/afts/img/F6vSTbj8KpYAAAAAAAAAAAAAFl94AQBr',
         bottom: 0,
         left: 0,
-        width: "331px",
+        width: '331px',
       },
     ],
     links: [],
@@ -148,6 +142,6 @@ export const layout: RunTimeLayoutConfig = ({
  * @doc https://umijs.org/docs/max/request#配置
  */
 export const request: RequestConfig = {
-  baseURL: "https://proapi.azurewebsites.net",
+  baseURL: 'https://proapi.azurewebsites.net',
   ...errorConfig,
 };

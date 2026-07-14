@@ -156,7 +156,7 @@ public class JobInstanceDaoImpl
     }
 
     @Override
-    public void updateSubmitResult(Long instanceId, Long engineJobId, JobStatus submitStatus, Date submitTime) {
+    public void updateSubmitResult(Long instanceId, String engineJobId, JobStatus submitStatus, Date submitTime) {
         JobInstance update = new JobInstance();
         update.setId(instanceId);
         update.setEngineJobId(engineJobId);

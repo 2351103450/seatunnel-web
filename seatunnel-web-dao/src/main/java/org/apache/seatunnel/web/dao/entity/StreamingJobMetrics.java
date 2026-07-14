@@ -16,7 +16,7 @@ public class StreamingJobMetrics {
 
     private Long jobDefinitionId;
 
-    private Long engineJobId;
+    private String engineJobId;
 
     private Long clientId;
 

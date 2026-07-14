@@ -3,7 +3,8 @@ package org.apache.seatunnel.web.api.service.impl;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import jakarta.annotation.Resource;
 import org.apache.seatunnel.web.api.service.UsersService;
-import org.apache.seatunnel.web.api.utils.EncryptionUtils;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.apache.seatunnel.web.common.enums.UserType;
 import org.apache.seatunnel.web.dao.entity.User;
 import org.apache.seatunnel.web.dao.mapper.UserMapper;
@@ -12,16 +13,20 @@ import org.springframework.stereotype.Service;
 @Service
 public class UsersServiceImpl implements UsersService {
 
+    private static final PasswordEncoder PASSWORD_ENCODER = new BCryptPasswordEncoder();
+
     @Resource
     private UserMapper userMapper;
 
     @Override
     public User queryUser(String name, String password) {
-        String md5 = EncryptionUtils.getMd5(password);
         LambdaQueryWrapper<User> wrapper = new LambdaQueryWrapper<>();
-        wrapper.eq(User::getUserName, name)
-                .eq(User::getUserPassword, md5);
-        return userMapper.selectOne(wrapper);
+        wrapper.eq(User::getUserName, name);
+        User user = userMapper.selectOne(wrapper);
+        if (user == null || !PASSWORD_ENCODER.matches(password, user.getUserPassword())) {
+            return null;
+        }
+        return user;
     }
 
     @Override

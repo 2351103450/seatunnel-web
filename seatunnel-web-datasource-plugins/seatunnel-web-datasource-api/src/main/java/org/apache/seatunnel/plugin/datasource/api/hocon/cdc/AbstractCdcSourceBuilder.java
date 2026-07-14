@@ -20,6 +20,7 @@ public abstract class AbstractCdcSourceBuilder implements DataSourceHoconBuilder
     protected static final String USERNAME = "username";
     protected static final String PASSWORD = "password";
     protected static final String URL = "url";
+    protected static final String DEBEZIUM = "debezium";
 
     protected static final String DATABASE_NAMES = "database-names";
     protected static final String DATABASE_PATTERN = "database-pattern";
@@ -281,11 +282,15 @@ public abstract class AbstractCdcSourceBuilder implements DataSourceHoconBuilder
         }
 
         List<? extends Config> list = node.getConfigList("extraParams");
+
         for (Config item : list) {
             String key = JdbcConfigReaders.getString(item, "key", "");
+
             if (StringUtils.isBlank(key)) {
                 continue;
             }
+
+            String normalizedKey = key.trim();
 
             Object value = item.hasPath("value")
                     ? item.getValue("value").unwrapped()
@@ -295,7 +300,83 @@ public abstract class AbstractCdcSourceBuilder implements DataSourceHoconBuilder
                 continue;
             }
 
-            map.put(key.trim(), value);
+            /*
+             * debezium 的类型是 Config，不能作为普通字符串输出。
+             *
+             * 前端当前传递的是 JSON 字符串：
+             * {
+             *   "snapshot.locking.mode": "none",
+             *   "include.schema.changes": "false"
+             * }
+             *
+             * 这里需要将它解析成 Map，再交给 ConfigFactory.parseMap。
+             */
+            if (DEBEZIUM.equalsIgnoreCase(normalizedKey)) {
+                appendDebeziumOptions(value, map);
+                continue;
+            }
+
+            map.put(normalizedKey, value);
+        }
+    }
+
+    protected void appendDebeziumOptions(
+            Object value,
+            Map<String, Object> map) {
+
+        if (isEmptyValue(value)) {
+            return;
+        }
+
+        /*
+         * 如果前端后续直接传递对象，
+         * ConfigValue.unwrapped() 后会得到 Map，可以直接使用。
+         */
+        if (value instanceof Map) {
+            map.put(DEBEZIUM, value);
+            return;
+        }
+
+        if (!(value instanceof String)) {
+            throw new IllegalArgumentException(
+                    "CDC debezium parameter must be a JSON object or JSON string"
+            );
+        }
+
+        String rawValue = ((String) value).trim();
+
+        if (StringUtils.isBlank(rawValue)) {
+            return;
+        }
+
+        try {
+            /*
+             * Typesafe Config 同时支持 JSON 和 HOCON。
+             *
+             * 输入：
+             * {
+             *   "snapshot.locking.mode": "none",
+             *   "include.schema.changes": "false"
+             * }
+             *
+             * 输出为 Map<String, Object>，而不再是普通 String。
+             */
+            Config debeziumConfig = ConfigFactory.parseString(rawValue);
+
+            Map<String, Object> debeziumOptions =
+                    debeziumConfig.root().unwrapped();
+
+            if (debeziumOptions.isEmpty()) {
+                return;
+            }
+
+            map.put(DEBEZIUM, debeziumOptions);
+        } catch (RuntimeException e) {
+            throw new IllegalArgumentException(
+                    "Invalid debezium config, expected a JSON object, actual value: "
+                            + rawValue,
+                    e
+            );
         }
     }
 

@@ -138,6 +138,7 @@ public enum Status {
     JOB_DEFINITION_EXECUTE_ERROR(11401, "execute job definition error", "执行任务定义失败"),
     JOB_DEFINITION_ID_INVALID(11402, "job definition id is invalid", "任务定义ID无效"),
     JOB_DEFINITION_EXECUTE_PARAM_ERROR(11403, "job execute parameter is invalid", "任务执行参数无效"),
+    JOB_DEFINITION_EXECUTE_RECOVERY(11404, "execute job recovery", "执行任务恢复"),
 
     QUERY_JOB_METRICS_SUMMARY_ERROR(11501, "query job metrics summary error", "查询任务指标汇总失败"),
     QUERY_JOB_METRICS_CHARTS_ERROR(11502, "query job metrics charts error", "查询任务指标图表失败"),

@@ -107,6 +107,7 @@ public class StreamingJobInstanceDaoImpl
                         JobStatus.CANCELING);
 
         Long count = streamingJobInstanceMapper.selectCount(wrapper);
+
         return count != null && count > 0;
     }
 
@@ -139,7 +140,7 @@ public class StreamingJobInstanceDaoImpl
     }
 
     @Override
-    public void updateStatusAndEngineId(Long instanceId, JobStatus status, Long engineJobId) {
+    public void updateStatusAndEngineId(Long instanceId, JobStatus status, String engineJobId) {
         boolean endState = status.isEndState();
         Date now = new Date();
 
@@ -160,7 +161,7 @@ public class StreamingJobInstanceDaoImpl
     }
 
     @Override
-    public void updateSubmitResult(Long instanceId, Long engineJobId, JobStatus submitStatus, Date submitTime) {
+    public void updateSubmitResult(Long instanceId, String engineJobId, JobStatus submitStatus, Date submitTime) {
         StreamingJobInstance update = new StreamingJobInstance();
         update.setId(instanceId);
         update.setEngineJobId(engineJobId);
@@ -202,6 +203,18 @@ public class StreamingJobInstanceDaoImpl
         return records.stream()
                 .map(item -> ConvertUtil.sourceToTarget(item, JobInstanceVO.class))
                 .collect(Collectors.toList());
+    }
+
+    @Override
+    public StreamingJobInstance lastInstance(Long definitionId) {
+        if (definitionId == null || definitionId <= 0) {
+            return null;
+        }
+        LambdaQueryWrapper<StreamingJobInstance> wrapperLast = new LambdaQueryWrapper<>();
+        wrapperLast.eq(StreamingJobInstance::getJobDefinitionId, definitionId)
+                .orderByDesc(StreamingJobInstance::getUpdateTime)
+                .last("limit 1");
+        return streamingJobInstanceMapper.selectOne(wrapperLast);
     }
 
     private String truncate(String text, int maxLength) {

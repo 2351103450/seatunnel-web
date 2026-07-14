@@ -41,6 +41,18 @@ export const sourceList = [
         type: "POSTGRE_SQL",
         connectorType: "Jdbc"
       },
+      {
+        onlyDiScript: false,
+        dbType: "KINGBASE",
+        type: "KINGBASE",
+        connectorType: "Jdbc"
+      },
+      {
+        onlyDiScript: false,
+        dbType: "DAMENG",
+        type: "DAMENG",
+        connectorType: "Jdbc"
+      },
 
     ],
   }

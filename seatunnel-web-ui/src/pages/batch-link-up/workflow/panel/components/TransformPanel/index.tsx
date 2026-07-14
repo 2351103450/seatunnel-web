@@ -32,7 +32,7 @@ function TransformPanel(props: Props) {
     return <SqlTransformPanel {...props} />;
   }
 
-  return <div>good</div>;
+ return null;
 }
 
 export default memo(TransformPanel);

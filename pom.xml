@@ -29,7 +29,6 @@
         <maven.compiler.source>21</maven.compiler.source>
         <maven.compiler.target>21</maven.compiler.target>
         <java.version>21</java.version>
-        <maven.test.skip>true</maven.test.skip>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <file_encoding>UTF-8</file_encoding>
 
@@ -51,13 +50,13 @@
         <module>seatunnel-web-datasource-connection</module>
         <module>seatunnel-web-datasource-plugins</module>
         <module>seatunnel-web-ui</module>
-        <module>seatunnel-web-copilot</module>
         <module>seatunnel-web-dao</module>
         <module>seatunnel-web-dao-plugin</module>
         <module>seatunnel-web-bom</module>
         <module>seatunnel-web-spi</module>
         <module>seatunnel-web-core</module>
         <module>seatunnel-web-engine-client</module>
+        <module>seatunnel-web-dist</module>
     </modules>
 
     <dependencyManagement>
@@ -89,11 +88,6 @@
             </dependency>
             <dependency>
                 <groupId>org.apache.seatunnel.web</groupId>
-                <artifactId>seatunnel-web-copilot</artifactId>
-                <version>${project.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>org.apache.seatunnel.web</groupId>
                 <artifactId>seatunnel-web-datasource-api</artifactId>
                 <version>${project.version}</version>
             </dependency>
@@ -120,6 +114,16 @@
             <dependency>
                 <groupId>org.apache.seatunnel.web</groupId>
                 <artifactId>seatunnel-web-datasource-doris</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.apache.seatunnel.web</groupId>
+                <artifactId>seatunnel-web-datasource-kingbase</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.apache.seatunnel.web</groupId>
+                <artifactId>seatunnel-web-datasource-dameng</artifactId>
                 <version>${project.version}</version>
             </dependency>
             <dependency>

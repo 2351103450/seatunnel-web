@@ -1,0 +1,19 @@
+spring:
+  config:
+    activate:
+      on-profile: mysql
+
+  datasource:
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    url: "${SPRING_DATASOURCE_URL:jdbc:mysql://${SEATUNNEL_WEB_DATABASE_HOST:127.0.0.1}:${SEATUNNEL_WEB_DATABASE_PORT:3306}/${SEATUNNEL_WEB_DATABASE_NAME:seatunnel_web}?useUnicode=true&characterEncoding=utf8&useSSL=false&serverTimezone=GMT%2B8&allowPublicKeyRetrieval=true}"
+    username: ${SPRING_DATASOURCE_USERNAME:root}
+    password: ${SPRING_DATASOURCE_PASSWORD:change_me}
+
+  quartz:
+    properties:
+      org.quartz.jobStore.driverDelegateClass: org.quartz.impl.jdbcjobstore.StdJDBCDelegate
+
+seatunnel:
+  web:
+    database:
+      type: mysql

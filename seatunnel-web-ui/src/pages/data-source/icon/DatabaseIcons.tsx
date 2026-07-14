@@ -51,6 +51,7 @@ const DatabaseIcons = ({
     case 'elasticsearch':
       return <ElasticSearchIcon width={width} height={height} />;
     case 'postgre_sql':
+    case 'postgresql':
       return <PsSqlIcon width={width} height={height} />;
     case 'opengauss':
       return <OpenGaussIcon width={width} height={height} />;

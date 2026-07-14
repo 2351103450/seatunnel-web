@@ -13,17 +13,15 @@ import java.util.Map;
 @SuppressWarnings("rawtypes")
 public class SeaTunnelJobResponseParser {
 
-    public Long extractJobId(Map submitResponse) {
+    public String extractJobId(Map submitResponse) {
         if (submitResponse == null || submitResponse.isEmpty()) {
             return null;
         }
 
         Object direct = firstNonNull(
-                submitResponse.get("jobId"),
-                submitResponse.get("job_id"),
-                submitResponse.get("id")
+                submitResponse.get("jobId")
         );
-        Long parsedDirect = toLong(direct);
+        String parsedDirect = direct.toString();
         if (parsedDirect != null) {
             return parsedDirect;
         }
@@ -32,11 +30,9 @@ public class SeaTunnelJobResponseParser {
         if (data instanceof Map) {
             Map dataMap = (Map) data;
             Object nested = firstNonNull(
-                    dataMap.get("jobId"),
-                    dataMap.get("job_id"),
-                    dataMap.get("id")
+                    dataMap.get("jobId")
             );
-            return toLong(nested);
+            return nested.toString();
         }
 
         return null;
@@ -48,9 +44,7 @@ public class SeaTunnelJobResponseParser {
         }
 
         Object direct = firstNonNull(
-                info.get("status"),
-                info.get("jobStatus"),
-                info.get("state")
+                info.get("jobStatus")
         );
         JobStatus directStatus = toJobStatus(direct);
         if (directStatus != null) {
@@ -61,9 +55,7 @@ public class SeaTunnelJobResponseParser {
         if (data instanceof Map) {
             Map dataMap = (Map) data;
             Object nested = firstNonNull(
-                    dataMap.get("status"),
-                    dataMap.get("jobStatus"),
-                    dataMap.get("state")
+                    dataMap.get("jobStatus")
             );
             return toJobStatus(nested);
         }
@@ -71,7 +63,7 @@ public class SeaTunnelJobResponseParser {
         return null;
     }
 
-    public boolean containsJob(List list, Long jobId) {
+    public boolean containsJob(List list, String jobId) {
         if (list == null || list.isEmpty() || jobId == null) {
             return false;
         }
@@ -80,11 +72,9 @@ public class SeaTunnelJobResponseParser {
             if (item instanceof Map) {
                 Map map = (Map) item;
                 Long id = toLong(firstNonNull(
-                        map.get("jobId"),
-                        map.get("job_id"),
-                        map.get("id")
+                        map.get("jobId")
                 ));
-                if (jobId.equals(id)) {
+                if (jobId.equals(id.toString())) {
                     return true;
                 }
             }

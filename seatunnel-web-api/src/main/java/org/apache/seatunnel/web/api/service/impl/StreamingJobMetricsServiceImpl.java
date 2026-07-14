@@ -99,9 +99,8 @@ public class StreamingJobMetricsServiceImpl implements StreamingJobMetricsServic
     private final Map<Long, Long> lastSnapshotTimeMap = new ConcurrentHashMap<>();
 
     @Override
-    public StreamingParsedJobMetrics getRealtimeMetricsFromEngine(Long clientId, Long engineJobId) {
+    public StreamingParsedJobMetrics getRealtimeMetricsFromEngine(Long clientId, String engineJobId) {
         validatePositive(clientId, "clientId");
-        validatePositive(engineJobId, "engineJobId");
 
         EngineJobInfo jobInfo = engineMetricsFetchService.fetchJobInfo(clientId, engineJobId);
         return streamingJobInfoMetricsParser.parse(jobInfo);
@@ -121,7 +120,7 @@ public class StreamingJobMetricsServiceImpl implements StreamingJobMetricsServic
     public void saveSnapshot(Long jobInstanceId,
                              Long jobDefinitionId,
                              Long clientId,
-                             Long engineJobId,
+                             String engineJobId,
                              StreamingParsedJobMetrics parsed) {
         validatePositive(jobInstanceId, "jobInstanceId");
         validatePositive(jobDefinitionId, "jobDefinitionId");
@@ -356,7 +355,7 @@ public class StreamingJobMetricsServiceImpl implements StreamingJobMetricsServic
     private StreamingJobMetricsCurrent buildCurrentMetrics(Long jobInstanceId,
                                                            Long jobDefinitionId,
                                                            Long clientId,
-                                                           Long engineJobId,
+                                                           String engineJobId,
                                                            StreamingParsedJobMetrics parsed,
                                                            Long collectTimeMs,
                                                            Date collectTime) {
@@ -437,7 +436,7 @@ public class StreamingJobMetricsServiceImpl implements StreamingJobMetricsServic
     private List<StreamingJobTableMetricsCurrent> buildTableCurrentMetrics(Long jobInstanceId,
                                                                            Long jobDefinitionId,
                                                                            Long clientId,
-                                                                           Long engineJobId,
+                                                                           String engineJobId,
                                                                            StreamingParsedJobMetrics parsed,
                                                                            Long collectTimeMs,
                                                                            Date collectTime) {
@@ -494,7 +493,7 @@ public class StreamingJobMetricsServiceImpl implements StreamingJobMetricsServic
     private List<StreamingJobMetrics> buildPipelineSnapshotMetrics(Long jobInstanceId,
                                                                    Long jobDefinitionId,
                                                                    Long clientId,
-                                                                   Long engineJobId,
+                                                                   String engineJobId,
                                                                    StreamingParsedJobMetrics parsed,
                                                                    Long collectTimeMs,
                                                                    Date collectTime,
@@ -766,7 +765,7 @@ public class StreamingJobMetricsServiceImpl implements StreamingJobMetricsServic
     }
 
     private void validatePositive(Long value, String name) {
-        if (value == null || value <= 0) {
+        if (value == null) {
             throw new ServiceException(Status.REQUEST_PARAMS_NOT_VALID_ERROR, name);
         }
     }

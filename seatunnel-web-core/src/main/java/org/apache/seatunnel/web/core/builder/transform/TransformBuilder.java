@@ -69,6 +69,12 @@ public class TransformBuilder implements TransformNodeConfigBuilder {
             TransformOptions transformOption =
                     TaskOptionUtils.getTransformOption(transform, transformOptions);
 
+            if (transformOption == null) {
+                throw new IllegalArgumentException(
+                        "Unsupported transform type: " + transform
+                );
+            }
+
             // Generate the final HOCON configuration for the transform node
             return TransformConfigSwitcherUtils.transform(transform, transformOption);
         } catch (IOException e) {

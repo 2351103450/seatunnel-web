@@ -1,0 +1,12 @@
+*
+
+!Dockerfile
+!.dockerignore
+
+!docker/
+!docker/nginx/
+!docker/nginx/default.conf
+
+!seatunnel-web-dist/
+!seatunnel-web-dist/target/
+!seatunnel-web-dist/target/seatunnel-web-*.tar.gz

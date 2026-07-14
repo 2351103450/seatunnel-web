@@ -8,9 +8,9 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.seatunnel.plugin.datasource.api.jdbc.DataSourceProcessor;
 import org.apache.seatunnel.plugin.datasource.api.utils.DataSourceUtils;
-import org.apache.seatunnel.web.core.exceptions.ServiceException;
 import org.apache.seatunnel.web.api.service.DatasourcePluginService;
 import org.apache.seatunnel.web.common.utils.JSONUtils;
+import org.apache.seatunnel.web.core.exceptions.ServiceException;
 import org.apache.seatunnel.web.dao.entity.DataSourcePluginConfig;
 import org.apache.seatunnel.web.dao.repository.DataSourcePluginConfigDao;
 import org.apache.seatunnel.web.spi.enums.DbType;
@@ -34,7 +34,7 @@ public class DatasourcePluginServiceImpl implements DatasourcePluginService {
 
         DbType dbType = parseDbType(pluginType);
         DataSourcePluginConfig config = dataSourcePluginConfigDao.queryByPluginType(dbType);
-        
+
         // If config not found, return empty response with install hint
         if (config == null) {
             log.warn("Datasource plugin config not found, pluginType={}", dbType);
@@ -45,7 +45,7 @@ public class DatasourcePluginServiceImpl implements DatasourcePluginService {
             response.setInstallHint("请先安装 " + dbType.name() + " 数据源插件");
             return response;
         }
-        
+
         ObjectNode schema = parseSchema(config.getConfigSchema());
 
         PluginConfigResponse response = new PluginConfigResponse();
@@ -74,6 +74,17 @@ public class DatasourcePluginServiceImpl implements DatasourcePluginService {
 
             ObjectNode schema = JSONUtils.createObjectNode();
             schema.set("fields", JSONUtils.toJsonNode(fields));
+
+            DataSourcePluginConfig existing =
+                    dataSourcePluginConfigDao.queryByPluginType(dbType);
+
+            if (existing != null) {
+                existing.setConfigSchema(JSONUtils.toJsonString(schema));
+                existing.initUpdate();
+
+                dataSourcePluginConfigDao.updatePluginConfig(existing);
+                return;
+            }
 
             DataSourcePluginConfig entity = new DataSourcePluginConfig();
             entity.setPluginType(dbType);

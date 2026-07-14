@@ -11,10 +11,12 @@ import { history } from "umi";
 
 import RunLogDrawer from "../batch-link-up/components/SyncTaskList/components/RunLogDrawer";
 import {
+  seatunnelCheckpointApi,
   seatunnelStreamingJobExecuteApi,
   seatunnelStremJobDefinitionApi,
 } from "./api";
 import BottomActionBar from "./components/BottomActionBar";
+import RealtimeCheckpointModal from "./components/RealtimeCheckpointModal";
 import RealtimeHeader from "./components/RealtimeHeader";
 import RealtimeTaskTable from "./components/RealtimeTaskTable";
 import RealtimeTaskViewModal from "./components/RealtimeTaskViewModal";
@@ -40,6 +42,7 @@ interface StreamingJobDefinitionVO {
   releaseState?: "ONLINE" | "OFFLINE" | string | number;
   lastJobStatus?: string;
   instanceId?: string | number;
+  engineJobId?: string | number;
   sourceType?: string;
   sinkType?: string;
   sourceTable?: string;
@@ -177,8 +180,9 @@ const RealtimeSyncPage: React.FC = () => {
     pluginName: "JDBC-MYSQL",
   });
 
-  const ref = useRef(null);
-  const refDetail = useRef(null);
+  const ref = useRef<any>(null);
+  const refDetail = useRef<any>(null);
+
   const [searchValues, setSearchValues] = useState<SearchValues>(() =>
     parseSearchParamsFromUrl()
   );
@@ -196,6 +200,15 @@ const RealtimeSyncPage: React.FC = () => {
   const [loading, setLoading] = useState(false);
   const [creating, setCreating] = useState(false);
 
+  const [logOpen, setLogOpen] = useState(false);
+
+  const [checkpointOpen, setCheckpointOpen] = useState(false);
+  const [checkpointRecord, setCheckpointRecord] =
+    useState<StreamingJobDefinitionVO | null>(null);
+  const [checkpointOverview, setCheckpointOverview] = useState<any>(null);
+  const [checkpointHistory, setCheckpointHistory] = useState<any[]>([]);
+  const [checkpointLoading, setCheckpointLoading] = useState(false);
+
   const hasSelected = selectedRowKeys.length > 0;
 
   const queryParams = useMemo(() => {
@@ -212,11 +225,6 @@ const RealtimeSyncPage: React.FC = () => {
       params.id = searchValues.id;
     }
 
-    /**
-     * 如果后端实时任务列表接口查的是 lastJobStatus，
-     * 这里可以改成：
-     * params.lastJobStatus = searchValues.status;
-     */
     if (searchValues?.status) {
       params.status = searchValues.status;
     }
@@ -237,10 +245,6 @@ const RealtimeSyncPage: React.FC = () => {
       params.sinkTable = searchValues.sinkTable.trim();
     }
 
-    /**
-     * 如果后端 DTO 字段不是 startTime / endTime，
-     * 可以改成 createTimeStart / createTimeEnd。
-     */
     if (searchValues?.createTime?.length === 2) {
       params.createTimeStart = moment(searchValues.createTime[0]).format(
         "YYYY-MM-DD HH:mm:ss"
@@ -326,14 +330,14 @@ const RealtimeSyncPage: React.FC = () => {
       const data = await seatunnelStremJobDefinitionApi.getUniqueId();
 
       if (data?.code !== 0) {
-        message.error(data?.message || "获取实时任务ID失败");
+        message.error(data?.message || "获取实时任务定义ID失败");
         return;
       }
 
       const returnId = data?.data;
 
       if (!returnId) {
-        message.error("创建实时任务失败：未获取到任务ID");
+        message.error("创建实时任务失败：未获取到任务定义ID");
         return;
       }
 
@@ -391,18 +395,16 @@ const RealtimeSyncPage: React.FC = () => {
   };
 
   const handleDetail = (record: StreamingJobDefinitionVO) => {
-    console.log("123");
     refDetail.current?.onOpen(true, record, () => {});
   };
 
   const handleEdit = async (item: StreamingJobDefinitionVO) => {
     if (!item?.id) {
-      message.warning("任务ID不能为空");
+      message.warning("任务定义ID不能为空");
       return;
     }
-    const id = item?.id;
 
-    console.log(item);
+    const id = item?.id;
 
     try {
       const mode = item?.mode;
@@ -419,14 +421,13 @@ const RealtimeSyncPage: React.FC = () => {
 
       if (mode === "SCRIPT") {
         history.push(`/sync/stream-link-up/${id}/config/script?scene=edit`);
-        return;
       }
     } catch (error) {}
   };
 
   const handleRun = async (record: StreamingJobDefinitionVO) => {
     if (!record?.id) {
-      message.warning("任务 ID 不存在");
+      message.warning("任务定义ID 不存在");
       return;
     }
 
@@ -478,7 +479,7 @@ const RealtimeSyncPage: React.FC = () => {
 
   const handleOnline = async (record: StreamingJobDefinitionVO) => {
     if (!record?.id) {
-      message.warning("任务 ID 不存在");
+      message.warning("任务定义ID 不存在");
       return;
     }
 
@@ -499,7 +500,7 @@ const RealtimeSyncPage: React.FC = () => {
 
   const handleOffline = async (record: StreamingJobDefinitionVO) => {
     if (!record?.id) {
-      message.warning("任务 ID 不存在");
+      message.warning("任务定义ID 不存在");
       return;
     }
 
@@ -520,7 +521,7 @@ const RealtimeSyncPage: React.FC = () => {
 
   const handleDelete = (record: StreamingJobDefinitionVO) => {
     if (!record?.id) {
-      message.warning("任务 ID 不存在");
+      message.warning("任务定义ID 不存在");
       return;
     }
 
@@ -574,8 +575,6 @@ const RealtimeSyncPage: React.FC = () => {
     });
   };
 
-  const [logOpen, setLogOpen] = useState(false);
-
   const handleLog = (record: StreamingJobDefinitionVO) => {
     if (!record?.instanceId) {
       message.warning("当前任务没有运行实例，暂无日志");
@@ -586,18 +585,75 @@ const RealtimeSyncPage: React.FC = () => {
     setLogOpen(true);
   };
 
-  const handleCheckpoint = (record: StreamingJobDefinitionVO) => {
-    Modal.info({
-      title: "检查点配置",
-      centered: true,
-      width: 720,
-      content: (
-        <pre className="max-h-[420px] overflow-auto rounded-lg bg-slate-950 p-4 text-xs leading-6 text-slate-100">
-          {record.checkpointConfig || "暂无检查点配置"}
-        </pre>
-      ),
-      okText: "关闭",
-    });
+  const loadCheckpointData = async (record: StreamingJobDefinitionVO) => {
+    if (!record?.clientId) {
+      message.warning("当前任务没有绑定 SeaTunnel Client");
+      return;
+    }
+
+    if (!record?.engineJobId) {
+      message.warning("当前任务没有 Engine Job ID，暂无检查点数据");
+      setCheckpointOverview(null);
+      setCheckpointHistory([]);
+      return;
+    }
+
+    const clientId = record.clientId;
+    const engineJobId = String(record.engineJobId);
+
+    try {
+      setCheckpointLoading(true);
+
+      const [overviewRes, historyRes] = await Promise.all([
+        seatunnelCheckpointApi.overview(clientId, engineJobId),
+        seatunnelCheckpointApi.history(clientId, engineJobId, {
+          limit: 20,
+        }),
+      ]);
+
+      if (overviewRes?.code !== undefined && overviewRes.code !== 0) {
+        message.error(
+          overviewRes?.message || overviewRes?.msg || "获取检查点概览失败"
+        );
+        setCheckpointOverview(null);
+      } else {
+        setCheckpointOverview(overviewRes?.data || null);
+      }
+
+      if (historyRes?.code !== undefined && historyRes.code !== 0) {
+        message.error(
+          historyRes?.message || historyRes?.msg || "获取检查点历史失败"
+        );
+        setCheckpointHistory([]);
+      } else {
+        setCheckpointHistory(historyRes?.data || []);
+      }
+    } catch (error) {
+      message.error("获取检查点数据失败");
+      setCheckpointOverview(null);
+      setCheckpointHistory([]);
+    } finally {
+      setCheckpointLoading(false);
+    }
+  };
+
+  const handleCheckpoint = async (record: StreamingJobDefinitionVO) => {
+    if (!record?.clientId) {
+      message.warning("当前任务没有绑定 SeaTunnel Client");
+      return;
+    }
+
+    if (!record?.engineJobId) {
+      message.warning("当前任务没有 Engine Job ID，暂无检查点数据");
+      return;
+    }
+
+    setCheckpointRecord(record);
+    setCheckpointOpen(true);
+    setCheckpointOverview(null);
+    setCheckpointHistory([]);
+
+    await loadCheckpointData(record);
   };
 
   const handleBatchStart = async () => {
@@ -801,6 +857,7 @@ const RealtimeSyncPage: React.FC = () => {
           onPageChange={handlePaginationChange}
         />
       </div>
+
       <RealtimeTaskViewModal ref={ref} />
       <TaskViewModal ref={refDetail} />
 
@@ -816,6 +873,25 @@ const RealtimeSyncPage: React.FC = () => {
         subtitle={
           logRecord?.jobName ? `任务：${logRecord.jobName}` : "查看任务运行输出"
         }
+      />
+
+      <RealtimeCheckpointModal
+        open={checkpointOpen}
+        record={checkpointRecord}
+        overview={checkpointOverview}
+        history={checkpointHistory}
+        loading={checkpointLoading}
+        onRefresh={() => {
+          if (checkpointRecord) {
+            loadCheckpointData(checkpointRecord);
+          }
+        }}
+        onClose={() => {
+          setCheckpointOpen(false);
+          setCheckpointRecord(null);
+          setCheckpointOverview(null);
+          setCheckpointHistory([]);
+        }}
       />
     </>
   );

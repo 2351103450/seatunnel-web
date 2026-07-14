@@ -93,6 +93,8 @@ const SearchToolbar: React.FC<SearchToolbarProps> = ({
     createDataSourceOption("MySql", "MYSQL"),
     createDataSourceOption("Oracle", "ORACLE"),
     createDataSourceOption("PostgreSQL", "POSTGRE_SQL"),
+    createDataSourceOption("Kingbase", "KINGBASE"),
+    createDataSourceOption("Dameng", "DAMENG"),
   ];
 
   const statusOptions = [
@@ -238,11 +240,11 @@ const SearchToolbar: React.FC<SearchToolbarProps> = ({
               <Form.Item
                 {...commonFormItemProps}
                 name="id"
-                label={fieldLabel("任务 ID")}
+                label={fieldLabel("任务定义ID")}
               >
                 <Input
                   allowClear
-                  placeholder="请输入任务 ID"
+                  placeholder="请输入任务定义ID"
                   className="h-8"
                   style={{ borderRadius: 16 }}
                 />

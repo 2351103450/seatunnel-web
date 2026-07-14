@@ -31,7 +31,7 @@ public class StreamingJobInstance {
 
     private Integer retryCount;
 
-    private Long engineJobId;
+    private String engineJobId;
 
     private String runtimeConfig;
 

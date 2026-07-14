@@ -5,6 +5,8 @@ import MysqlIcon from "../data-source/icon/MysqlIcon";
 import OracleIcon from "../data-source/icon/OracleIcon";
 import PostgreSQL from "../data-source/icon/PsSqlIcon";
 import DorisIcon from "../data-source/icon/DorisIcon";
+import KingBaseIcon from "../data-source/icon/KingBaseIcon";
+import DaMengIcon from "../data-source/icon/DamengIcon";
 import "./index.less";
 // 类型定义
 interface DataSourceType {
@@ -57,6 +59,28 @@ export const generateDataSourceOptions = (): DataSourceType[] => [
       <div style={{ display: "flex", alignItems: "center" }}>
         <DorisIcon />
         <span style={{ marginLeft: 8 }}>Doris</span>
+      </div>
+    ),
+  },
+  {
+    value: "KINGBASE",
+    connectorType: "Jdbc",
+    pluginName: "JDBC-KINGBASE",
+    label: (
+      <div style={{ display: "flex", alignItems: "center" }}>
+        <KingBaseIcon />
+        <span style={{ marginLeft: 8 }}>KINGBASE</span>
+      </div>
+    ),
+  },
+  {
+    value: "DAMENG",
+    connectorType: "Jdbc",
+    pluginName: "JDBC-DAMENG",
+    label: (
+      <div style={{ display: "flex", alignItems: "center" }}>
+        <DaMengIcon />
+        <span style={{ marginLeft: 8 }}>DAMENG</span>
       </div>
     ),
   },
