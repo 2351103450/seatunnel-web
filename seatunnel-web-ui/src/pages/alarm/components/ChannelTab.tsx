@@ -2,7 +2,7 @@ import { useIntl } from '@umijs/max';
 import { Button, Input, message, Modal, Space, Spin, Switch, Table, Tag } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
 import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { deleteChannel, fetchChannels, saveChannel } from '../service';
+import { deleteChannel, fetchChannels, saveChannel, testChannel } from '../service';
 import type { AlarmChannelRecord, AlarmModalRef, AlarmOperateType } from '../types';
 import { formatTime } from '../utils';
 import AddOrEditChannelModal from './AddOrEditChannelModal';
@@ -16,6 +16,7 @@ const ChannelTab: React.FC = () => {
   const [loading, setLoading] = useState(false);
   const [channelList, setChannelList] = useState<AlarmChannelRecord[]>([]);
   const [searchKeyword, setSearchKeyword] = useState('');
+  const [testingId, setTestingId] = useState<number | null>(null);
 
   const fetchList = async () => {
     setLoading(true);
@@ -91,7 +92,12 @@ const ChannelTab: React.FC = () => {
         try {
           const res = await deleteChannel(record.id);
           if (res?.code === 0) {
-            message.success(res.msg || '删除成功');
+            message.success(
+              intl.formatMessage({
+                id: 'pages.alarm.message.deleteSuccess',
+                defaultMessage: '删除成功',
+              }),
+            );
             handleRefresh();
           }
         } catch {
@@ -114,11 +120,45 @@ const ChannelTab: React.FC = () => {
         description: record.description,
       });
       if (res?.code === 0) {
-        message.success(checked ? '已启用' : '已禁用');
+        message.success(
+          intl.formatMessage({
+            id: checked ? 'pages.alarm.message.enabled' : 'pages.alarm.message.disabled',
+            defaultMessage: checked ? '已启用' : '已禁用',
+          }),
+        );
         handleRefresh();
       }
     } catch {
       /* ignore */
+    }
+  };
+
+  /** 直接测试已保存的通道连通性 */
+  const handleTest = async (record: AlarmChannelRecord) => {
+    if (!record.channelType || !record.configJson) {
+      message.error(
+        intl.formatMessage({
+          id: 'pages.alarm.channel.test.noConfig',
+          defaultMessage: '通道配置不完整，无法测试',
+        }),
+      );
+      return;
+    }
+    setTestingId(record.id ?? null);
+    try {
+      const res = await testChannel({
+        channelType: record.channelType,
+        configJson: record.configJson,
+      });
+      if (res?.code === 0 && res.data?.success) {
+        message.success(res.data.message || '测试成功');
+      } else {
+        message.error(res?.data?.message || '测试失败，请检查配置');
+      }
+    } catch {
+      /* errorHandler 已提示 */
+    } finally {
+      setTestingId(null);
     }
   };
 
@@ -167,9 +207,17 @@ const ChannelTab: React.FC = () => {
     {
       title: intl.formatMessage({ id: 'pages.alarm.table.col.action', defaultMessage: '操作' }),
       key: 'action',
-      width: 140,
+      width: 200,
       render: (_: unknown, record: AlarmChannelRecord) => (
         <Space size="small">
+          <Button
+            type="link"
+            size="small"
+            loading={testingId === record.id}
+            onClick={() => handleTest(record)}
+          >
+            {intl.formatMessage({ id: 'pages.alarm.button.test', defaultMessage: '测试' })}
+          </Button>
           <Button type="link" size="small" onClick={() => handleEdit(record)}>
             {intl.formatMessage({ id: 'pages.alarm.button.edit', defaultMessage: '编辑' })}
           </Button>
@@ -205,7 +253,15 @@ const ChannelTab: React.FC = () => {
           size="middle"
           columns={columns}
           dataSource={filteredList}
-          pagination={{ pageSize: 10, showSizeChanger: true, showTotal: (t) => `共 ${t} 条` }}
+          pagination={{
+            pageSize: 10,
+            showSizeChanger: true,
+            showTotal: (t) =>
+              intl.formatMessage(
+                { id: 'pages.alarm.pagination.total', defaultMessage: '共 {total} 条' },
+                { total: t },
+              ),
+          }}
         />
       </Spin>
 

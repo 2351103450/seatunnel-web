@@ -1,6 +1,6 @@
 package org.apache.seatunnel.web.api.controller;
 
-import com.fasterxml.jackson.core.type.TypeReference;
+import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -12,12 +12,14 @@ import org.apache.seatunnel.plugin.alarm.api.AlarmData;
 import org.apache.seatunnel.plugin.alarm.api.AlarmInfo;
 import org.apache.seatunnel.plugin.alarm.api.AlarmResult;
 import org.apache.seatunnel.plugin.alarm.api.AlarmSeverity;
+import org.apache.seatunnel.web.api.alarm.engine.AlarmConfigParser;
 import org.apache.seatunnel.web.api.alarm.plugin.AlarmPluginManager;
 import org.apache.seatunnel.web.api.service.AlarmChannelService;
 import org.apache.seatunnel.web.api.service.AlarmRecordService;
 import org.apache.seatunnel.web.api.service.AlarmRuleService;
 import org.apache.seatunnel.web.dao.entity.AlarmChannelEntity;
 import org.apache.seatunnel.web.dao.entity.AlarmRecordEntity;
+import org.apache.seatunnel.web.dao.entity.AlarmRuleChannelEntity;
 import org.apache.seatunnel.web.dao.entity.AlarmRuleEntity;
 import org.apache.seatunnel.web.spi.bean.entity.Result;
 import org.apache.seatunnel.web.spi.form.FormFieldConfig;
@@ -31,7 +33,6 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -55,8 +56,6 @@ public class AlarmController {
 
     @Resource
     private ObjectMapper objectMapper;
-
-    private static final TypeReference<Map<String, Object>> CONFIG_TYPE = new TypeReference<>() {};
 
     // -------------------- channel types (from SPI) --------------------
 
@@ -110,7 +109,7 @@ public class AlarmController {
             return Result.buildSuc(vo);
         }
         AlarmChannel channel = factory.create();
-        Map<String, String> params = parseConfigToParams(cmd.getConfigJson());
+        Map<String, String> params = AlarmConfigParser.parse(objectMapper, cmd.getConfigJson());
         AlarmData data = AlarmData.builder()
                 .id(0L)
                 .title("SeaTunnel 告警连通性测试")
@@ -142,31 +141,6 @@ public class AlarmController {
         vo.setSuccess(result.isSuccess());
         vo.setMessage(result.getMessage());
         return Result.buildSuc(vo);
-    }
-
-    private Map<String, String> parseConfigToParams(String configJson) {
-        if (configJson == null || configJson.isBlank()) {
-            return new HashMap<>();
-        }
-        try {
-            Map<String, Object> raw = objectMapper.readValue(configJson, CONFIG_TYPE);
-            Map<String, String> params = new HashMap<>();
-            raw.forEach((k, v) -> {
-                if (v == null) return;
-                if (v instanceof CharSequence || v instanceof Number || v instanceof Boolean) {
-                    params.put(k, v.toString());
-                } else {
-                    try {
-                        params.put(k, objectMapper.writeValueAsString(v));
-                    } catch (Exception e) {
-                        params.put(k, v.toString());
-                    }
-                }
-            });
-            return params;
-        } catch (Exception e) {
-            return new HashMap<>();
-        }
     }
 
     // -------------------- rules --------------------
@@ -201,15 +175,29 @@ public class AlarmController {
         return Result.buildSuc(ids);
     }
 
+    @GetMapping("/rules/all-channels")
+    @Operation(summary = "listAllRuleChannels", description = "List all rule-channel links for batch loading")
+    public Result<List<AlarmRuleChannelEntity>> listAllRuleChannels() {
+        return Result.buildSuc(alarmRuleService.listAllChannels());
+    }
+
     // -------------------- records --------------------
 
     @GetMapping("/records")
-    @Operation(summary = "pageRecords", description = "Page alarm delivery records")
-    public Result<List<AlarmRecordEntity>> pageRecords(
+    @Operation(summary = "pageRecords", description = "Page alarm delivery records with optional filters")
+    public Result<RecordPageVO> pageRecords(
             @RequestParam(value = "pageNo", defaultValue = "1") int pageNo,
             @RequestParam(value = "pageSize", defaultValue = "10") int pageSize,
-            @RequestParam(value = "jobInstanceId", required = false) Long jobInstanceId) {
-        return Result.buildSuc(alarmRecordService.page(pageNo, pageSize, jobInstanceId).getRecords());
+            @RequestParam(value = "jobInstanceId", required = false) Long jobInstanceId,
+            @RequestParam(value = "channelType", required = false) String channelType,
+            @RequestParam(value = "severity", required = false) String severity,
+            @RequestParam(value = "success", required = false) Integer success) {
+        IPage<AlarmRecordEntity> page = alarmRecordService.page(
+                pageNo, pageSize, jobInstanceId, channelType, severity, success);
+        RecordPageVO vo = new RecordPageVO();
+        vo.setList(page.getRecords());
+        vo.setTotal(page.getTotal());
+        return Result.buildSuc(vo);
     }
 
     @Data
@@ -229,5 +217,11 @@ public class AlarmController {
     public static class TestChannelResultVO {
         private boolean success;
         private String message;
+    }
+
+    @Data
+    public static class RecordPageVO {
+        private List<AlarmRecordEntity> list;
+        private long total;
     }
 }

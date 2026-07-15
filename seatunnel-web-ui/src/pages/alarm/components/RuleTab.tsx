@@ -3,7 +3,7 @@ import { Button, Input, message, Modal, Space, Spin, Switch, Table, Tag } from '
 import type { ColumnsType } from 'antd/es/table';
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { SEVERITY_CONFIG } from '../constants';
-import { deleteRule, fetchAllJobDefinitions, fetchChannels, fetchRuleChannels, fetchRules, saveRule } from '../service';
+import { deleteRule, fetchAllJobDefinitions, fetchAllRuleChannels, fetchChannels, fetchRuleChannels, fetchRules, saveRule } from '../service';
 import type { AlarmChannelRecord, AlarmModalRef, AlarmOperateType, AlarmRuleRecord } from '../types';
 import AddOrEditRuleModal from './AddOrEditRuleModal';
 
@@ -17,7 +17,16 @@ const RuleTab: React.FC = () => {
   const [ruleList, setRuleList] = useState<AlarmRuleRecord[]>([]);
   const [channelList, setChannelList] = useState<AlarmChannelRecord[]>([]);
   const [jobNameMap, setJobNameMap] = useState<Record<number, string>>({});
+  const [ruleChannelMap, setRuleChannelMap] = useState<Record<number, number[]>>({});
   const [searchKeyword, setSearchKeyword] = useState('');
+
+  const channelMap = useMemo(() => {
+    const map: Record<number, AlarmChannelRecord> = {};
+    channelList.forEach((c) => {
+      if (c.id != null) map[c.id] = c;
+    });
+    return map;
+  }, [channelList]);
 
   const fetchList = async () => {
     setLoading(true);
@@ -32,9 +41,10 @@ const RuleTab: React.FC = () => {
   };
 
   const fetchSupportData = async () => {
-    const [channelsRes, jobs] = await Promise.all([
+    const [channelsRes, jobs, ruleChannelsRes] = await Promise.all([
       fetchChannels().catch(() => null),
       fetchAllJobDefinitions().catch(() => [] as any[]),
+      fetchAllRuleChannels().catch(() => null),
     ]);
     if (channelsRes?.code === 0) {
       setChannelList(channelsRes.data || []);
@@ -44,6 +54,16 @@ const RuleTab: React.FC = () => {
       map[j.id] = j.jobName;
     });
     setJobNameMap(map);
+
+    // 构建规则 -> 通道 id 列表的映射
+    if (ruleChannelsRes?.code === 0 && Array.isArray(ruleChannelsRes.data)) {
+      const rcMap: Record<number, number[]> = {};
+      ruleChannelsRes.data.forEach((link) => {
+        if (!rcMap[link.ruleId]) rcMap[link.ruleId] = [];
+        rcMap[link.ruleId].push(link.channelId);
+      });
+      setRuleChannelMap(rcMap);
+    }
   };
 
   useEffect(() => {
@@ -59,6 +79,19 @@ const RuleTab: React.FC = () => {
 
   const handleRefresh = () => {
     fetchList();
+    // 刷新规则-通道关联映射，确保新增/编辑/删除后列表展示同步
+    fetchAllRuleChannels()
+      .then((res) => {
+        if (res?.code === 0 && Array.isArray(res.data)) {
+          const rcMap: Record<number, number[]> = {};
+          res.data.forEach((link) => {
+            if (!rcMap[link.ruleId]) rcMap[link.ruleId] = [];
+            rcMap[link.ruleId].push(link.channelId);
+          });
+          setRuleChannelMap(rcMap);
+        }
+      })
+      .catch(() => {});
   };
 
   const handleCreate = () => {
@@ -104,7 +137,12 @@ const RuleTab: React.FC = () => {
         try {
           const res = await deleteRule(record.id);
           if (res?.code === 0) {
-            message.success(res.msg || '删除成功');
+            message.success(
+              intl.formatMessage({
+                id: 'pages.alarm.message.deleteSuccess',
+                defaultMessage: '删除成功',
+              }),
+            );
             handleRefresh();
           }
         } catch {
@@ -130,7 +168,7 @@ const RuleTab: React.FC = () => {
       const res = await saveRule({
         id: record.id,
         name: record.name,
-        jobDefinitionId: record.jobDefinitionId ?? null,
+        targetJobs: record.targetJobs,
         triggerStatuses: record.triggerStatuses,
         excludes: record.excludes,
         severity: record.severity,
@@ -139,7 +177,12 @@ const RuleTab: React.FC = () => {
         channelIds,
       });
       if (res?.code === 0) {
-        message.success(checked ? '已启用' : '已禁用');
+        message.success(
+          intl.formatMessage({
+            id: checked ? 'pages.alarm.message.enabled' : 'pages.alarm.message.disabled',
+            defaultMessage: checked ? '已启用' : '已禁用',
+          }),
+        );
         handleRefresh();
       }
     } catch {
@@ -157,15 +200,24 @@ const RuleTab: React.FC = () => {
     },
     {
       title: intl.formatMessage({ id: 'pages.alarm.table.col.targetJob', defaultMessage: '目标任务' }),
-      dataIndex: 'jobDefinitionId',
-      key: 'jobDefinitionId',
+      dataIndex: 'targetJobs',
+      key: 'targetJobs',
       width: 200,
-      render: (id: number | null | undefined) =>
-        id == null ? (
-          <Tag color="purple">全部任务</Tag>
-        ) : (
-          <span title={jobNameMap[id]}>{jobNameMap[id] || `#${id}`}</span>
-        ),
+      render: (targetJobs: string) => {
+        if (!targetJobs) {
+          return <Tag color="purple">{intl.formatMessage({ id: 'pages.alarm.field.allJobs', defaultMessage: '全部任务' })}</Tag>;
+        }
+        const ids = targetJobs.split(',').map((s) => s.trim()).filter(Boolean).map(Number);
+        return (
+          <Space size={[0, 4]} wrap>
+            {ids.map((id) => (
+              <Tag key={id} bordered={false}>
+                {jobNameMap[id] || `#${id}`}
+              </Tag>
+            ))}
+          </Space>
+        );
+      },
     },
     {
       title: intl.formatMessage({ id: 'pages.alarm.table.col.triggerStatuses', defaultMessage: '触发状态' }),
@@ -186,6 +238,27 @@ const RuleTab: React.FC = () => {
         ) : (
           '-'
         ),
+    },
+    {
+      title: intl.formatMessage({ id: 'pages.alarm.table.col.linkedChannels', defaultMessage: '关联通道' }),
+      key: 'linkedChannels',
+      width: 200,
+      render: (_: unknown, record: AlarmRuleRecord) => {
+        const channelIds = (record.id != null && ruleChannelMap[record.id]) || [];
+        if (channelIds.length === 0) return '-';
+        return (
+          <Space size={[0, 4]} wrap>
+            {channelIds.map((cid) => {
+              const ch = channelMap[cid];
+              return (
+                <Tag key={cid} bordered={false} color={ch?.enabled === 0 ? 'default' : 'blue'}>
+                  {ch?.name || `#${cid}`}
+                </Tag>
+              );
+            })}
+          </Space>
+        );
+      },
     },
     {
       title: intl.formatMessage({ id: 'pages.alarm.table.col.severity', defaultMessage: '严重级别' }),
@@ -251,7 +324,15 @@ const RuleTab: React.FC = () => {
           size="middle"
           columns={columns}
           dataSource={filteredList}
-          pagination={{ pageSize: 10, showSizeChanger: true, showTotal: (t) => `共 ${t} 条` }}
+          pagination={{
+            pageSize: 10,
+            showSizeChanger: true,
+            showTotal: (t) =>
+              intl.formatMessage(
+                { id: 'pages.alarm.pagination.total', defaultMessage: '共 {total} 条' },
+                { total: t },
+              ),
+          }}
         />
       </Spin>
 

@@ -4,7 +4,8 @@ import { ALARM_API_PREFIX } from './constants';
 import type {
   AlarmChannelCommand,
   AlarmChannelRecord,
-  AlarmRecordRecord,
+  AlarmRecordPage,
+  AlarmRecordQuery,
   AlarmRuleCommand,
   AlarmRuleRecord,
   ChannelTypeVO,
@@ -69,18 +70,26 @@ export async function fetchRuleChannels(
   return HttpUtils.get(`${ALARM_API_PREFIX}/rules/${id}/channels`);
 }
 
-/** 告警记录分页（后端仅返回当页列表，无 total） */
-export async function fetchAlarmRecords(params: {
-  pageNo: number;
-  pageSize: number;
-  jobInstanceId?: number;
-}): Promise<ApiResponse<AlarmRecordRecord[]>> {
-  const { pageNo, pageSize, jobInstanceId } = params;
-  let url = `${ALARM_API_PREFIX}/records?pageNo=${pageNo}&pageSize=${pageSize}`;
-  if (jobInstanceId !== undefined && jobInstanceId !== null) {
-    url += `&jobInstanceId=${jobInstanceId}`;
-  }
-  return HttpUtils.get(url);
+/** 所有规则-通道关联（批量加载，用于规则列表展示关联通道） */
+export async function fetchAllRuleChannels(): Promise<
+  ApiResponse<Array<{ ruleId: number; channelId: number }>>
+> {
+  return HttpUtils.get(`${ALARM_API_PREFIX}/rules/all-channels`);
+}
+
+/** 告警记录分页（含 total 和可选筛选） */
+export async function fetchAlarmRecords(
+  params: AlarmRecordQuery,
+): Promise<ApiResponse<AlarmRecordPage>> {
+  const { pageNo, pageSize, jobInstanceId, channelType, severity, success } = params;
+  const searchParams = new URLSearchParams();
+  searchParams.set('pageNo', String(pageNo));
+  searchParams.set('pageSize', String(pageSize));
+  if (jobInstanceId != null) searchParams.set('jobInstanceId', String(jobInstanceId));
+  if (channelType) searchParams.set('channelType', channelType);
+  if (severity) searchParams.set('severity', severity);
+  if (success != null) searchParams.set('success', String(success));
+  return HttpUtils.get(`${ALARM_API_PREFIX}/records?${searchParams.toString()}`);
 }
 
 // -------------------- 任务定义合并拉取 --------------------

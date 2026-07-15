@@ -1,6 +1,5 @@
 package org.apache.seatunnel.web.api.alarm.engine;
 
-import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.seatunnel.plugin.alarm.api.AlarmChannel;
@@ -20,7 +19,6 @@ import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Component;
 
 import java.util.Date;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -39,9 +37,6 @@ import java.util.Map;
 @Component
 @Slf4j
 public class AlarmRuleEngine {
-
-    private static final TypeReference<Map<String, Object>> CONFIG_TYPE = new TypeReference<>() {
-    };
 
     private final AlarmRuleTargetRepository ruleRepository;
 
@@ -135,7 +130,7 @@ public class AlarmRuleEngine {
             log.warn("No alarm channel registered for type {}, jobId={}", ch.getChannelType(),
                     event.getJobInstanceId());
         } else {
-            Map<String, String> params = parseConfigToParams(ch.getConfigJson());
+            Map<String, String> params = AlarmConfigParser.parse(objectMapper, ch.getConfigJson());
             AlarmInfo info = AlarmInfo.builder()
                     .alarmParams(params)
                     .alarmData(alarmData)
@@ -163,39 +158,6 @@ public class AlarmRuleEngine {
         } catch (Exception e) {
             log.warn("Persist alarm record failed, jobId={}, channelId={}",
                     event.getJobInstanceId(), ch.getChannelId(), e);
-        }
-    }
-
-    /**
-     * Convert the stored channel config JSON into a flat string map (DS
-     * AlertInfo#alertParams style): scalars become their string form, nested
-     * maps/lists are kept as JSON strings.
-     */
-    private Map<String, String> parseConfigToParams(String configJson) {
-        if (configJson == null || configJson.isBlank()) {
-            return new HashMap<>();
-        }
-        try {
-            Map<String, Object> raw = objectMapper.readValue(configJson, CONFIG_TYPE);
-            Map<String, String> params = new HashMap<>();
-            raw.forEach((k, v) -> {
-                if (v == null) {
-                    return;
-                }
-                if (v instanceof CharSequence || v instanceof Number || v instanceof Boolean) {
-                    params.put(k, v.toString());
-                } else {
-                    try {
-                        params.put(k, objectMapper.writeValueAsString(v));
-                    } catch (Exception e) {
-                        params.put(k, v.toString());
-                    }
-                }
-            });
-            return params;
-        } catch (Exception e) {
-            log.warn("Failed to parse alarm channel config: {}", configJson, e);
-            return new HashMap<>();
         }
     }
 }

@@ -1,3 +1,5 @@
+import type { Variants } from 'framer-motion';
+
 export const ALARM_API_PREFIX = '/api/v1/alarm';
 
 export const PAGE_DEFAULT_PAGINATION = {
@@ -77,8 +79,6 @@ export const JOB_STATUS_TAG_COLOR: Record<string, string> = {
   DOING_SAVEPOINT: 'warning',
   UNKNOWABLE: 'default',
 };
-
-import type { Variants } from 'framer-motion';
 
 /** 通道类型展示图标颜色（统一主色） */
 export const CHANNEL_TYPE_COLOR = 'hsl(231 48% 48%)';

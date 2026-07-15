@@ -121,6 +121,22 @@ export interface AlarmRecordRecord {
   updateTime?: string;
 }
 
+/** 告警记录分页结果，对应 AlarmController.RecordPageVO */
+export interface AlarmRecordPage {
+  list: AlarmRecordRecord[];
+  total: number;
+}
+
+/** 告警记录查询参数 */
+export interface AlarmRecordQuery {
+  pageNo: number;
+  pageSize: number;
+  jobInstanceId?: number;
+  channelType?: string;
+  severity?: string;
+  success?: number;
+}
+
 /** 保存规则的请求体，对应 AlarmRuleService.AlarmRuleCommand */
 export interface AlarmRuleCommand {
   id?: number | null;

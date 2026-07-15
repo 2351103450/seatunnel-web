@@ -20,6 +20,9 @@ public interface AlarmRuleService {
 
     List<AlarmRuleChannelEntity> listChannels(Long ruleId);
 
+    /** Returns all rule-channel links (for batch loading channel associations). */
+    List<AlarmRuleChannelEntity> listAllChannels();
+
     @Data
     class AlarmRuleCommand {
         private Long id;

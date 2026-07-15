@@ -83,6 +83,11 @@ public class AlarmRuleServiceImpl implements AlarmRuleService {
         return alarmRuleChannelMapper.selectList(w);
     }
 
+    @Override
+    public List<AlarmRuleChannelEntity> listAllChannels() {
+        return alarmRuleChannelMapper.selectList(null);
+    }
+
     private void relinkChannels(Long ruleId, List<Long> channelIds) {
         LambdaQueryWrapper<AlarmRuleChannelEntity> w = new LambdaQueryWrapper<>();
         w.eq(AlarmRuleChannelEntity::getRuleId, ruleId);

@@ -17,10 +17,25 @@ public class AlarmRecordServiceImpl implements AlarmRecordService {
 
     @Override
     public IPage<AlarmRecordEntity> page(int pageNo, int pageSize, Long jobInstanceId) {
+        return page(pageNo, pageSize, jobInstanceId, null, null, null);
+    }
+
+    @Override
+    public IPage<AlarmRecordEntity> page(int pageNo, int pageSize, Long jobInstanceId,
+                                           String channelType, String severity, Integer success) {
         Page<AlarmRecordEntity> page = new Page<>(pageNo < 1 ? 1 : pageNo, pageSize < 1 ? 10 : pageSize);
         LambdaQueryWrapper<AlarmRecordEntity> w = new LambdaQueryWrapper<>();
         if (jobInstanceId != null) {
             w.eq(AlarmRecordEntity::getJobInstanceId, jobInstanceId);
+        }
+        if (channelType != null && !channelType.isBlank()) {
+            w.eq(AlarmRecordEntity::getChannelType, channelType);
+        }
+        if (severity != null && !severity.isBlank()) {
+            w.eq(AlarmRecordEntity::getSeverity, severity);
+        }
+        if (success != null) {
+            w.eq(AlarmRecordEntity::getSuccess, success);
         }
         w.orderByDesc(AlarmRecordEntity::getCreateTime);
         return alarmRecordMapper.selectPage(page, w);
