@@ -152,6 +152,11 @@ function SqlTransformPanel({
       heroDesc={description}
       heroTag="SQL"
       onClose={onClose}
+      footer={
+        <button type="button" className="workflow-panel__btn workflow-panel__btn--ghost" onClick={onClose}>
+          关闭
+        </button>
+      }
     >
       <section className="workflow-panel__section">
         <div className="workflow-panel__section-head">
