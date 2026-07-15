@@ -84,6 +84,12 @@ export default [
     component: './metrics',
   },
   {
+    icon: 'bell',
+    name: 'alarm',
+    path: '/alarm',
+    component: './alarm',
+  },
+  {
     icon: 'read',
     name: 'knowledge-management',
     path: '/knowledge-management',

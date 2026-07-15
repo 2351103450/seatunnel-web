@@ -47,21 +47,19 @@ public class AlarmRuleTargetRepositoryImpl implements AlarmRuleTargetRepository 
             return Collections.emptyList();
         }
 
+        // Load all enabled rules and filter targetJobs / excludes in Java
+        // (targetJobs is a comma-separated string, precise matching in Java)
         LambdaQueryWrapper<AlarmRuleEntity> ruleWrapper = new LambdaQueryWrapper<>();
-        ruleWrapper.eq(AlarmRuleEntity::getEnabled, 1)
-                .and(q -> q.eq(jobDefinitionId != null, AlarmRuleEntity::getJobDefinitionId, jobDefinitionId)
-                        .or()
-                        .isNull(AlarmRuleEntity::getJobDefinitionId));
+        ruleWrapper.eq(AlarmRuleEntity::getEnabled, 1);
 
         List<AlarmRuleEntity> rules = ruleMapper.selectList(ruleWrapper);
         if (rules == null || rules.isEmpty()) {
             return Collections.emptyList();
         }
 
-        // Precise status matching in Java to avoid SQL LIKE false positives.
         List<AlarmRuleEntity> matched = rules.stream()
                 .filter(r -> statusMatches(r.getTriggerStatuses(), newStatus))
-                // Exclude rules that explicitly black-list this task definition.
+                .filter(r -> targetJobsMatches(r.getTargetJobs(), jobDefinitionId))
                 .filter(r -> !excludesContains(r.getExcludes(), jobDefinitionId))
                 .toList();
         if (matched.isEmpty()) {
@@ -103,6 +101,7 @@ public class AlarmRuleTargetRepositoryImpl implements AlarmRuleTargetRepository 
         if (record == null) {
             return;
         }
+        record.initInsert();
         recordMapper.insert(record);
     }
 
@@ -142,6 +141,24 @@ public class AlarmRuleTargetRepositoryImpl implements AlarmRuleTargetRepository 
             return false;
         }
         return Arrays.stream(excludes.split(","))
+                .map(String::trim)
+                .filter(s -> !s.isEmpty())
+                .anyMatch(s -> s.equals(jobDefinitionId.toString()));
+    }
+
+    /**
+     * Check if targetJobs matches the given jobDefinitionId.
+     * targetJobs is null → matches all jobs.
+     * targetJobs is a comma-separated list → matches if it contains jobDefinitionId.
+     */
+    private boolean targetJobsMatches(String targetJobs, Long jobDefinitionId) {
+        if (targetJobs == null || targetJobs.isBlank()) {
+            return true;
+        }
+        if (jobDefinitionId == null) {
+            return false;
+        }
+        return Arrays.stream(targetJobs.split(","))
                 .map(String::trim)
                 .filter(s -> !s.isEmpty())
                 .anyMatch(s -> s.equals(jobDefinitionId.toString()));

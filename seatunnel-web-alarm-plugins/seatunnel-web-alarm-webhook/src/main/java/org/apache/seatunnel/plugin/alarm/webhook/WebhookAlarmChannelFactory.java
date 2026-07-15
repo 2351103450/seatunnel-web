@@ -30,11 +30,14 @@ public class WebhookAlarmChannelFactory implements AlarmChannelFactory {
     @Override
     public List<FormFieldConfig> params() {
         return List.of(
-                buildField("url", "Webhook 地址", FieldType.INPUT, "https://example.com/alarm", null),
+                buildField("url", "Webhook 地址", FieldType.INPUT, "https://oapi.dingtalk.com/robot/send?access_token=xxx", null),
                 buildField("method", "HTTP 方法", FieldType.INPUT, null, "POST"),
                 buildField("timeoutMs", "超时(ms)", FieldType.NUMBER, null, "10000"),
                 buildField("headers", "请求头(JSON)", FieldType.TEXTAREA,
-                        "{\"Authorization\":\"Bearer xxx\"}", null)
+                        "{\"Authorization\":\"Bearer xxx\"}", null),
+                buildField("bodyTemplate", "请求体模板", FieldType.TEXTAREA,
+                        "{\"msgtype\":\"text\",\"text\":{\"content\":\"${title}\\n${content}\"}}",
+                        null)
         );
     }
 
