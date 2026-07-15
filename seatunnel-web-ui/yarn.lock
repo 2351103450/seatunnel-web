@@ -2019,7 +2019,7 @@
   resolved "https://registry.npmmirror.com/@chevrotain/utils/-/utils-11.1.2.tgz#a0b13637acc0a2933d8a2edeba4bf1da789c565d"
   integrity sha512-4mudFAQ6H+MqBTfqLmU7G1ZwRzCLfJEooL/fsF6rCX5eePMbGhoy5n4g+G4vlh2muDcsCTJtL+uKbOzWxs5LHA==
 
-"@codemirror/autocomplete@^6.20.3":
+"@codemirror/autocomplete@^6.0.0", "@codemirror/autocomplete@^6.20.3":
   version "6.20.3"
   resolved "https://registry.npmmirror.com/@codemirror/autocomplete/-/autocomplete-6.20.3.tgz#696b740312c6a962e14567b49a3661b5924bc5ae"
   integrity sha512-tlosUqb+3BbxCxZdu4tKeRghPFC+QM7q4X5YhKV2eCmPG+1r2F3f4AaSz5sCrFqUtX4Jh20VFTKecl16MgiV9g==
@@ -2039,6 +2039,18 @@
     "@codemirror/view" "^6.27.0"
     "@lezer/common" "^1.1.0"
 
+"@codemirror/lang-sql@^6.10.0":
+  version "6.10.0"
+  resolved "https://registry.npmmirror.com/@codemirror/lang-sql/-/lang-sql-6.10.0.tgz#49bfbf6cf31516a99e674da9a399f4426101a95a"
+  integrity sha512-6ayPkEd/yRw0XKBx5uAiToSgGECo/GY2NoJIHXIIQh1EVwLuKoU8BP/qK0qH5NLXAbtJRLuT73hx7P9X34iO4w==
+  dependencies:
+    "@codemirror/autocomplete" "^6.0.0"
+    "@codemirror/language" "^6.0.0"
+    "@codemirror/state" "^6.0.0"
+    "@lezer/common" "^1.2.0"
+    "@lezer/highlight" "^1.0.0"
+    "@lezer/lr" "^1.0.0"
+
 "@codemirror/language@^6.0.0", "@codemirror/language@^6.12.3":
   version "6.12.3"
   resolved "https://registry.npmmirror.com/@codemirror/language/-/language-6.12.3.tgz#0b220182973a4c19850b29f7dd82aec1bbae3d7e"
@@ -2051,29 +2063,19 @@
     "@lezer/lr" "^1.0.0"
     style-mod "^4.0.0"
 
-"@codemirror/state@^6.0.0", "@codemirror/state@^6.6.0":
-  version "6.6.0"
-  resolved "https://registry.npmmirror.com/@codemirror/state/-/state-6.6.0.tgz#b88dbdc14aea4ace3c6d67bb77fe28bb84e4394e"
-  integrity sha512-4nbvra5R5EtiCzr9BTHiTLc+MLXK2QGiAVYMyi8PkQd3SR+6ixar/Q/01Fa21TBIDOZXgeWV4WppsQolSreAPQ==
+"@codemirror/state@6.7.1", "@codemirror/state@^6.0.0", "@codemirror/state@^6.6.0", "@codemirror/state@^6.7.0", "@codemirror/state@^6.7.1":
+  version "6.7.1"
+  resolved "https://registry.npmmirror.com/@codemirror/state/-/state-6.7.1.tgz#9e88a17448c1dbc7b50acbeeec979ed7ccf1d6fc"
+  integrity sha512-9QzNDgE4EYDnAHfrTlR2lwiPciiOymLtwKK+8yHQzCc7GXhAP9xdEbEJFy2IWB1j9UGUl9BsgMmTo/ImA02T7A==
   dependencies:
     "@marijn/find-cluster-break" "^1.0.0"
 
-"@codemirror/view@^6.17.0":
-  version "6.43.1"
-  resolved "https://registry.npmmirror.com/@codemirror/view/-/view-6.43.1.tgz#bfe3ea568e38812631749c1b6c9c7869784143a5"
-  integrity sha512-+BIjw/AG3tDQ4pJgTLPYdAW25eDE66YsvM4LKyVPgGzVgZ4a9Wj1SRX8kPVKgBDdPt8oHtZ15F0qx7p0oOHdHw==
+"@codemirror/view@6.43.6", "@codemirror/view@^6.17.0", "@codemirror/view@^6.23.0", "@codemirror/view@^6.27.0", "@codemirror/view@^6.43.6":
+  version "6.43.6"
+  resolved "https://registry.npmmirror.com/@codemirror/view/-/view-6.43.6.tgz#81e4eeb2855e7cb6c62305fba8df319b5476280c"
+  integrity sha512-EVunGSYN1wz1p75WY1s3Xg7t3i8Yol0kGZGizNdX9BUFgMFILYVe8/u6EVpo7Ff5PwbZuILb4QAq7IZoKzIEQA==
   dependencies:
-    "@codemirror/state" "^6.6.0"
-    crelt "^1.0.6"
-    style-mod "^4.1.0"
-    w3c-keyname "^2.2.4"
-
-"@codemirror/view@^6.23.0", "@codemirror/view@^6.27.0", "@codemirror/view@^6.41.0":
-  version "6.41.0"
-  resolved "https://registry.npmmirror.com/@codemirror/view/-/view-6.41.0.tgz#482cbcb5f8f90131908e5f9c0e2f4681e0684db0"
-  integrity sha512-6H/qadXsVuDY219Yljhohglve8xf4B8xJkVOEWfA5uiYKiTFppjqsvsfR5iPA0RbvRBoOyTZpbLIxe9+0UR8xA==
-  dependencies:
-    "@codemirror/state" "^6.6.0"
+    "@codemirror/state" "^6.7.0"
     crelt "^1.0.6"
     style-mod "^4.1.0"
     w3c-keyname "^2.2.4"
@@ -3384,7 +3386,7 @@
     "@jridgewell/resolve-uri" "^3.1.0"
     "@jridgewell/sourcemap-codec" "^1.4.14"
 
-"@lezer/common@^1.0.0", "@lezer/common@^1.1.0", "@lezer/common@^1.3.0", "@lezer/common@^1.5.0":
+"@lezer/common@^1.0.0", "@lezer/common@^1.1.0", "@lezer/common@^1.2.0", "@lezer/common@^1.3.0", "@lezer/common@^1.5.0":
   version "1.5.2"
   resolved "https://registry.npmmirror.com/@lezer/common/-/common-1.5.2.tgz#d6840db13779e3f1b42e70c9a97c4086d12fae22"
   integrity sha512-sxQE460fPZyU3sdc8lafxiPwJHBzZRy/udNFynGQky1SePYBdhkBl1kOagA9uT3pxR8K09bOrmTUqA9wb/PjSQ==

@@ -1,10 +1,10 @@
-import { Button, Input, Popover, Select, Space } from "antd";
-import { Sparkles, Wand2 } from "lucide-react";
-
-const { TextArea } = Input;
+import SqlCodeEditor from '@/components/SqlCodeEditor';
+import { Button, Popover, Select, Space } from 'antd';
+import { Sparkles, Wand2 } from 'lucide-react';
 
 interface Props {
   dataSourceId?: string;
+  dbType?: string;
   sql: string;
   tableOptions: any[];
   sqlPopoverOpen: boolean;
@@ -19,6 +19,7 @@ interface Props {
 export default function SinkSqlEditorSection(props: Props) {
   const {
     dataSourceId,
+    dbType,
     sql,
     tableOptions,
     sqlPopoverOpen,
@@ -32,10 +33,8 @@ export default function SinkSqlEditorSection(props: Props) {
 
   const sqlPopoverContent = (
     <div style={{ width: 320 }}>
-      <Space direction="vertical" style={{ width: "100%" }} size={12}>
-        <div style={{ fontSize: 13, color: "#667085" }}>
-          选择一张目标表，自动生成写入 SQL 模板
-        </div>
+      <Space direction="vertical" style={{ width: '100%' }} size={12}>
+        <div style={{ fontSize: 13, color: '#667085' }}>选择一张目标表，自动生成写入 SQL 模板</div>
 
         <Select
           size="small"
@@ -44,11 +43,11 @@ export default function SinkSqlEditorSection(props: Props) {
           placeholder="请选择目标表"
           showSearch
           optionFilterProp="rawLabel"
-          style={{ width: "100%" }}
+          style={{ width: '100%' }}
           onChange={(value) => setSelectedSqlTable(value)}
         />
 
-        <Space style={{ justifyContent: "flex-end", width: "100%" }}>
+        <Space style={{ justifyContent: 'flex-end', width: '100%' }}>
           <Button size="small" onClick={() => setSqlPopoverOpen(false)}>
             取消
           </Button>
@@ -70,31 +69,31 @@ export default function SinkSqlEditorSection(props: Props) {
     <div className="workflow-panel__field workflow-panel__field--full">
       <div
         style={{
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "space-between",
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
           marginBottom: 10,
         }}
       >
         <div
           style={{
-            display: "flex",
-            alignItems: "center",
+            display: 'flex',
+            alignItems: 'center',
             gap: 8,
             fontSize: 13,
-            color: "#667085",
+            color: '#667085',
           }}
         >
           <span
             style={{
-              display: "inline-flex",
-              alignItems: "center",
-              justifyContent: "center",
+              display: 'inline-flex',
+              alignItems: 'center',
+              justifyContent: 'center',
               width: 22,
               height: 22,
               borderRadius: 7,
-              background: "rgba(99, 102, 241, 0.08)",
-              color: "#667085",
+              background: 'rgba(99, 102, 241, 0.08)',
+              color: '#667085',
             }}
           >
             <Sparkles size={13} />
@@ -110,24 +109,21 @@ export default function SinkSqlEditorSection(props: Props) {
           open={sqlPopoverOpen}
           onOpenChange={setSqlPopoverOpen}
         >
-          <Button
-            size="small"
-            type="text"
-            disabled={!dataSourceId}
-            icon={<Wand2 size={14} />}
-          />
+          <Button size="small" type="text" disabled={!dataSourceId} icon={<Wand2 size={14} />} />
         </Popover>
       </div>
 
-      <TextArea
+      <SqlCodeEditor
         value={sql}
-        onChange={(e) => onSqlChange(e.target.value)}
+        onChange={onSqlChange}
+        dbType={dbType}
+        tableOptions={tableOptions}
         placeholder={`请输入自定义写入 SQL，例如：
 INSERT INTO target_table (id, name, dt)
 SELECT id, name, dt
 FROM temp_view`}
-        autoSize={{ minRows: 5, maxRows: 12 }}
-        className="workflow-panel__antd-textarea"
+        minRows={5}
+        maxRows={12}
       />
     </div>
   );

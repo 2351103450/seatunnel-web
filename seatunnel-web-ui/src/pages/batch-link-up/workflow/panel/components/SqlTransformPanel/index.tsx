@@ -1,8 +1,7 @@
-import { Button, Input, message } from "antd";
-import { memo, useEffect, useMemo } from "react";
-import PanelShell from "../PanelShell";
-
-const { TextArea } = Input;
+import SqlCodeEditor from '@/components/SqlCodeEditor';
+import { Button, message } from 'antd';
+import { memo, useEffect, useMemo } from 'react';
+import PanelShell from '../PanelShell';
 
 interface Props {
   selectedNode: any;
@@ -34,17 +33,12 @@ function SqlTransformPanel({
 }: Props) {
   const nodeId = selectedNode?.id;
 
-  const title =
-    selectedNode?.data?.title ||
-    selectedNode?.data?.label ||
-    "SQL 脚本";
+  const title = selectedNode?.data?.title || selectedNode?.data?.label || 'SQL 脚本';
 
-  const description =
-    selectedNode?.data?.description ||
-    "支持自定义转换 SQL";
+  const description = selectedNode?.data?.description || '支持自定义转换 SQL';
 
   const config = selectedNode?.data?.config || {};
-  const sql = config.sql || "";
+  const sql = config.sql || '';
 
   const upstreamSchema = useMemo(() => {
     if (!nodeId) {
@@ -90,14 +84,14 @@ function SqlTransformPanel({
 
   const handleApply = () => {
     if (!nodeId) {
-      message.warning("当前节点不存在");
+      message.warning('当前节点不存在');
       return;
     }
 
-    const nextSql = String(sql || "").trim();
+    const nextSql = String(sql || '').trim();
 
     if (!nextSql) {
-      message.warning("请输入 SQL 转换脚本");
+      message.warning('请输入 SQL 转换脚本');
       return;
     }
 
@@ -105,19 +99,18 @@ function SqlTransformPanel({
      * 参考 FieldMapper：
      * 从当前画布连接关系重新获取上下游节点。
      */
-    const syncedPluginConfig =
-      syncTransformPluginConfig(nodeId) || {};
+    const syncedPluginConfig = syncTransformPluginConfig(nodeId) || {};
 
     const pluginInput = syncedPluginConfig.pluginInput;
     const pluginOutput = syncedPluginConfig.pluginOutput;
 
     if (!pluginInput) {
-      message.warning("请先连接上游节点");
+      message.warning('请先连接上游节点');
       return;
     }
 
     if (!pluginOutput) {
-      message.warning("请先连接下游节点");
+      message.warning('请先连接下游节点');
       return;
     }
 
@@ -146,7 +139,7 @@ function SqlTransformPanel({
     refreshNodeSchema(nodeId);
     refreshDownstreamSchemas(nodeId);
 
-    message.success("SQL 脚本已应用");
+    message.success('SQL 脚本已应用');
   };
 
   return (
@@ -162,32 +155,23 @@ function SqlTransformPanel({
     >
       <section className="workflow-panel__section">
         <div className="workflow-panel__section-head">
-          <div className="workflow-panel__section-title">
-            脚本配置
-          </div>
+          <div className="workflow-panel__section-title">脚本配置</div>
 
-          <div className="workflow-panel__section-tip">
-            SQL
-          </div>
+          <div className="workflow-panel__section-tip">SQL</div>
         </div>
 
-        <TextArea
+        <SqlCodeEditor
           value={sql}
-          onChange={(event) =>
-            handleSqlChange(event.target.value)
-          }
+          onChange={handleSqlChange}
+          dbType={selectedNode?.data?.dbType}
+          schemaFields={upstreamSchema}
           placeholder="请输入 SQL 转换脚本"
-          autoSize={{
-            minRows: 10,
-            maxRows: 16,
-          }}
+          minRows={10}
+          maxRows={16}
         />
 
         <div style={{ marginTop: 12 }}>
-          <Button
-            type="primary"
-            onClick={handleApply}
-          >
+          <Button type="primary" onClick={handleApply}>
             应用脚本
           </Button>
         </div>
