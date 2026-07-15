@@ -1,5 +1,6 @@
 import {
   autocompletion,
+  closeCompletion,
   completionKeymap,
   completionStatus,
   startCompletion,
@@ -24,9 +25,11 @@ import {
   type SQLNamespace,
 } from '@codemirror/lang-sql';
 import { tags } from '@lezer/highlight';
+import { Button, Modal } from 'antd';
 import classNames from 'classnames';
+import { Maximize2 } from 'lucide-react';
 import type { CSSProperties } from 'react';
-import { useEffect, useMemo, useRef } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import './index.less';
 
 type SqlSchemaField = {
@@ -54,10 +57,14 @@ interface SqlCodeEditorProps {
   maxRows?: number;
   className?: string;
   showLineNumbers?: boolean;
+  expandable?: boolean;
+  fullscreenTitle?: string;
 }
 
 const DEFAULT_MIN_ROWS = 5;
 const DEFAULT_MAX_ROWS = 12;
+const FULLSCREEN_MIN_ROWS = 18;
+const FULLSCREEN_MAX_ROWS = 28;
 const LINE_HEIGHT = 24;
 const VERTICAL_PADDING = 20;
 const SQL_COMPLETION_TOKEN_PATTERN = /(?:\$\{var:)?[A-Za-z_$][\w$:{.-]*$/;
@@ -391,22 +398,32 @@ function buildSqlExtensions(props: {
   ];
 }
 
-function shouldOpenCompletion(view: EditorView): boolean {
-  if (!view.hasFocus || view.composing || completionStatus(view.state)) {
-    return false;
-  }
-
+function getSqlCompletionToken(view: EditorView): string {
   const head = view.state.selection.main.head;
   const line = view.state.doc.lineAt(head);
   const beforeCursor = view.state.sliceDoc(line.from, head);
-  const token = beforeCursor.match(SQL_COMPLETION_TOKEN_PATTERN)?.[0];
 
-  return Boolean(token);
+  return beforeCursor.match(SQL_COMPLETION_TOKEN_PATTERN)?.[0] || '';
 }
 
-function requestSqlCompletion(view: EditorView): void {
+function syncSqlCompletion(view: EditorView): void {
   window.setTimeout(() => {
-    if (shouldOpenCompletion(view)) {
+    if (!view.dom.isConnected || !view.hasFocus || view.composing) {
+      return;
+    }
+
+    const token = getSqlCompletionToken(view);
+    const status = completionStatus(view.state);
+
+    if (!token) {
+      if (status) {
+        closeCompletion(view);
+      }
+
+      return;
+    }
+
+    if (!status) {
       startCompletion(view);
     }
   }, 0);
@@ -487,11 +504,15 @@ export default function SqlCodeEditor({
   maxRows = DEFAULT_MAX_ROWS,
   className,
   showLineNumbers = true,
+  expandable = true,
+  fullscreenTitle = '编辑 SQL',
 }: SqlCodeEditorProps) {
   const containerRef = useRef<HTMLDivElement | null>(null);
   const viewRef = useRef<EditorView | null>(null);
   const onChangeRef = useRef(onChange);
   const sqlCompartmentRef = useRef(new Compartment());
+  const [fullscreenOpen, setFullscreenOpen] = useState(false);
+  const [fullscreenValue, setFullscreenValue] = useState(value || '');
 
   const minHeight = Math.max(minRows, 1) * LINE_HEIGHT + VERTICAL_PADDING;
   const maxHeight = Math.max(maxRows, minRows) * LINE_HEIGHT + VERTICAL_PADDING;
@@ -510,6 +531,27 @@ export default function SqlCodeEditor({
   useEffect(() => {
     onChangeRef.current = onChange;
   }, [onChange]);
+
+  useEffect(() => {
+    if (!fullscreenOpen) {
+      setFullscreenValue(value || '');
+    }
+  }, [fullscreenOpen, value]);
+
+  const handleOpenFullscreen = () => {
+    setFullscreenValue(value || '');
+    setFullscreenOpen(true);
+  };
+
+  const handleCancelFullscreen = () => {
+    setFullscreenValue(value || '');
+    setFullscreenOpen(false);
+  };
+
+  const handleApplyFullscreen = () => {
+    onChangeRef.current(fullscreenValue);
+    setFullscreenOpen(false);
+  };
 
   useEffect(() => {
     if (!containerRef.current || viewRef.current) {
@@ -558,7 +600,7 @@ export default function SqlCodeEditor({
           }
 
           onChangeRef.current(update.state.doc.toString());
-          requestSqlCompletion(update.view);
+          syncSqlCompletion(update.view);
         }),
       ],
     });
@@ -617,9 +659,69 @@ export default function SqlCodeEditor({
   }, [value]);
 
   return (
-    <div className={classNames('sql-code-editor', className)} style={editorStyle}>
-      <div ref={containerRef} />
-      {showPlaceholder && <div className="sql-code-editor__placeholder">{placeholder}</div>}
-    </div>
+    <>
+      <div
+        className={classNames(
+          'sql-code-editor',
+          {
+            'sql-code-editor--expandable': expandable,
+          },
+          className,
+        )}
+        style={editorStyle}
+      >
+        <div ref={containerRef} />
+        {showPlaceholder && <div className="sql-code-editor__placeholder">{placeholder}</div>}
+        {expandable ? (
+          <Button
+            type="text"
+            size="small"
+            className="sql-code-editor__expand-btn"
+            icon={<Maximize2 size={14} />}
+            aria-label="展开 SQL 编辑器"
+            title="展开编辑"
+            onClick={handleOpenFullscreen}
+          />
+        ) : null}
+      </div>
+
+      {expandable ? (
+        <Modal
+          open={fullscreenOpen}
+          title={fullscreenTitle}
+          centered
+          width="min(920px, calc(100vw - 48px))"
+          className="sql-code-editor-modal"
+          destroyOnClose
+          maskClosable={false}
+          onCancel={handleCancelFullscreen}
+          footer={
+            <div className="sql-code-editor-modal__footer">
+              <Button onClick={handleCancelFullscreen}>取消</Button>
+              <Button type="primary" onClick={handleApplyFullscreen}>
+                应用
+              </Button>
+            </div>
+          }
+        >
+          <div className="sql-code-editor-modal__body">
+            <SqlCodeEditor
+              value={fullscreenValue}
+              onChange={(nextValue) => setFullscreenValue(nextValue)}
+              placeholder={placeholder}
+              dbType={dbType}
+              schemaFields={schemaFields}
+              tableOptions={tableOptions}
+              variables={variables}
+              minRows={FULLSCREEN_MIN_ROWS}
+              maxRows={FULLSCREEN_MAX_ROWS}
+              className="sql-code-editor--fullscreen"
+              showLineNumbers={showLineNumbers}
+              expandable={false}
+            />
+          </div>
+        </Modal>
+      ) : null}
+    </>
   );
 }

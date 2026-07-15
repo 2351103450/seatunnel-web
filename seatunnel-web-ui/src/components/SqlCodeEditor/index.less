@@ -29,6 +29,54 @@
     min-height: calc(var(--sql-editor-min-height) - 20px);
   }
 
+  &--expandable {
+    .cm-line {
+      padding-right: 44px;
+    }
+  }
+
+  &--fullscreen {
+    border-radius: 14px;
+
+    .cm-editor {
+      min-height: min(62vh, var(--sql-editor-min-height));
+      max-height: min(62vh, var(--sql-editor-max-height));
+      border-radius: 14px;
+    }
+
+    .cm-scroller {
+      max-height: min(62vh, var(--sql-editor-max-height));
+      border-radius: 14px;
+    }
+  }
+
+  &__expand-btn {
+    position: absolute;
+    top: 8px;
+    right: 8px;
+    z-index: 3;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 28px;
+    height: 28px;
+    border-radius: 9px;
+    color: #667085;
+    background: rgba(255, 255, 255, 0.72);
+    box-shadow: 0 2px 8px rgba(15, 23, 42, 0.04);
+    transition:
+      background-color 0.16s ease,
+      color 0.16s ease,
+      box-shadow 0.16s ease;
+
+    &:hover,
+    &:focus-visible {
+      color: #315efb;
+      background: #eef2ff;
+      box-shadow: 0 4px 12px rgba(79, 107, 255, 0.14);
+    }
+  }
+
   &__placeholder {
     position: absolute;
     top: 10px;
@@ -41,6 +89,67 @@
     font-size: 13px;
     line-height: 24px;
     white-space: pre-wrap;
+  }
+}
+
+.sql-code-editor-modal {
+  .ant-modal-content {
+    overflow: hidden;
+    border: 1px solid rgba(216, 223, 255, 0.85);
+    border-radius: 20px;
+    background: #fff;
+    box-shadow: 0 24px 64px rgba(15, 23, 42, 0.18);
+  }
+
+  .ant-modal-header {
+    margin: 0;
+    padding: 20px 68px 18px 22px;
+    border-bottom: 1px solid #eef2f7;
+    background: linear-gradient(180deg, #ffffff 0%, #f8faff 100%);
+  }
+
+  .ant-modal-title {
+    color: #1f2937;
+    font-size: 15px;
+    font-weight: 700;
+  }
+
+  .ant-modal-close {
+    top: 12px;
+    right: 16px;
+    width: 36px;
+    height: 36px;
+    border-radius: 10px;
+
+    &:hover {
+      background: #eef2ff;
+      color: #315efb;
+    }
+  }
+
+  .ant-modal-body {
+    padding: 0;
+    background: #f8faff;
+  }
+
+  .ant-modal-footer {
+    margin-top: 0;
+    padding: 0;
+    border-top: 0;
+  }
+
+  &__body {
+    padding: 16px 20px 18px;
+  }
+
+  &__footer {
+    display: flex;
+    justify-content: flex-end;
+    gap: 8px;
+    margin: 0;
+    padding: 12px 20px;
+    border-top: 1px solid #eef2f7;
+    background: #fff;
   }
 }
 
