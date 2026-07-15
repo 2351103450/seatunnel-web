@@ -35,18 +35,19 @@ public class JobInstanceLookupImpl implements JobInstanceLookup {
         }
 
         ReleaseState releaseState = null;
+        String jobName = null;
         if (instance.getJobDefinitionId() != null) {
             JobDefinitionEntity definition = jobDefinitionDao.queryById(instance.getJobDefinitionId());
             if (definition != null) {
                 releaseState = definition.getReleaseState();
+                jobName = definition.getJobName();
             }
         }
 
         return JobInstanceBasic.builder()
                 .jobInstanceId(instance.getId())
                 .jobDefinitionId(instance.getJobDefinitionId())
-                // jobName lives on the job definition, not the instance; left null here.
-                .jobName(null)
+                .jobName(jobName)
                 .jobMode(instance.getJobMode() == null ? null : instance.getJobMode().name())
                 .engineJobId(instance.getEngineJobId())
                 .releaseState(releaseState)

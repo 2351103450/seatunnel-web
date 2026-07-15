@@ -1,16 +1,25 @@
 package org.apache.seatunnel.web.api.controller;
 
+import com.baomidou.mybatisplus.core.metadata.IPage;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.annotation.Resource;
 import lombok.Data;
+import org.apache.seatunnel.plugin.alarm.api.AlarmChannel;
 import org.apache.seatunnel.plugin.alarm.api.AlarmChannelFactory;
+import org.apache.seatunnel.plugin.alarm.api.AlarmData;
+import org.apache.seatunnel.plugin.alarm.api.AlarmInfo;
+import org.apache.seatunnel.plugin.alarm.api.AlarmResult;
+import org.apache.seatunnel.plugin.alarm.api.AlarmSeverity;
+import org.apache.seatunnel.web.api.alarm.engine.AlarmConfigParser;
 import org.apache.seatunnel.web.api.alarm.plugin.AlarmPluginManager;
 import org.apache.seatunnel.web.api.service.AlarmChannelService;
 import org.apache.seatunnel.web.api.service.AlarmRecordService;
 import org.apache.seatunnel.web.api.service.AlarmRuleService;
 import org.apache.seatunnel.web.dao.entity.AlarmChannelEntity;
 import org.apache.seatunnel.web.dao.entity.AlarmRecordEntity;
+import org.apache.seatunnel.web.dao.entity.AlarmRuleChannelEntity;
 import org.apache.seatunnel.web.dao.entity.AlarmRuleEntity;
 import org.apache.seatunnel.web.spi.bean.entity.Result;
 import org.apache.seatunnel.web.spi.form.FormFieldConfig;
@@ -25,6 +34,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 @RestController
@@ -43,6 +53,9 @@ public class AlarmController {
 
     @Resource
     private AlarmPluginManager alarmPluginManager;
+
+    @Resource
+    private ObjectMapper objectMapper;
 
     // -------------------- channel types (from SPI) --------------------
 
@@ -85,6 +98,51 @@ public class AlarmController {
         return Result.buildSuc(alarmChannelService.delete(id));
     }
 
+    @PostMapping("/channels/test")
+    @Operation(summary = "testChannel", description = "Send a test alarm to verify channel connectivity")
+    public Result<TestChannelResultVO> testChannel(@RequestBody TestChannelCommand cmd) {
+        AlarmChannelFactory factory = alarmPluginManager.getFactoryMap().get(cmd.getChannelType());
+        if (factory == null) {
+            TestChannelResultVO vo = new TestChannelResultVO();
+            vo.setSuccess(false);
+            vo.setMessage("未找到通道类型: " + cmd.getChannelType());
+            return Result.buildSuc(vo);
+        }
+        AlarmChannel channel = factory.create();
+        Map<String, String> params = AlarmConfigParser.parse(objectMapper, cmd.getConfigJson());
+        AlarmData data = AlarmData.builder()
+                .id(0L)
+                .title("SeaTunnel 告警连通性测试")
+                .content("这是一条测试消息，用于验证告警通道配置是否正确。\n如收到此消息，说明通道连通性正常。")
+                .severity(AlarmSeverity.INFO)
+                .build();
+        AlarmInfo info = AlarmInfo.builder()
+                .alarmParams(params)
+                .alarmData(data)
+                .build();
+        AlarmResult result = channel.process(info);
+
+        // Persist test record so user can see it in the record list
+        AlarmRecordEntity record = new AlarmRecordEntity();
+        record.setRuleId(0L);
+        record.setChannelId(0L);
+        record.setChannelType(cmd.getChannelType());
+        record.setJobInstanceId(0L);
+        record.setJobDefinitionId(0L);
+        record.setJobName("连通性测试");
+        record.setNewStatus("TEST");
+        record.setSeverity(data.getSeverity() == null ? null : data.getSeverity().name());
+        record.setSuccess(result.isSuccess() ? 1 : 0);
+        record.setErrorMessage(result.isSuccess() ? null : result.getMessage());
+        record.setContent(data.getContent());
+        alarmRecordService.save(record);
+
+        TestChannelResultVO vo = new TestChannelResultVO();
+        vo.setSuccess(result.isSuccess());
+        vo.setMessage(result.getMessage());
+        return Result.buildSuc(vo);
+    }
+
     // -------------------- rules --------------------
 
     @GetMapping("/rules")
@@ -117,15 +175,29 @@ public class AlarmController {
         return Result.buildSuc(ids);
     }
 
+    @GetMapping("/rules/all-channels")
+    @Operation(summary = "listAllRuleChannels", description = "List all rule-channel links for batch loading")
+    public Result<List<AlarmRuleChannelEntity>> listAllRuleChannels() {
+        return Result.buildSuc(alarmRuleService.listAllChannels());
+    }
+
     // -------------------- records --------------------
 
     @GetMapping("/records")
-    @Operation(summary = "pageRecords", description = "Page alarm delivery records")
-    public Result<List<AlarmRecordEntity>> pageRecords(
+    @Operation(summary = "pageRecords", description = "Page alarm delivery records with optional filters")
+    public Result<RecordPageVO> pageRecords(
             @RequestParam(value = "pageNo", defaultValue = "1") int pageNo,
             @RequestParam(value = "pageSize", defaultValue = "10") int pageSize,
-            @RequestParam(value = "jobInstanceId", required = false) Long jobInstanceId) {
-        return Result.buildSuc(alarmRecordService.page(pageNo, pageSize, jobInstanceId).getRecords());
+            @RequestParam(value = "jobInstanceId", required = false) Long jobInstanceId,
+            @RequestParam(value = "channelType", required = false) String channelType,
+            @RequestParam(value = "severity", required = false) String severity,
+            @RequestParam(value = "success", required = false) Integer success) {
+        IPage<AlarmRecordEntity> page = alarmRecordService.page(
+                pageNo, pageSize, jobInstanceId, channelType, severity, success);
+        RecordPageVO vo = new RecordPageVO();
+        vo.setList(page.getRecords());
+        vo.setTotal(page.getTotal());
+        return Result.buildSuc(vo);
     }
 
     @Data
@@ -133,5 +205,23 @@ public class AlarmController {
         private String channelType;
         private String displayName;
         private List<FormFieldConfig> configFields = new ArrayList<>();
+    }
+
+    @Data
+    public static class TestChannelCommand {
+        private String channelType;
+        private String configJson;
+    }
+
+    @Data
+    public static class TestChannelResultVO {
+        private boolean success;
+        private String message;
+    }
+
+    @Data
+    public static class RecordPageVO {
+        private List<AlarmRecordEntity> list;
+        private long total;
     }
 }

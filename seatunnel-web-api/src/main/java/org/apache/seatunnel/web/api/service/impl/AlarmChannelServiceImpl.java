@@ -4,8 +4,11 @@ import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import jakarta.annotation.Resource;
 import org.apache.seatunnel.web.api.service.AlarmChannelService;
 import org.apache.seatunnel.web.dao.entity.AlarmChannelEntity;
+import org.apache.seatunnel.web.dao.entity.AlarmRuleChannelEntity;
 import org.apache.seatunnel.web.dao.mapper.AlarmChannelMapper;
+import org.apache.seatunnel.web.dao.mapper.AlarmRuleChannelMapper;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.Date;
 import java.util.List;
@@ -15,6 +18,9 @@ public class AlarmChannelServiceImpl implements AlarmChannelService {
 
     @Resource
     private AlarmChannelMapper alarmChannelMapper;
+
+    @Resource
+    private AlarmRuleChannelMapper alarmRuleChannelMapper;
 
     @Override
     public AlarmChannelEntity getById(Long id) {
@@ -35,13 +41,10 @@ public class AlarmChannelServiceImpl implements AlarmChannelService {
 
     @Override
     public Long create(AlarmChannelEntity entity) {
-        entity.setId(null);
         if (entity.getEnabled() == null) {
             entity.setEnabled(1);
         }
-        Date now = new Date();
-        entity.setCreateTime(now);
-        entity.setUpdateTime(now);
+        entity.initInsert();
         alarmChannelMapper.insert(entity);
         return entity.getId();
     }
@@ -55,8 +58,21 @@ public class AlarmChannelServiceImpl implements AlarmChannelService {
         return alarmChannelMapper.updateById(entity) > 0;
     }
 
+    /**
+     * Delete a channel and cascade-clean any rule-channel links that reference
+     * it, preventing orphaned associations that would cause rules to match a
+     * non-existent channel.
+     */
     @Override
+    @Transactional
     public boolean delete(Long id) {
+        if (id == null) {
+            return false;
+        }
+        // Remove all rule-channel links referencing this channel
+        LambdaQueryWrapper<AlarmRuleChannelEntity> linkWrapper = new LambdaQueryWrapper<>();
+        linkWrapper.eq(AlarmRuleChannelEntity::getChannelId, id);
+        alarmRuleChannelMapper.delete(linkWrapper);
         return alarmChannelMapper.deleteById(id) > 0;
     }
 }
