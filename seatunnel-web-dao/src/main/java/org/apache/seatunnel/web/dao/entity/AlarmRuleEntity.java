@@ -22,9 +22,10 @@ public class AlarmRuleEntity extends BaseEntity {
     private String name;
 
     /**
-     * Target job definition id. Null means all jobs.
+     * Target job definition ids as a comma-separated list, e.g. "1,2,3".
+     * Null means all jobs.
      */
-    private Long jobDefinitionId;
+    private String targetJobs;
 
     /**
      * Comma-separated {@link org.apache.seatunnel.web.common.enums.JobStatus}

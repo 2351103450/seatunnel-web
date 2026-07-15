@@ -21,7 +21,7 @@ CREATE TABLE `t_seatunnel_web_alarm_rule`
 (
     `id`                bigint       NOT NULL COMMENT '主键ID',
     `name`              varchar(128) NOT NULL COMMENT '规则名称',
-    `job_definition_id` bigint                DEFAULT NULL COMMENT '任务定义ID，NULL表示全部任务',
+    `target_jobs`     varchar(512)          DEFAULT NULL COMMENT '目标任务定义ID，逗号分隔，NULL表示全部任务',
     `trigger_statuses`  varchar(256) NOT NULL COMMENT '触发的状态(JobStatus名)，逗号分隔，如 FAILED,CANCELED',
     `excludes`          varchar(512)          DEFAULT NULL COMMENT '排除的任务定义ID，逗号分隔',
     `severity`          varchar(32)          DEFAULT 'WARN' COMMENT '严重级别：INFO/WARN/CRITICAL',
@@ -30,7 +30,7 @@ CREATE TABLE `t_seatunnel_web_alarm_rule`
     `create_time`       datetime     NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
     `update_time`       datetime     NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
     PRIMARY KEY (`id`),
-    KEY                 `idx_job_definition_id` (`job_definition_id`),
+    KEY                 `idx_target_jobs` (`target_jobs`(191)),
     KEY                 `idx_enabled` (`enabled`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='告警规则表';
 
@@ -40,6 +40,7 @@ CREATE TABLE `t_seatunnel_web_alarm_rule_channel`
     `rule_id`     bigint   NOT NULL COMMENT '规则ID',
     `channel_id`  bigint   NOT NULL COMMENT '渠道ID',
     `create_time` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+    `update_time` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
     PRIMARY KEY (`id`),
     UNIQUE KEY `uk_rule_channel` (`rule_id`, `channel_id`),
     KEY          `idx_channel_id` (`channel_id`)
@@ -61,6 +62,7 @@ CREATE TABLE `t_seatunnel_web_alarm_record`
     `content`           text COMMENT '告警内容',
     `sent_time`         datetime              DEFAULT NULL COMMENT '发送时间',
     `create_time`       datetime     NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+    `update_time` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
     PRIMARY KEY (`id`),
     KEY                 `idx_rule_id` (`rule_id`),
     KEY                 `idx_job_instance_id` (`job_instance_id`),

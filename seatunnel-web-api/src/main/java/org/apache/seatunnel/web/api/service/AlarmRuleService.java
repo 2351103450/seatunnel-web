@@ -24,7 +24,7 @@ public interface AlarmRuleService {
     class AlarmRuleCommand {
         private Long id;
         private String name;
-        private Long jobDefinitionId;
+        private String targetJobs;
         private String triggerStatuses;
         private String excludes;
         private String severity;

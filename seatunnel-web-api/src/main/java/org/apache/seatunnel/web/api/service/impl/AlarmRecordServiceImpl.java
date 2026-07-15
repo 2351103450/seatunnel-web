@@ -25,4 +25,13 @@ public class AlarmRecordServiceImpl implements AlarmRecordService {
         w.orderByDesc(AlarmRecordEntity::getCreateTime);
         return alarmRecordMapper.selectPage(page, w);
     }
+
+    @Override
+    public void save(AlarmRecordEntity entity) {
+        if (entity.getSentTime() == null) {
+            entity.setSentTime(new java.util.Date());
+        }
+        entity.initInsert();
+        alarmRecordMapper.insert(entity);
+    }
 }

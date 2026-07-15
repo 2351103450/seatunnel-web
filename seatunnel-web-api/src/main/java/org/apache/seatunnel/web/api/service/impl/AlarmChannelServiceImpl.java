@@ -35,13 +35,10 @@ public class AlarmChannelServiceImpl implements AlarmChannelService {
 
     @Override
     public Long create(AlarmChannelEntity entity) {
-        entity.setId(null);
         if (entity.getEnabled() == null) {
             entity.setEnabled(1);
         }
-        Date now = new Date();
-        entity.setCreateTime(now);
-        entity.setUpdateTime(now);
+        entity.initInsert();
         alarmChannelMapper.insert(entity);
         return entity.getId();
     }

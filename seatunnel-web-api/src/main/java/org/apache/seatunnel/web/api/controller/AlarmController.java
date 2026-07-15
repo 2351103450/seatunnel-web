@@ -1,10 +1,17 @@
 package org.apache.seatunnel.web.api.controller;
 
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.annotation.Resource;
 import lombok.Data;
+import org.apache.seatunnel.plugin.alarm.api.AlarmChannel;
 import org.apache.seatunnel.plugin.alarm.api.AlarmChannelFactory;
+import org.apache.seatunnel.plugin.alarm.api.AlarmData;
+import org.apache.seatunnel.plugin.alarm.api.AlarmInfo;
+import org.apache.seatunnel.plugin.alarm.api.AlarmResult;
+import org.apache.seatunnel.plugin.alarm.api.AlarmSeverity;
 import org.apache.seatunnel.web.api.alarm.plugin.AlarmPluginManager;
 import org.apache.seatunnel.web.api.service.AlarmChannelService;
 import org.apache.seatunnel.web.api.service.AlarmRecordService;
@@ -24,7 +31,9 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 @RestController
@@ -43,6 +52,11 @@ public class AlarmController {
 
     @Resource
     private AlarmPluginManager alarmPluginManager;
+
+    @Resource
+    private ObjectMapper objectMapper;
+
+    private static final TypeReference<Map<String, Object>> CONFIG_TYPE = new TypeReference<>() {};
 
     // -------------------- channel types (from SPI) --------------------
 
@@ -83,6 +97,76 @@ public class AlarmController {
     @Operation(summary = "deleteChannel", description = "Delete an alarm channel instance")
     public Result<Boolean> deleteChannel(@PathVariable("id") Long id) {
         return Result.buildSuc(alarmChannelService.delete(id));
+    }
+
+    @PostMapping("/channels/test")
+    @Operation(summary = "testChannel", description = "Send a test alarm to verify channel connectivity")
+    public Result<TestChannelResultVO> testChannel(@RequestBody TestChannelCommand cmd) {
+        AlarmChannelFactory factory = alarmPluginManager.getFactoryMap().get(cmd.getChannelType());
+        if (factory == null) {
+            TestChannelResultVO vo = new TestChannelResultVO();
+            vo.setSuccess(false);
+            vo.setMessage("未找到通道类型: " + cmd.getChannelType());
+            return Result.buildSuc(vo);
+        }
+        AlarmChannel channel = factory.create();
+        Map<String, String> params = parseConfigToParams(cmd.getConfigJson());
+        AlarmData data = AlarmData.builder()
+                .id(0L)
+                .title("SeaTunnel 告警连通性测试")
+                .content("这是一条测试消息，用于验证告警通道配置是否正确。\n如收到此消息，说明通道连通性正常。")
+                .severity(AlarmSeverity.INFO)
+                .build();
+        AlarmInfo info = AlarmInfo.builder()
+                .alarmParams(params)
+                .alarmData(data)
+                .build();
+        AlarmResult result = channel.process(info);
+
+        // Persist test record so user can see it in the record list
+        AlarmRecordEntity record = new AlarmRecordEntity();
+        record.setRuleId(0L);
+        record.setChannelId(0L);
+        record.setChannelType(cmd.getChannelType());
+        record.setJobInstanceId(0L);
+        record.setJobDefinitionId(0L);
+        record.setJobName("连通性测试");
+        record.setNewStatus("TEST");
+        record.setSeverity(data.getSeverity() == null ? null : data.getSeverity().name());
+        record.setSuccess(result.isSuccess() ? 1 : 0);
+        record.setErrorMessage(result.isSuccess() ? null : result.getMessage());
+        record.setContent(data.getContent());
+        alarmRecordService.save(record);
+
+        TestChannelResultVO vo = new TestChannelResultVO();
+        vo.setSuccess(result.isSuccess());
+        vo.setMessage(result.getMessage());
+        return Result.buildSuc(vo);
+    }
+
+    private Map<String, String> parseConfigToParams(String configJson) {
+        if (configJson == null || configJson.isBlank()) {
+            return new HashMap<>();
+        }
+        try {
+            Map<String, Object> raw = objectMapper.readValue(configJson, CONFIG_TYPE);
+            Map<String, String> params = new HashMap<>();
+            raw.forEach((k, v) -> {
+                if (v == null) return;
+                if (v instanceof CharSequence || v instanceof Number || v instanceof Boolean) {
+                    params.put(k, v.toString());
+                } else {
+                    try {
+                        params.put(k, objectMapper.writeValueAsString(v));
+                    } catch (Exception e) {
+                        params.put(k, v.toString());
+                    }
+                }
+            });
+            return params;
+        } catch (Exception e) {
+            return new HashMap<>();
+        }
     }
 
     // -------------------- rules --------------------
@@ -133,5 +217,17 @@ public class AlarmController {
         private String channelType;
         private String displayName;
         private List<FormFieldConfig> configFields = new ArrayList<>();
+    }
+
+    @Data
+    public static class TestChannelCommand {
+        private String channelType;
+        private String configJson;
+    }
+
+    @Data
+    public static class TestChannelResultVO {
+        private boolean success;
+        private String message;
     }
 }

@@ -6,4 +6,6 @@ import org.apache.seatunnel.web.dao.entity.AlarmRecordEntity;
 public interface AlarmRecordService {
 
     IPage<AlarmRecordEntity> page(int pageNo, int pageSize, Long jobInstanceId);
+
+    void save(AlarmRecordEntity entity);
 }

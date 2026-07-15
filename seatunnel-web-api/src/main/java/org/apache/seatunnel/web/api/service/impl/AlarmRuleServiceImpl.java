@@ -37,13 +37,10 @@ public class AlarmRuleServiceImpl implements AlarmRuleService {
     @Transactional
     public Long create(AlarmRuleCommand command) {
         AlarmRuleEntity entity = toEntity(command);
-        entity.setId(null);
         if (entity.getEnabled() == null) {
             entity.setEnabled(1);
         }
-        Date now = new Date();
-        entity.setCreateTime(now);
-        entity.setUpdateTime(now);
+        entity.initInsert();
         alarmRuleMapper.insert(entity);
         relinkChannels(entity.getId(), command.getChannelIds());
         return entity.getId();
@@ -93,7 +90,6 @@ public class AlarmRuleServiceImpl implements AlarmRuleService {
         if (channelIds == null || channelIds.isEmpty()) {
             return;
         }
-        Date now = new Date();
         for (Long channelId : channelIds) {
             if (channelId == null) {
                 continue;
@@ -101,7 +97,7 @@ public class AlarmRuleServiceImpl implements AlarmRuleService {
             AlarmRuleChannelEntity link = new AlarmRuleChannelEntity();
             link.setRuleId(ruleId);
             link.setChannelId(channelId);
-            link.setCreateTime(now);
+            link.initInsert();
             alarmRuleChannelMapper.insert(link);
         }
     }
@@ -111,7 +107,7 @@ public class AlarmRuleServiceImpl implements AlarmRuleService {
         // not part of AlarmRuleEntity's @Builder; set id via the setter instead.
         AlarmRuleEntity entity = AlarmRuleEntity.builder()
                 .name(command.getName())
-                .jobDefinitionId(command.getJobDefinitionId())
+                .targetJobs(command.getTargetJobs())
                 .triggerStatuses(command.getTriggerStatuses())
                 .excludes(command.getExcludes())
                 .severity(command.getSeverity())
