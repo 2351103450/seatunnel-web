@@ -1,11 +1,11 @@
-import { Input, Segmented, Select, Switch, Tooltip } from "antd";
-import { Database, FileCode2, Save, Table2, UploadCloud } from "lucide-react";
-import { memo } from "react";
-import PanelShell from "../PanelShell";
-import ExtraParamsConfig from "./ExtraParamsConfig";
-import SinkSqlEditorSection from "./SinkSqlEditorSection";
-import { useSinkPanelLogic } from "./hooks/useSinkPanelLogic";
-import "./index.less";
+import { Input, Segmented, Select, Switch, Tooltip } from 'antd';
+import { Database, FileCode2, Save, Table2, UploadCloud } from 'lucide-react';
+import { memo } from 'react';
+import PanelShell from '../PanelShell';
+import ExtraParamsConfig from './ExtraParamsConfig';
+import SinkSqlEditorSection from './SinkSqlEditorSection';
+import { useSinkPanelLogic } from './hooks/useSinkPanelLogic';
+import './index.less';
 
 interface Props {
   selectedNode: any;
@@ -27,7 +27,6 @@ function SinkPanel({ selectedNode, onClose, onNodeDataChange }: Props) {
     targetTableName,
     sql,
     primaryKey,
-    batchSize,
     extraParams,
 
     dataSourceOptions,
@@ -63,11 +62,7 @@ function SinkPanel({ selectedNode, onClose, onNodeDataChange }: Props) {
       dbType={dbType}
       onClose={onClose}
       footer={
-        <button
-          type="button"
-          className="workflow-panel__btn workflow-panel__btn--ghost"
-          onClick={onClose}
-        >
+        <button type="button" className="workflow-panel__btn workflow-panel__btn--ghost" onClick={onClose}>
           关闭
         </button>
       }
@@ -90,7 +85,7 @@ function SinkPanel({ selectedNode, onClose, onNodeDataChange }: Props) {
               showSearch
               optionFilterProp="label"
               className="workflow-panel__antd-select"
-              style={{ width: "100%" }}
+              style={{ width: '100%' }}
               popupClassName="workflow-panel__dropdown"
             />
           </div>
@@ -99,27 +94,20 @@ function SinkPanel({ selectedNode, onClose, onNodeDataChange }: Props) {
         <div className="workflow-panel__divider" />
 
         <div className="workflow-panel__group">
-          <div
-            className="workflow-panel__group-head"
-            style={{ display: "flex", justifyContent: "space-between" }}
-          >
+          <div className="workflow-panel__group-head" style={{ display: 'flex', justifyContent: 'space-between' }}>
             <div className="workflow-panel__group-kicker">写入设置</div>
 
             <div
               style={{
-                display: "inline-flex",
-                alignItems: "center",
+                display: 'inline-flex',
+                alignItems: 'center',
                 gap: 8,
                 fontSize: 12,
-                color: "#667085",
+                color: '#667085',
               }}
             >
               <span>自动建表</span>
-              <Switch
-                size="small"
-                checked={autoCreateTable}
-                onChange={handleAutoCreateTableChange}
-              />
+              <Switch size="small" checked={autoCreateTable} onChange={handleAutoCreateTableChange} />
             </div>
           </div>
 
@@ -128,9 +116,7 @@ function SinkPanel({ selectedNode, onClose, onNodeDataChange }: Props) {
               <div className="workflow-panel__field workflow-panel__field--full">
                 <Input
                   value={targetTableName}
-                  onChange={(e) =>
-                    updateNode({ targetTableName: e.target.value })
-                  }
+                  onChange={(e) => updateNode({ targetTableName: e.target.value })}
                   placeholder="请输入目标表名"
                   className="workflow-panel__antd-input"
                 />
@@ -151,7 +137,7 @@ function SinkPanel({ selectedNode, onClose, onNodeDataChange }: Props) {
                             <span>按表写入</span>
                           </div>
                         ),
-                        value: "table",
+                        value: 'table',
                       },
                       {
                         label: (
@@ -160,13 +146,13 @@ function SinkPanel({ selectedNode, onClose, onNodeDataChange }: Props) {
                             <span>自定义 SQL</span>
                           </div>
                         ),
-                        value: "sql",
+                        value: 'sql',
                       },
                     ]}
                   />
                 </div>
 
-                {targetMode === "table" ? (
+                {targetMode === 'table' ? (
                   <div className="workflow-panel__field workflow-panel__field--full">
                     <Select
                       value={table}
@@ -175,7 +161,7 @@ function SinkPanel({ selectedNode, onClose, onNodeDataChange }: Props) {
                       loading={tableLoading}
                       placeholder="请选择目标表"
                       className="workflow-panel__antd-select"
-                      style={{ width: "100%" }}
+                      style={{ width: '100%' }}
                       popupClassName="workflow-panel__dropdown"
                       showSearch
                       optionFilterProp="rawLabel"
@@ -184,6 +170,7 @@ function SinkPanel({ selectedNode, onClose, onNodeDataChange }: Props) {
                 ) : (
                   <SinkSqlEditorSection
                     dataSourceId={dataSourceId}
+                    dbType={dbType}
                     sql={sql}
                     tableOptions={tableOptions}
                     sqlPopoverOpen={sqlPopoverOpen}
@@ -198,10 +185,7 @@ function SinkPanel({ selectedNode, onClose, onNodeDataChange }: Props) {
               </>
             )}
 
-            <div
-              className="workflow-panel__form-grid"
-              style={{ marginTop: autoCreateTable ? 12 : 0 }}
-            >
+            <div className="workflow-panel__form-grid" style={{ marginTop: autoCreateTable ? 12 : 0 }}>
               <div className="workflow-panel__divider" />
               <Segmented
                 block
@@ -215,7 +199,7 @@ function SinkPanel({ selectedNode, onClose, onNodeDataChange }: Props) {
                         <span>追加写入</span>
                       </div>
                     ),
-                    value: "append",
+                    value: 'append',
                   },
                   {
                     label: (
@@ -228,7 +212,7 @@ function SinkPanel({ selectedNode, onClose, onNodeDataChange }: Props) {
                         </Tooltip>
                       </div>
                     ),
-                    value: "overwrite",
+                    value: 'overwrite',
                   },
                   {
                     label: (
@@ -237,17 +221,14 @@ function SinkPanel({ selectedNode, onClose, onNodeDataChange }: Props) {
                         <span>Upsert</span>
                       </div>
                     ),
-                    value: "upsert",
+                    value: 'upsert',
                   },
                 ]}
               />
 
-              {writeMode === "upsert" ? (
+              {writeMode === 'upsert' ? (
                 <div className="workflow-panel__field">
-                  <div
-                    className="workflow-panel__label"
-                    style={{ marginTop: 12 }}
-                  >
+                  <div className="workflow-panel__label" style={{ marginTop: 12 }}>
                     主键字段
                   </div>
                   <Input
