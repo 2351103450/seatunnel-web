@@ -1,12 +1,21 @@
 package org.apache.seatunnel.web.api.service.impl;
 
-import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.annotation.Resource;
+import org.apache.seatunnel.plugin.alarm.api.AlarmChannel;
+import org.apache.seatunnel.plugin.alarm.api.AlarmChannelFactory;
+import org.apache.seatunnel.plugin.alarm.api.AlarmData;
+import org.apache.seatunnel.plugin.alarm.api.AlarmInfo;
+import org.apache.seatunnel.plugin.alarm.api.AlarmResult;
+import org.apache.seatunnel.plugin.alarm.api.AlarmSeverity;
+import org.apache.seatunnel.web.api.alarm.engine.AlarmConfigParser;
+import org.apache.seatunnel.web.api.alarm.plugin.AlarmPluginManager;
 import org.apache.seatunnel.web.api.service.AlarmChannelService;
 import org.apache.seatunnel.web.dao.entity.AlarmChannelEntity;
-import org.apache.seatunnel.web.dao.entity.AlarmRuleChannelEntity;
-import org.apache.seatunnel.web.dao.mapper.AlarmChannelMapper;
-import org.apache.seatunnel.web.dao.mapper.AlarmRuleChannelMapper;
+import org.apache.seatunnel.web.dao.entity.AlarmRecordEntity;
+import org.apache.seatunnel.web.dao.repository.AlarmChannelDao;
+import org.apache.seatunnel.web.dao.repository.AlarmRecordDao;
+import org.apache.seatunnel.web.dao.repository.AlarmRuleChannelDao;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -17,26 +26,33 @@ import java.util.List;
 public class AlarmChannelServiceImpl implements AlarmChannelService {
 
     @Resource
-    private AlarmChannelMapper alarmChannelMapper;
+    private AlarmChannelDao alarmChannelDao;
 
     @Resource
-    private AlarmRuleChannelMapper alarmRuleChannelMapper;
+    private AlarmRuleChannelDao alarmRuleChannelDao;
+
+    @Resource
+    private AlarmRecordDao alarmRecordDao;
+
+    @Resource
+    private AlarmPluginManager alarmPluginManager;
+
+    @Resource
+    private ObjectMapper objectMapper;
 
     @Override
     public AlarmChannelEntity getById(Long id) {
-        return alarmChannelMapper.selectById(id);
+        return alarmChannelDao.queryById(id);
     }
 
     @Override
     public List<AlarmChannelEntity> list() {
-        return alarmChannelMapper.selectList(null);
+        return alarmChannelDao.queryAll();
     }
 
     @Override
     public List<AlarmChannelEntity> listEnabled() {
-        LambdaQueryWrapper<AlarmChannelEntity> w = new LambdaQueryWrapper<>();
-        w.eq(AlarmChannelEntity::getEnabled, 1);
-        return alarmChannelMapper.selectList(w);
+        return alarmChannelDao.listEnabled();
     }
 
     @Override
@@ -45,7 +61,7 @@ public class AlarmChannelServiceImpl implements AlarmChannelService {
             entity.setEnabled(1);
         }
         entity.initInsert();
-        alarmChannelMapper.insert(entity);
+        alarmChannelDao.insert(entity);
         return entity.getId();
     }
 
@@ -55,7 +71,7 @@ public class AlarmChannelServiceImpl implements AlarmChannelService {
             return false;
         }
         entity.setUpdateTime(new Date());
-        return alarmChannelMapper.updateById(entity) > 0;
+        return alarmChannelDao.updateById(entity);
     }
 
     /**
@@ -69,10 +85,52 @@ public class AlarmChannelServiceImpl implements AlarmChannelService {
         if (id == null) {
             return false;
         }
-        // Remove all rule-channel links referencing this channel
-        LambdaQueryWrapper<AlarmRuleChannelEntity> linkWrapper = new LambdaQueryWrapper<>();
-        linkWrapper.eq(AlarmRuleChannelEntity::getChannelId, id);
-        alarmRuleChannelMapper.delete(linkWrapper);
-        return alarmChannelMapper.deleteById(id) > 0;
+        alarmRuleChannelDao.deleteByChannelId(id);
+        return alarmChannelDao.deleteById(id);
     }
+
+    @Override
+    public TestChannelResult testChannel(String channelType, String configJson) {
+        TestChannelResult vo = new TestChannelResult();
+        AlarmChannelFactory factory = alarmPluginManager.getFactoryMap().get(channelType);
+        if (factory == null) {
+            vo.setSuccess(false);
+            vo.setMessage("未找到通道类型: " + channelType);
+            return vo;
+        }
+
+        AlarmChannel channel = factory.create();
+        AlarmData data = AlarmData.builder()
+                .id(0L)
+                .title("SeaTunnel 告警连通性测试")
+                .content("这是一条测试消息，用于验证告警通道配置是否正确。\n如收到此消息，说明通道连通性正常。")
+                .severity(AlarmSeverity.INFO)
+                .build();
+        AlarmInfo info = AlarmInfo.builder()
+                .alarmParams(AlarmConfigParser.parse(objectMapper, configJson))
+                .alarmData(data)
+                .build();
+        AlarmResult result = channel.process(info);
+
+        AlarmRecordEntity record = new AlarmRecordEntity();
+        record.setRuleId(0L);
+        record.setChannelId(0L);
+        record.setChannelType(channelType);
+        record.setJobInstanceId(0L);
+        record.setJobDefinitionId(0L);
+        record.setJobName("连通性测试");
+        record.setNewStatus("TEST");
+        record.setSeverity(data.getSeverity().name());
+        record.setSuccess(result.isSuccess() ? 1 : 0);
+        record.setErrorMessage(result.isSuccess() ? null : result.getMessage());
+        record.setContent(data.getContent());
+        record.setSentTime(new Date());
+        record.initInsert();
+        alarmRecordDao.insert(record);
+
+        vo.setSuccess(result.isSuccess());
+        vo.setMessage(result.getMessage());
+        return vo;
+    }
+
 }
