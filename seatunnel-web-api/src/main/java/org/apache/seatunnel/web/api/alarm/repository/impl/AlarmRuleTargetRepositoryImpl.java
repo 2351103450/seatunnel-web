@@ -1,18 +1,16 @@
 package org.apache.seatunnel.web.api.alarm.repository.impl;
 
-import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import jakarta.annotation.Resource;
-import lombok.extern.slf4j.Slf4j;
 import org.apache.seatunnel.web.api.alarm.repository.AlarmRuleTargetRepository;
 import org.apache.seatunnel.web.api.alarm.repository.AlarmTarget;
 import org.apache.seatunnel.web.dao.entity.AlarmChannelEntity;
 import org.apache.seatunnel.web.dao.entity.AlarmRecordEntity;
 import org.apache.seatunnel.web.dao.entity.AlarmRuleChannelEntity;
 import org.apache.seatunnel.web.dao.entity.AlarmRuleEntity;
-import org.apache.seatunnel.web.dao.mapper.AlarmChannelMapper;
-import org.apache.seatunnel.web.dao.mapper.AlarmRecordMapper;
-import org.apache.seatunnel.web.dao.mapper.AlarmRuleChannelMapper;
-import org.apache.seatunnel.web.dao.mapper.AlarmRuleMapper;
+import org.apache.seatunnel.web.dao.repository.AlarmChannelDao;
+import org.apache.seatunnel.web.dao.repository.AlarmRecordDao;
+import org.apache.seatunnel.web.dao.repository.AlarmRuleChannelDao;
+import org.apache.seatunnel.web.dao.repository.AlarmRuleDao;
 import org.springframework.stereotype.Repository;
 
 import java.util.Arrays;
@@ -26,20 +24,19 @@ import java.util.stream.Collectors;
  * MyBatis-Plus backed implementation of {@link AlarmRuleTargetRepository}.
  */
 @Repository
-@Slf4j
 public class AlarmRuleTargetRepositoryImpl implements AlarmRuleTargetRepository {
 
     @Resource
-    private AlarmRuleMapper ruleMapper;
+    private AlarmRuleDao ruleDao;
 
     @Resource
-    private AlarmRuleChannelMapper ruleChannelMapper;
+    private AlarmRuleChannelDao ruleChannelDao;
 
     @Resource
-    private AlarmChannelMapper channelMapper;
+    private AlarmChannelDao channelDao;
 
     @Resource
-    private AlarmRecordMapper recordMapper;
+    private AlarmRecordDao recordDao;
 
     @Override
     public List<AlarmTarget> findMatchedTargets(Long jobDefinitionId, String newStatus) {
@@ -47,12 +44,7 @@ public class AlarmRuleTargetRepositoryImpl implements AlarmRuleTargetRepository 
             return Collections.emptyList();
         }
 
-        // Load all enabled rules and filter targetJobs / excludes in Java
-        // (targetJobs is a comma-separated string, precise matching in Java)
-        LambdaQueryWrapper<AlarmRuleEntity> ruleWrapper = new LambdaQueryWrapper<>();
-        ruleWrapper.eq(AlarmRuleEntity::getEnabled, 1);
-
-        List<AlarmRuleEntity> rules = ruleMapper.selectList(ruleWrapper);
+        List<AlarmRuleEntity> rules = ruleDao.listEnabled();
         if (rules == null || rules.isEmpty()) {
             return Collections.emptyList();
         }
@@ -68,9 +60,7 @@ public class AlarmRuleTargetRepositoryImpl implements AlarmRuleTargetRepository 
 
         List<Long> ruleIds = matched.stream().map(AlarmRuleEntity::getId).collect(Collectors.toList());
 
-        LambdaQueryWrapper<AlarmRuleChannelEntity> linkWrapper = new LambdaQueryWrapper<>();
-        linkWrapper.in(AlarmRuleChannelEntity::getRuleId, ruleIds);
-        List<AlarmRuleChannelEntity> links = ruleChannelMapper.selectList(linkWrapper);
+        List<AlarmRuleChannelEntity> links = ruleChannelDao.listByRuleIds(ruleIds);
         if (links == null || links.isEmpty()) {
             return Collections.emptyList();
         }
@@ -82,10 +72,7 @@ public class AlarmRuleTargetRepositoryImpl implements AlarmRuleTargetRepository 
                 .map(AlarmRuleChannelEntity::getChannelId)
                 .collect(Collectors.toSet());
 
-        LambdaQueryWrapper<AlarmChannelEntity> channelWrapper = new LambdaQueryWrapper<>();
-        channelWrapper.in(AlarmChannelEntity::getId, channelIds)
-                .eq(AlarmChannelEntity::getEnabled, 1);
-        List<AlarmChannelEntity> channels = channelMapper.selectList(channelWrapper);
+        List<AlarmChannelEntity> channels = channelDao.listEnabledByIds(channelIds);
         Map<Long, AlarmChannelEntity> channelMap = channels.stream()
                 .collect(Collectors.toMap(AlarmChannelEntity::getId, c -> c));
 
@@ -102,7 +89,7 @@ public class AlarmRuleTargetRepositoryImpl implements AlarmRuleTargetRepository 
             return;
         }
         record.initInsert();
-        recordMapper.insert(record);
+        recordDao.insert(record);
     }
 
     private AlarmTarget buildTarget(AlarmRuleEntity rule,

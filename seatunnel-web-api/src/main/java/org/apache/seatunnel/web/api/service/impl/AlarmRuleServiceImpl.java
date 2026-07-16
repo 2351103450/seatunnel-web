@@ -1,12 +1,11 @@
 package org.apache.seatunnel.web.api.service.impl;
 
-import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import jakarta.annotation.Resource;
 import org.apache.seatunnel.web.api.service.AlarmRuleService;
 import org.apache.seatunnel.web.dao.entity.AlarmRuleChannelEntity;
 import org.apache.seatunnel.web.dao.entity.AlarmRuleEntity;
-import org.apache.seatunnel.web.dao.mapper.AlarmRuleChannelMapper;
-import org.apache.seatunnel.web.dao.mapper.AlarmRuleMapper;
+import org.apache.seatunnel.web.dao.repository.AlarmRuleChannelDao;
+import org.apache.seatunnel.web.dao.repository.AlarmRuleDao;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -18,19 +17,19 @@ import java.util.List;
 public class AlarmRuleServiceImpl implements AlarmRuleService {
 
     @Resource
-    private AlarmRuleMapper alarmRuleMapper;
+    private AlarmRuleDao alarmRuleDao;
 
     @Resource
-    private AlarmRuleChannelMapper alarmRuleChannelMapper;
+    private AlarmRuleChannelDao alarmRuleChannelDao;
 
     @Override
     public AlarmRuleEntity getById(Long id) {
-        return alarmRuleMapper.selectById(id);
+        return alarmRuleDao.queryById(id);
     }
 
     @Override
     public List<AlarmRuleEntity> list() {
-        return alarmRuleMapper.selectList(null);
+        return alarmRuleDao.queryAll();
     }
 
     @Override
@@ -41,7 +40,7 @@ public class AlarmRuleServiceImpl implements AlarmRuleService {
             entity.setEnabled(1);
         }
         entity.initInsert();
-        alarmRuleMapper.insert(entity);
+        alarmRuleDao.insert(entity);
         relinkChannels(entity.getId(), command.getChannelIds());
         return entity.getId();
     }
@@ -54,7 +53,7 @@ public class AlarmRuleServiceImpl implements AlarmRuleService {
         }
         AlarmRuleEntity entity = toEntity(command);
         entity.setUpdateTime(new Date());
-        boolean updated = alarmRuleMapper.updateById(entity) > 0;
+        boolean updated = alarmRuleDao.updateById(entity);
         if (updated) {
             relinkChannels(entity.getId(), command.getChannelIds());
         }
@@ -67,10 +66,8 @@ public class AlarmRuleServiceImpl implements AlarmRuleService {
         if (id == null) {
             return false;
         }
-        LambdaQueryWrapper<AlarmRuleChannelEntity> w = new LambdaQueryWrapper<>();
-        w.eq(AlarmRuleChannelEntity::getRuleId, id);
-        alarmRuleChannelMapper.delete(w);
-        return alarmRuleMapper.deleteById(id) > 0;
+        alarmRuleChannelDao.deleteByRuleId(id);
+        return alarmRuleDao.deleteById(id);
     }
 
     @Override
@@ -78,20 +75,16 @@ public class AlarmRuleServiceImpl implements AlarmRuleService {
         if (ruleId == null) {
             return Collections.emptyList();
         }
-        LambdaQueryWrapper<AlarmRuleChannelEntity> w = new LambdaQueryWrapper<>();
-        w.eq(AlarmRuleChannelEntity::getRuleId, ruleId);
-        return alarmRuleChannelMapper.selectList(w);
+        return alarmRuleChannelDao.listByRuleId(ruleId);
     }
 
     @Override
     public List<AlarmRuleChannelEntity> listAllChannels() {
-        return alarmRuleChannelMapper.selectList(null);
+        return alarmRuleChannelDao.queryAll();
     }
 
     private void relinkChannels(Long ruleId, List<Long> channelIds) {
-        LambdaQueryWrapper<AlarmRuleChannelEntity> w = new LambdaQueryWrapper<>();
-        w.eq(AlarmRuleChannelEntity::getRuleId, ruleId);
-        alarmRuleChannelMapper.delete(w);
+        alarmRuleChannelDao.deleteByRuleId(ruleId);
         if (channelIds == null || channelIds.isEmpty()) {
             return;
         }
@@ -103,7 +96,7 @@ public class AlarmRuleServiceImpl implements AlarmRuleService {
             link.setRuleId(ruleId);
             link.setChannelId(channelId);
             link.initInsert();
-            alarmRuleChannelMapper.insert(link);
+            alarmRuleChannelDao.insert(link);
         }
     }
 
