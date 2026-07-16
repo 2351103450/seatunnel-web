@@ -1,13 +1,13 @@
-import { Button, Divider, Segmented, Select, Tooltip } from "antd";
-import { BarChart3, Database, Eye, FileCode2, Table2 } from "lucide-react";
-import { memo, useRef } from "react";
-import PanelShell from "../PanelShell";
-import ExtraParamsConfig from "./ExtraParamsConfig";
+import { Button, Divider, Segmented, Select, Tooltip } from 'antd';
+import { BarChart3, Database, Eye, FileCode2, Table2 } from 'lucide-react';
+import { memo, useRef } from 'react';
+import PanelShell from '../PanelShell';
+import ExtraParamsConfig from './ExtraParamsConfig';
 
-import QualityDetail from "@/pages/batch-link-up/DataViewSQL";
-import { useSourcePanelLogic } from "./hooks/useSourcePanelLogic";
-import "./index.less";
-import SqlEditorSection from "./SqlEditorSection";
+import QualityDetail from '@/pages/batch-link-up/DataViewSQL';
+import { useSourcePanelLogic } from './hooks/useSourcePanelLogic';
+import './index.less';
+import SqlEditorSection from './SqlEditorSection';
 
 interface Props {
   selectedNode: any;
@@ -46,7 +46,6 @@ function SourcePanel({ selectedNode, onClose, onNodeDataChange, scheduleConfig }
     handleDataSourceChange,
     handleReadModeChange,
     handlePreview,
-    handleStatistics,
     handleGenerateSql,
     handleResolveSqlPreview,
     handleOpenResolvePopover,
@@ -56,7 +55,7 @@ function SourcePanel({ selectedNode, onClose, onNodeDataChange, scheduleConfig }
     selectedNode,
     onNodeDataChange,
     qualityDetailRef,
-    scheduleConfig
+    scheduleConfig,
   });
 
   return (
@@ -72,11 +71,7 @@ function SourcePanel({ selectedNode, onClose, onNodeDataChange, scheduleConfig }
         dbType={dbType}
         onClose={onClose}
         footer={
-          <button
-            type="button"
-            className="workflow-panel__btn workflow-panel__btn--ghost"
-            onClick={onClose}
-          >
+          <button type="button" className="workflow-panel__btn workflow-panel__btn--ghost" onClick={onClose}>
             关闭
           </button>
         }
@@ -99,7 +94,7 @@ function SourcePanel({ selectedNode, onClose, onNodeDataChange, scheduleConfig }
                 showSearch
                 optionFilterProp="label"
                 className="workflow-panel__antd-select"
-                style={{ width: "100%" }}
+                style={{ width: '100%' }}
                 popupClassName="workflow-panel__dropdown"
               />
             </div>
@@ -108,13 +103,10 @@ function SourcePanel({ selectedNode, onClose, onNodeDataChange, scheduleConfig }
           <div className="workflow-panel__divider" />
 
           <div className="workflow-panel__group">
-            <div
-              className="workflow-panel__group-head"
-              style={{ display: "flex", justifyContent: "space-between" }}
-            >
+            <div className="workflow-panel__group-head" style={{ display: 'flex', justifyContent: 'space-between' }}>
               <div className="workflow-panel__group-kicker">读取方式</div>
 
-              <div style={{ display: "flex", alignItems: "center" }}>
+              <div style={{ display: 'flex', alignItems: 'center' }}>
                 <Tooltip title="预览读取结果样例数据">
                   <Button
                     size="small"
@@ -127,18 +119,10 @@ function SourcePanel({ selectedNode, onClose, onNodeDataChange, scheduleConfig }
                   </Button>
                 </Tooltip>
 
-                <Divider
-                  type="vertical"
-                  style={{ padding: 0, margin: "0 4px" }}
-                />
+                <Divider type="vertical" style={{ padding: 0, margin: '0 4px' }} />
 
                 <Tooltip title="解析当前读取配置下的字段信息">
-                  <Button
-                    onClick={handleResolveColumns}
-                    size="small"
-                    type="text"
-                    icon={<BarChart3 size={14} />}
-                  >
+                  <Button onClick={handleResolveColumns} size="small" type="text" icon={<BarChart3 size={14} />}>
                     字段解析
                   </Button>
                 </Tooltip>
@@ -157,7 +141,7 @@ function SourcePanel({ selectedNode, onClose, onNodeDataChange, scheduleConfig }
                       <span>按表读取</span>
                     </div>
                   ),
-                  value: "table",
+                  value: 'table',
                 },
                 {
                   label: (
@@ -166,31 +150,27 @@ function SourcePanel({ selectedNode, onClose, onNodeDataChange, scheduleConfig }
                       <span>自定义 SQL</span>
                     </div>
                   ),
-                  value: "sql",
+                  value: 'sql',
                 },
               ]}
             />
 
-            {readMode === "table" ? (
+            {readMode === 'table' ? (
               <div className="workflow-panel__field workflow-panel__field--full">
                 <Select
                   value={table}
                   onChange={(value) =>
-                    updateNode(
-                      { table: value },
-                      undefined,
-                      {
-                        outputSchema: [],
-                        schemaStatus: "idle",
-                        schemaError: "",
-                      }
-                    )
+                    updateNode({ table: value }, undefined, {
+                      outputSchema: [],
+                      schemaStatus: 'idle',
+                      schemaError: '',
+                    })
                   }
                   options={tableOptions}
                   loading={tableLoading}
                   placeholder="请选择来源表"
                   className="workflow-panel__antd-select"
-                  style={{ width: "100%" }}
+                  style={{ width: '100%' }}
                   popupClassName="workflow-panel__dropdown"
                   showSearch
                   optionFilterProp="rawLabel"
@@ -199,6 +179,7 @@ function SourcePanel({ selectedNode, onClose, onNodeDataChange, scheduleConfig }
             ) : (
               <SqlEditorSection
                 sourceDataSourceId={dataSourceId}
+                dbType={dbType}
                 sql={sql}
                 tableOptions={tableOptions}
                 sqlPopoverOpen={sqlPopoverOpen}
@@ -210,15 +191,11 @@ function SourcePanel({ selectedNode, onClose, onNodeDataChange, scheduleConfig }
                 resolveSqlLoading={resolveSqlLoading}
                 resolvedSqlPreview={resolvedSqlPreview}
                 onSqlChange={(value: any) =>
-                  updateNode(
-                    { sql: value },
-                    undefined,
-                    {
-                      outputSchema: [],
-                      schemaStatus: "idle",
-                      schemaError: "",
-                    }
-                  )
+                  updateNode({ sql: value }, undefined, {
+                    outputSchema: [],
+                    schemaStatus: 'idle',
+                    schemaError: '',
+                  })
                 }
                 onGenerateSql={handleGenerateSql}
                 onResolveSqlPreview={handleResolveSqlPreview}
