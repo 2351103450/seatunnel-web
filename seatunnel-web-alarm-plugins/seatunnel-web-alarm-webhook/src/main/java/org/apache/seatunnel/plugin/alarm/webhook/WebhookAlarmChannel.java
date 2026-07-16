@@ -8,7 +8,9 @@ import org.apache.seatunnel.plugin.alarm.api.AlarmData;
 import org.apache.seatunnel.plugin.alarm.api.AlarmInfo;
 import org.apache.seatunnel.plugin.alarm.api.AlarmResult;
 
+import java.io.BufferedReader;
 import java.io.IOException;
+import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.net.HttpURLConnection;
 import java.net.URI;
@@ -46,7 +48,10 @@ public class WebhookAlarmChannel implements AlarmChannel {
         String method = params.getOrDefault("method", "POST");
         int timeoutMs = parseIntOrDefault(params.get("timeoutMs"), DEFAULT_TIMEOUT_MS);
         Map<String, Object> headers = parseHeaders(params.get("headers"));
-        String body = buildBody(info.getAlarmData());
+        String bodyTemplate = params.get("bodyTemplate");
+        String body = (bodyTemplate != null && !bodyTemplate.isBlank())
+                ? renderTemplate(bodyTemplate, info.getAlarmData())
+                : buildBody(info.getAlarmData());
 
         HttpURLConnection conn = null;
         try {
@@ -69,10 +74,16 @@ public class WebhookAlarmChannel implements AlarmChannel {
             }
 
             int code = conn.getResponseCode();
+            String responseBody = readResponseBody(conn);
             if (code >= 200 && code < 300) {
-                return AlarmResult.success("status " + code);
+                // DingTalk / Feishu etc. return 200 but embed error in JSON body
+                String errMsg = extractErrorMessage(responseBody);
+                if (errMsg != null) {
+                    return AlarmResult.fail("webhook error: " + errMsg + " | response: " + responseBody);
+                }
+                return AlarmResult.success("status " + code + " | response: " + responseBody);
             }
-            return AlarmResult.fail("webhook responded with status " + code);
+            return AlarmResult.fail("webhook responded with status " + code + " | response: " + responseBody);
         } catch (IOException e) {
             log.warn("Webhook alarm delivery failed, url={}", url, e);
             return AlarmResult.fail(e.getMessage());
@@ -93,6 +104,84 @@ public class WebhookAlarmChannel implements AlarmChannel {
                 .add("log", data.getLog())
                 .add("severity", data.getSeverity() == null ? null : data.getSeverity().name())
                 .build();
+    }
+
+    /**
+     * Render a body template by replacing {@code ${title}}, {@code ${content}},
+     * {@code ${severity}}, {@code ${log}} placeholders with actual alarm data values.
+     */
+    private String renderTemplate(String template, AlarmData data) {
+        if (data == null) {
+            return template;
+        }
+        String result = template;
+        result = result.replace("${title}", safe(data.getTitle()));
+        result = result.replace("${content}", safe(data.getContent()));
+        result = result.replace("${severity}", data.getSeverity() == null ? "" : data.getSeverity().name());
+        result = result.replace("${log}", safe(data.getLog()));
+        return result;
+    }
+
+    private String safe(String value) {
+        return value == null ? "" : value;
+    }
+
+    private String readResponseBody(HttpURLConnection conn) {
+        try (BufferedReader reader = new BufferedReader(
+                new InputStreamReader(conn.getInputStream(), StandardCharsets.UTF_8))) {
+            StringBuilder sb = new StringBuilder();
+            String line;
+            while ((line = reader.readLine()) != null) {
+                sb.append(line);
+            }
+            return sb.toString();
+        } catch (IOException e) {
+            // If error stream exists, try reading it
+            try (BufferedReader reader = new BufferedReader(
+                    new InputStreamReader(conn.getErrorStream(), StandardCharsets.UTF_8))) {
+                StringBuilder sb = new StringBuilder();
+                String line;
+                while ((line = reader.readLine()) != null) {
+                    sb.append(line);
+                }
+                return sb.toString();
+            } catch (IOException ex) {
+                return "";
+            }
+        }
+    }
+
+    /**
+     * Extract error message from common webhook response formats (DingTalk, Feishu, etc.)
+     */
+    private String extractErrorMessage(String responseBody) {
+        if (responseBody == null || responseBody.isBlank()) {
+            return null;
+        }
+        try {
+            Map<String, Object> map = OBJECT_MAPPER.readValue(responseBody, MAP_TYPE);
+            // DingTalk: errcode, errmsg
+            // Feishu: code, msg
+            Object errCode = map.get("errcode");
+            if (errCode != null) {
+                int code = errCode instanceof Number ? ((Number) errCode).intValue() : Integer.parseInt(errCode.toString());
+                if (code != 0) {
+                    Object msg = map.get("errmsg");
+                    return msg != null ? msg.toString() : "errcode=" + code;
+                }
+            }
+            Object feishuCode = map.get("code");
+            if (feishuCode != null) {
+                int code = feishuCode instanceof Number ? ((Number) feishuCode).intValue() : Integer.parseInt(feishuCode.toString());
+                if (code != 0) {
+                    Object msg = map.get("msg");
+                    return msg != null ? msg.toString() : "code=" + code;
+                }
+            }
+            return null;
+        } catch (Exception e) {
+            return null;
+        }
     }
 
     private Map<String, Object> parseHeaders(String headersJson) {

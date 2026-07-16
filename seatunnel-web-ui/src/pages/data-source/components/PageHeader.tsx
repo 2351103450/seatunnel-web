@@ -11,8 +11,13 @@ const PageHeader: React.FC<PageHeaderProps> = ({ onCreate }) => {
   const intl = useIntl();
 
   return (
-    <div className="mb-8 flex flex-col gap-5 rounded-3xl  lg:flex-row lg:items-end lg:justify-between">
-      <div className="min-w-0">
+    <div
+      className={[
+        'mb-8 flex flex-col items-start gap-5',
+        'md:flex-row md:items-end md:justify-between',
+      ].join(' ')}
+    >
+      <div className="min-w-0 flex-1">
         <div className="mb-2 flex items-center gap-3">
           <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-[hsl(231_48%_48%/0.10)] text-[hsl(231_48%_48%)]">
             <svg
@@ -57,10 +62,10 @@ const PageHeader: React.FC<PageHeaderProps> = ({ onCreate }) => {
         className={[
           '!h-[42px] !shrink-0 !rounded-full !px-5 !font-semibold',
           '!border-[hsl(231_48%_48%)] !bg-[hsl(231_48%_48%)]',
-          // 'shadow-[0_8px_18px_hsl(231_48%_48%/0.22)]',
+          'self-start md:self-auto',
           'transition-all duration-200 ease-out',
-          ' hover:!border-[hsl(231_48%_44%)] hover:!bg-[hsl(231_48%_44%)]',
-          // 'hover:!shadow-[0_12px_24px_hsl(231_48%_48%/0.26)]',
+          'hover:!border-[hsl(231_48%_44%)]',
+          'hover:!bg-[hsl(231_48%_44%)]',
         ].join(' ')}
       >
         新建数据源
