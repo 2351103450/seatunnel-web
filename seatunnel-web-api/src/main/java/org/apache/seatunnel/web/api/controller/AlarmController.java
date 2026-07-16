@@ -11,6 +11,7 @@ import org.apache.seatunnel.web.api.service.AlarmChannelService;
 import org.apache.seatunnel.web.api.service.AlarmRecordService;
 import org.apache.seatunnel.web.api.service.AlarmRuleService;
 import org.apache.seatunnel.web.dao.entity.AlarmChannelEntity;
+import org.apache.seatunnel.web.dao.entity.AlarmRecordEntity;
 import org.apache.seatunnel.web.dao.entity.AlarmRuleChannelEntity;
 import org.apache.seatunnel.web.dao.entity.AlarmRuleEntity;
 import org.apache.seatunnel.web.spi.bean.entity.Result;
@@ -119,7 +120,7 @@ public class AlarmController {
     @Operation(summary = "listRuleChannels", description = "List channel ids linked to a rule")
     public Result<List<Long>> listRuleChannels(@PathVariable("id") Long id) {
         List<Long> ids = alarmRuleService.listChannels(id).stream()
-                .map(link -> link.getChannelId())
+                .map(AlarmRuleChannelEntity::getChannelId)
                 .collect(Collectors.toList());
         return Result.buildSuc(ids);
     }
