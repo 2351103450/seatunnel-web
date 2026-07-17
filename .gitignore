@@ -61,3 +61,6 @@ spark-warehouse
 .env.*
 !.env.example
 !.env.*.example
+
+# Local CodeGraph index and configuration
+.codegraph/
